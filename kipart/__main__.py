@@ -28,35 +28,41 @@ from __init__ import __version__
 from kipart import *
 
 parser = ap.ArgumentParser(
-    description='Generate KiCad multi-unit schematic symbols from a CSV file.')
+    description=
+    'Generate multi-unit schematic symbols for KiCad from a CSV file.')
+
 parser.add_argument('-v', '--version',
                     action='version',
                     version='KiPart ' + __version__)
-parser.add_argument('input_files',
-                    nargs='+',
-                    type=str,
-                    metavar='file1.[csv|zip] file2.[csv|zip] ...',
-                    help='Files for parts in CSV format.')
+parser.add_argument(
+    'input_files',
+    nargs='+',
+    type=str,
+    metavar='file1.[csv|zip] file2.[csv|zip] ...',
+    help='Files for parts in CSV format or as CSV files in .zip archives.')
 parser.add_argument('-r', '--reader',
                     nargs='?',
-                    type=str,
-                    metavar='CSV_READER',
+                    choices=['generic', 'xilinx7'],
                     default='generic',
+                    metavar='generic|xilinx7',
                     help='Name of function for reading the CSV file.')
-parser.add_argument('-s', '--sort',
-                    nargs='?',
-                    choices=['row', 'num', 'name'],
-                    default='name',
-                    metavar='row|num|name',
-                    help='Sort the part pins by their entry order in the CSV file, their pin number, or their pin name.')
+parser.add_argument(
+    '-s', '--sort',
+    nargs='?',
+    choices=['row', 'num', 'name'],
+    default='row',
+    metavar='row|num|name',
+    help=
+    'Sort the part pins by their entry order in the CSV file, their pin number, or their pin name.')
 parser.add_argument('-o', '--output',
                     nargs='?',
                     type=str,
                     metavar='file.lib',
                     help='Generated KiCad library for part.')
-parser.add_argument('-b', '--bundle',
-                    action='store_true',
-                    help='Bundle multiple pins with the same name into a single schematic pin.')
+parser.add_argument(
+    '-b', '--bundle',
+    action='store_true',
+    help='Bundle multiple pins with the same name into a single schematic pin.')
 parser.add_argument('-w', '--overwrite',
                     action='store_true',
                     help='Allow overwriting of an existing part library.')
@@ -80,33 +86,32 @@ if os.path.isfile(args.output):
         print 'Output file {} already exists! Use the --overwrite option to replace it.'.format(
             args.output)
         sys.exit(1)
+        
+def call_kipart(csv_file):
+    '''Helper routine for calling kipart.'''
+    kipart(reader_type=args.reader,
+           csv_file=csv_file,
+           lib_filename=args.output,
+           append_to_lib=append_to_lib,
+           sort_type=args.sort,
+           bundle=args.bundle,
+           debug_level=args.debug)
 
 append_to_lib = False
 for input_file in args.input_files:
-    file_ext = os.path.splitext(input_file)[1]
+    file_ext = os.path.splitext(input_file)[-1]
     if file_ext == '.zip':
         zip_file = zipfile.ZipFile(input_file, 'r')
         zipped_files = zip_file.infolist()
         for zipped_file in zipped_files:
-            if os.path.splitext(zipped_file.filename)[1] == '.csv':
+            if os.path.splitext(zipped_file.filename)[-1] == '.csv':
                 with zip_file.open(zipped_file, 'r') as csv_file:
-                    kipart(reader_type=args.reader,
-                           csv_file=csv_file,
-                           lib_filename=args.output,
-                           append_to_lib=append_to_lib,
-                           sort_type=args.sort,
-                           bundle=args.bundle,
-                           debug_level=args.debug)
+                    call_kipart(csv_file)
                     append_to_lib = True
     elif file_ext == '.csv':
         with open(input_file, 'r') as csv_file:
-            kipart(reader_type=args.reader,
-                   csv_file=csv_file,
-                   lib_filename=args.output,
-                   append_to_lib=append_to_lib,
-                   sort_type=args.sort,
-                   bundle=args.bundle,
-                   debug_level=args.debug)
+            call_kipart(csv_file)
             append_to_lib = True
     else:
         continue
+        

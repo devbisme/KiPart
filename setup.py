@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 import setuptools
-import KiPart
+import kipart
 
 
 try:
@@ -27,11 +27,11 @@ test_requirements = [
 
 setup(
     name='kipart',
-    version=KiPart.__version__,
+    version=kipart.__version__,
     description="Part creator for KiCad.",
     long_description=readme + '\n\n' + history,
-    author=KiPart.__author__,
-    author_email=KiPart.__email__,
+    author=kipart.__author__,
+    author_email=kipart.__email__,
     url='https://github.com/xesscorp/kipart',
 #    packages=['kipart',],
     packages=setuptools.find_packages(),
@@ -39,7 +39,7 @@ setup(
     package_dir={'kipart':
                  'kipart'},
     include_package_data=True,
-    package_data={'KiPart': ['*.gif', '*.png']},
+    package_data={'kipart': ['*.gif', '*.png']},
     scripts=[],
     install_requires=requirements,
     license="MIT",
@@ -50,12 +50,8 @@ setup(
         'Intended Audience :: Developers',
         'License :: OSI Approved :: MIT License',
         'Natural Language :: English',
-        "Programming Language :: Python :: 2",
         'Programming Language :: Python :: 2.6',
         'Programming Language :: Python :: 2.7',
-        'Programming Language :: Python :: 3',
-        'Programming Language :: Python :: 3.3',
-        'Programming Language :: Python :: 3.4',
     ],
     test_suite='tests',
     tests_require=test_requirements

@@ -68,7 +68,8 @@ def generic_reader(csv_file, bundle):
     _ = csv_file.readline()
 
     # Create a reader object for the rows of the CSV file and read it row-by-row.
-    csv_reader = csv.DictReader(csv_file)
+    
+    csv_reader = csv.DictReader(csv_file, skipinitialspace=True)
     for index, row in enumerate(csv_reader):
         # A blank line signals the end of the pin data.
         if row['Pin'] == '':
@@ -95,7 +96,7 @@ def generic_reader(csv_file, bundle):
     return part_num, pin_data  # Return the dictionary of pins extracted from the CVS file.
 
 
-def xilinx_reader(csv_file, bundle):
+def xilinx7_reader(csv_file, bundle):
     '''Extract the pin data from a Xilinx CSV file and return a dictionary of pin data.'''
 
     # Create a dictionary that uses the bank numbers as keys. Each entry in this dictionary
@@ -113,7 +114,7 @@ def xilinx_reader(csv_file, bundle):
     _ = csv_file.readline()
 
     # Create a reader object for the rows of the CSV file and read it row-by-row.
-    csv_reader = csv.DictReader(csv_file)
+    csv_reader = csv.DictReader(csv_file, skipinitialspace=True)
     for index, row in enumerate(csv_reader):
         # A blank line signals the end of the pin data.
         if row['Pin'] == '':
@@ -343,9 +344,11 @@ def kipart(reader_type, csv_file, lib_filename,
         # Start the section of the part definition that holds the part's units.
         lib_file.write(START_DRAW)
 
+        # Get a reference to the sort-key generation routine.
+        key_func = getattr(THIS_MODULE, '{}_key'.format(sort_type))
+        
         # Now create the units that make up the part. Unit numbers go from 1
         # up to the number of units in the part.
-        key_func = getattr(THIS_MODULE, '{}_key'.format(sort_type))
         for unit_num, unit in enumerate(pin_data.values(), 1):
             # Start placing pins from this location.
             x = XO
@@ -354,8 +357,8 @@ def kipart(reader_type, csv_file, lib_filename,
             # Set the maximum observed width of a pin name. (Zero since we haven't seen any yet.)
             max_name_width = 0
 
-            # Create the pins for this unit in alphabetical order so pins with
-            # similar names are placed next to each other, such as 'IO_59N' and 'IO_59P'.
+            # Create the pins for this unit in row, pin number, or alphabetical order depending
+            # upon the sorting-key routine that's used.
             for name, pins in sorted(unit.items(), key=key_func):
 
                 # If there are multiple pins with the same name in a unit, then append a
@@ -369,8 +372,11 @@ def kipart(reader_type, csv_file, lib_filename,
 
                 # Update the maximum observed width of a pin name. This is used later to
                 # size the width of the box surrounding the pin names for this unit.
+                # (Don't use the pin name used for sorting the pins since that can have
+                # extra characters attached. Use the pin name from the first pin in the list
+                # since that's what will be displayed in the symbol.)
                 max_name_width = max(max_name_width,
-                                     len(name + name_suffix) * PIN_NAME_SIZE)
+                                     len(pins[0].name + name_suffix) * PIN_NAME_SIZE)
 
                 # Start off creating visible part pins. If there are multiple pins with
                 # the same name, then the visibility will be turned off for any pins
@@ -440,7 +446,11 @@ def num_key(pin):
         return prefix + num
     except:
         # The pin number is probably a straight number like '45', so just return it.
-        return pin[1][0].num
+        try:
+            return int(pin[1][0].num)
+        except:
+            return pin[1][0].num
+            
 
 
 def name_key(pin):
