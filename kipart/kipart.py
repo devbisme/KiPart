@@ -30,7 +30,9 @@ from collections import defaultdict
 
 __all__ = ['kipart']  # Only export this routine for use by the outside world.
 
-THIS_MODULE = sys.modules[__name__]  # Reference to this module for making named calls.
+THIS_MODULE = sys.modules[__name__
+                          ]  # Reference to this module for making named calls.
+
 
 # This is just a vanilla object class for device pins. 
 # We'll add attributes to it as needed.
@@ -67,7 +69,7 @@ def generic_reader(csv_file, bundle):
 
     # Create a reader object for the rows of the CSV file and read it row-by-row.
     csv_reader = csv.DictReader(csv_file)
-    for index,row in enumerate(csv_reader):
+    for index, row in enumerate(csv_reader):
         # A blank line signals the end of the pin data.
         if row['Pin'] == '':
             break
@@ -82,9 +84,13 @@ def generic_reader(csv_file, bundle):
 
         # Add the pin from this row of the CVS file to the pin dictionary.
         if bundle:
+            # If bundling like-named pins, place all the pins into a list under their common name.
             pin_data[pin.unit][pin.name].append(pin)
         else:
-            pin_data[pin.unit][pin.name+'_'+str(index)].append(pin)
+            # If each like-named pin should be shown separately, place each pin into a 
+            # single-element list under the pin name with the unique row index appended
+            # to differentiate the pin names.
+            pin_data[pin.unit][pin.name + '_' + str(index)].append(pin)
 
     return part_num, pin_data  # Return the dictionary of pins extracted from the CVS file.
 
@@ -108,7 +114,7 @@ def xilinx_reader(csv_file, bundle):
 
     # Create a reader object for the rows of the CSV file and read it row-by-row.
     csv_reader = csv.DictReader(csv_file)
-    for index,row in enumerate(csv_reader):
+    for index, row in enumerate(csv_reader):
         # A blank line signals the end of the pin data.
         if row['Pin'] == '':
             break
@@ -192,9 +198,13 @@ def xilinx_reader(csv_file, bundle):
 
         # Add the pin from this row of the CVS file to the pin dictionary.
         if bundle:
+            # If bundling like-named pins, place all the pins into a list under their common name.
             pin_data[pin.unit][pin.name].append(pin)
         else:
-            pin_data[pin.unit][pin.name+'_'+str(index)].append(pin)
+            # If each like-named pin should be shown separately, place each pin into a 
+            # single-element list under the pin name with the unique row index appended
+            # to differentiate the pin names.
+            pin_data[pin.unit][pin.name + '_' + str(index)].append(pin)
 
     return part_num, pin_data  # Return the dictionary of pins extracted from the CVS file.
 
@@ -409,42 +419,42 @@ def kipart(reader_type, csv_file, lib_filename,
         # Close the part definition.
         lib_file.write(END_DEF)
 
-        
+
 def row_key(pin):
     '''Generate a key from the order the pins were entered into the CSV file.'''
     return pin[1][0].index
 
-        
+
 def num_key(pin):
     '''Generate a key from a pin's number so they are sorted by position on the package.'''
-    
+
     # Get the alphabetic prefix string of the pin number and then the numeric string.
     # Pad the numeric string with leading 0's and then concatenate the two strings.
     # Thus, 'A10' and 'A2' will become 'A00010' and 'A00002' and A2 will
     # appear before A10 in a list.
     try:
-        m = re.search('(\D+)(\d+)',pin[1][0].num)
+        m = re.search('(\D+)(\d+)', pin[1][0].num)
         prefix = m.group(1)
         num = m.group(2)
-        num = '0'*(8-len(num)) + num
+        num = '0' * (8 - len(num)) + num
         return prefix + num
     except:
         # The pin number is probably a straight number like '45', so just return it.
         return pin[1][0].num
 
-        
+
 def name_key(pin):
     '''Generate a key from a pin's name so they are sorted more logically.'''
-    
+
     # Get the alphabetic prefix string of the pin name and the first numeric string.
     # Pad the numeric string with leading 0's and then concatenate the two strings.
     # Thus, 'adc10' and 'adc2' will become 'adc00010' and 'adc00002' and adc2 will
     # appear before adc10 in a list.
     try:
-        m = re.search('(\D+)(\d+)',pin[0])
+        m = re.search('(\D+)(\d+)', pin[0])
         prefix = m.group(1)
         num = m.group(2)
-        num = '0'*(8-len(num)) + num
+        num = '0' * (8 - len(num)) + num
         return prefix + num
     except:
         return pin[0]
