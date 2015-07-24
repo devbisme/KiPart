@@ -51,12 +51,17 @@ def generic_reader(csv_file, bundle):
        The CSV file should be formatted as follows:
            The first row should contain the part number.
            The second row should be empty.
-           The third row should have columns labeled 'Pin', 'Unit', 'Type', and 'Name'.
+           The third row should have columns labeled:
+               'Pin', 'Unit', 'Type', 'Style', 'Side', and 'Name'.
+               (Only 'Pin' and 'Name' are required. The order of
+               the columns is not important.)
            Each succeeding row should contain:
                The 'Pin' column should contain the pin number.
-               The 'Unit' column should contain the bank or unit number.
-               The 'Type' column should contain the pin type.
-               The 'Name' column should contain the pin name.
+               The 'Unit' column specifies the bank or unit number for the pin.
+               The 'Type' column specifies the pin type (input, output,...).
+               The 'Style' column specifies the pin's schematic style.
+               The 'Side' column specifies the side of the symbol the pin is on.
+               The 'Name' column contains the pin name.
     '''
 
     # Create a dictionary that uses the unit numbers as keys. Each entry in this dictionary
@@ -263,12 +268,10 @@ FILL = 'no_fill'
 # Part reference.
 REF_PREFIX = 'U'
 REF_SIZE = 60  # Font size.
-REF_X_OFFSET = PIN_LENGTH
 REF_Y_OFFSET = 250
 
 # Part number.
 PART_NUM_SIZE = 60  # Font size.
-PART_NUM_X_OFFSET = PIN_LENGTH
 PART_NUM_Y_OFFSET = 150
 
 # Mapping from understandable pin orientation name to the orientation
@@ -321,8 +324,8 @@ FILLS = {'no_fill': 'N', 'fg_fill': 'F', 'bg_fill': 'f'}
 LIB_HEADER = 'EESchema-LIBRARY Version 2.3\n'
 START_DEF = 'DEF {name} {ref} 0 {pin_name_offset} {show_pin_number} {show_pin_name} {num_units} L N\n'
 END_DEF = 'ENDDEF\n'
-REF_FIELD = 'F0 "{ref_prefix}" {x} {y} {ref_size} H V L CNN\n'
-PART_FIELD = 'F1 "{part_num}" {x} {y} {ref_size} H V L CNN\n'
+REF_FIELD = 'F0 "{ref_prefix}" {x} {y} {ref_size} H V {horiz_just} CNN\n'
+PART_FIELD = 'F1 "{part_num}" {x} {y} {ref_size} H V {horiz_just} CNN\n'
 START_DRAW = 'DRAW\n'
 END_DRAW = 'ENDDRAW\n'
 BOX = 'S {x0} {y0} {x1} {y1} {unit_num} 1 {line_width} {fill}\n'
@@ -330,7 +333,7 @@ PIN = 'X {name} {num} {x} {y} {length} {orientation} {num_sz} {name_sz} {unit_nu
     
     
 def annotate_pins(unit_pins):
-    
+    '''Annotate pin names to indicate special information.'''
     for name, pins in unit_pins:
         # If there are multiple pins with the same name in a unit, then append a
         # distinctive suffix to the pin name to indicate multiple pins are placed
@@ -345,33 +348,35 @@ def annotate_pins(unit_pins):
 
 
 def pins_bbox(unit_pins):
-    '''Return the bounding box of a column of pins with their names.'''
+    '''Return the bounding box of a column of pins and their names.'''
     
     if len(unit_pins) == 0:
-        return [[0,0], [0,0]] # No pins, so no bounding box.
+        return [[XO,YO], [XO,YO]] # No pins, so no bounding box.
 
     width = 0
     for name, pins in unit_pins:
 
         # Update the maximum observed width of a pin name. This is used later to
         # size the width of the box surrounding the pin names for this unit.
-        # (Don't use the pin name used for sorting the pins since that can have
-        # extra characters attached. Use the pin name from the first pin in the list
-        # since that's what will be displayed in the symbol.)
         width = max(width, len(pins[0].name) * PIN_NAME_SIZE)
 
+    # Add the separation space before and after the pin name.
     width += PIN_LENGTH + 2 * PIN_NAME_OFFSET
+    # Make bounding box an integer number of pin spaces so pin connections are always on the grid.
     width = math.ceil(float(width) / PIN_SPACING) * PIN_SPACING
     height = len(unit_pins) * PIN_SPACING
         
-    return [[0, PIN_SPACING], [width, -height]]
+    return [[XO, YO+PIN_SPACING], [XO+width, YO-height]]
         
 
 
 def draw_pins(lib_file, unit_num, unit_pins, transform):
-
+    '''Draw a column of pins rotated/translated by the transform matrix.'''
+    
+    # Start drawing pins from the origin.
     x = XO
     y = YO
+    
     for name, pins in unit_pins:
 
         # Start off creating visible part pins. If there are multiple pins with
@@ -379,6 +384,7 @@ def draw_pins(lib_file, unit_num, unit_pins, transform):
         # after the first.
         visibility = VISIBILITY['visible']
 
+        # Rotate/translate the current drawing point.
         (draw_x, draw_y) = transform * (x, y)
 
         # Create all the pins with a particular name. If there are more than one,
@@ -437,15 +443,30 @@ def kipart(reader_type, csv_file, lib_filename,
                              show_pin_number=SHOW_PIN_NUMBER and 'Y' or 'N',
                              show_pin_name=SHOW_PIN_NAME and 'Y' or 'N',
                              num_units=len(pin_data)))
+
+        # Determine if there are pins across the top of the symbol.
+        # If so, right-justify the reference and part number so they don't
+        # run into the top pins. If not, stick with left-justification.
+        horiz_just = 'L'
+        horiz_offset = PIN_LENGTH
+        for unit in pin_data.values():
+            if 'top' in unit.keys():
+                horiz_just = 'R'
+                horiz_offset = PIN_LENGTH - 50
+                break
+                
         # Create the field that stores the part reference.
         lib_file.write(REF_FIELD.format(ref_prefix=REF_PREFIX,
-                                        x=XO + REF_X_OFFSET,
+                                        x=XO + horiz_offset,
                                         y=YO + REF_Y_OFFSET,
+                                        horiz_just = horiz_just,
                                         ref_size=REF_SIZE))
+                                        
         # Create the field that stores the part number.
         lib_file.write(PART_FIELD.format(part_num=part_num,
-                                         x=XO + PART_NUM_X_OFFSET,
+                                         x=XO + horiz_offset,
                                          y=YO + PART_NUM_Y_OFFSET,
+                                         horiz_just = horiz_just,
                                          ref_size=PART_NUM_SIZE))
 
         # Start the section of the part definition that holds the part's units.
@@ -458,42 +479,94 @@ def kipart(reader_type, csv_file, lib_filename,
         # up to the number of units in the part.
         for unit_num, unit in enumerate(pin_data.values(), 1):
 
+            # The indices of the X and Y coordinates in a list of point coords.
             X = 0
             Y = 1
         
+            # Initialize data structures that store info for each side of a schematic symbol unit.
             all_sides = ['left','right','top','bottom']
-            bbox = {side:[(0,0),(0,0)] for side in all_sides}
-            box_pt = {side:[PIN_LENGTH, PIN_SPACING] for side in all_sides}
-            anchor_pt = {side:[PIN_LENGTH, PIN_SPACING] for side in all_sides}
+            bbox = {side:[(XO,YO),(XO,YO)] for side in all_sides}
+            box_pt = {side:[XO+PIN_LENGTH, YO+PIN_SPACING] for side in all_sides}
+            anchor_pt = {side:[XO+PIN_LENGTH, YO+PIN_SPACING] for side in all_sides}
             transform = {}
+            
+            # Annotate the pins for each side of the symbol and determine the bounding box
+            # and various points for each side.
             for side, side_pins in unit.items():
                 annotate_pins(side_pins.items())
                 bbox[side] = pins_bbox(side_pins.items())
+                #
+                #     C     B-------A
+                #           |       |
+                #     ------| name1 |
+                #           |       |
+                #     ------| name2 |
+                #
+                # A = anchor point = upper-right corner of bounding box.
+                # B = box point = upper-left corner of bounding box + pin length.
+                # C = upper-left corner of bounding box.
                 anchor_pt[side] = [max(bbox[side][0][X],bbox[side][1][X]), max(bbox[side][0][Y],bbox[side][1][Y])]
                 box_pt[side] = [min(bbox[side][0][X],bbox[side][1][X])+PIN_LENGTH, max(bbox[side][0][Y],bbox[side][1][Y])]
-                
+
+            # AL = left-side anchor point.
+            # AB = bottom-side anchor point.
+            # AR = right-side anchor point.
+            # AT = top-side anchor-point.
+            #        +-------------+          
+            #        |             |          
+            #        |     TOP     |          
+            #        |             |          
+            # +------AL------------AT         
+            # |      |                        
+            # |      |             +---------+
+            # |      |             |         |
+            # |  L   |             |         |
+            # |  E   |             |    R    |
+            # |  F   |             |    I    |
+            # |  T   |             |    G    |
+            # |      |             |    H    |
+            # |      |             |    T    |
+            # |      |             |         |
+            # +------AB-------+    AR--------+
+            #        | BOTTOM |               
+            #        +--------+               
+            #
+            # This is the width and height of the box in the middle of the pins on each side.
             box_width = max(abs(bbox['top'][0][Y] - bbox['top'][1][Y]),
                             abs(bbox['bottom'][0][Y] - bbox['bottom'][1][Y]))
             box_height = max(abs(bbox['left'][0][Y] - bbox['left'][1][Y]),
                             abs(bbox['left'][0][Y] - bbox['right'][1][Y]))
             
             for side in all_sides:
+                # Each side of pins starts off with the orientation of a left-hand side of pins.
+                # Transformation matrix starts by rotating the side of pins.
                 transform[side] = Affine.rotation(ROTATION[side])
+                # Now rotate the anchor point to see where it goes.
                 rot_anchor_pt = transform[side] * anchor_pt[side]
+                # Translate the rotated anchor point to coincide with the AL anchor point.
                 translate_x = anchor_pt['left'][X] - rot_anchor_pt[X]
                 translate_y = anchor_pt['left'][Y] - rot_anchor_pt[Y]
+                # Make additional translation to bring the AL point to the correct position.
                 if side == 'right':
+                    # Translate AL to AR.
                     translate_x += box_width
                     translate_y -= box_height 
                 elif side == 'bottom':
+                    # Translate AL to AB
                     translate_y -= box_height 
                 elif side == 'top':
+                    # Translate AL to AT
                     translate_x += box_width
+                # Create the complete transformation matrix = rotation followed by translation.
                 transform[side] = Affine.translation(translate_x, translate_y) * transform[side]
+                # Also translate the point on each side that defines the box around the symbol.
                 box_pt[side] = transform[side] * box_pt[side]
             
+            # Draw the transformed pins for each side of the symbol.
             for side, side_pins in unit.items():
+                # Sort the pins names for the desired order: row-wise, numeric, alphabetical.
                 sorted_side_pins = sorted(side_pins.items(), key=key_func)
+                # Draw the transformed pins for this side of the symbol.
                 draw_pins(lib_file, unit_num, sorted_side_pins, transform[side])
                 
             # Create the box around the unit's pins.
