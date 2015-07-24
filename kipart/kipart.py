@@ -24,14 +24,20 @@
 
 import sys
 import warnings
+import math
 import re
 import csv
 from collections import defaultdict
+from affine import Affine
 
 __all__ = ['kipart']  # Only export this routine for use by the outside world.
 
-THIS_MODULE = sys.modules[__name__
-                          ]  # Reference to this module for making named calls.
+THIS_MODULE = sys.modules[__name__]  # Ref to this module for making named calls.
+
+DEFAULT_UNIT = 1
+DEFAULT_PIN_TYPE = 'bidirectional'
+DEFAULT_PIN_STYLE = 'line'
+DEFAULT_PIN_SIDE = 'left'
 
 
 # This is just a vanilla object class for device pins. 
@@ -53,12 +59,14 @@ def generic_reader(csv_file, bundle):
                The 'Name' column should contain the pin name.
     '''
 
-    # Create a dictionary that uses the bank numbers as keys. Each entry in this dictionary
-    # contains another dictionary that uses the pin names in that bank as keys. Each entry
+    # Create a dictionary that uses the unit numbers as keys. Each entry in this dictionary
+    # contains another dictionary that uses the side of the symbol as a key. Each entry in
+    # that dictionary uses the pin names in that unit and on that side as keys. Each entry
     # in that dictionary is a list of Pin objects with each Pin object having the same name
-    # as the dictionary key. So the pins are separated into banks at the top level, and then
-    # pins with the same name within a bank are organized into lists on the second level.
-    pin_data = defaultdict(lambda: defaultdict(list))
+    # as the dictionary key. So the pins are separated into units at the top level, and then
+    # the sides of the symbol, and then the pins with the same name that are on that side
+    # of the unit.
+    pin_data = defaultdict(lambda: defaultdict(lambda: defaultdict(list)))
 
     # Read title line of the CSV file and extract the part number.
     title = csv_file.readline()
@@ -68,7 +76,7 @@ def generic_reader(csv_file, bundle):
     _ = csv_file.readline()
 
     # Create a reader object for the rows of the CSV file and read it row-by-row.
-    
+
     csv_reader = csv.DictReader(csv_file, skipinitialspace=True)
     for index, row in enumerate(csv_reader):
         # A blank line signals the end of the pin data.
@@ -77,21 +85,35 @@ def generic_reader(csv_file, bundle):
 
         # Get the pin attributes from the cells of the row of data.
         pin = Pin()
+        pin.index = index
         pin.name = row['Name']
         pin.num = row['Pin']
-        pin.unit = row['Unit']
-        pin.index = index
-        pin.type = row['Type']
+        try:
+            pin.unit = row['Unit']
+        except KeyError:
+            pin.unit = DEFAULT_UNIT
+        try:
+            pin.side = row['Side']
+        except KeyError:
+            pin.side = DEFAULT_PIN_SIDE
+        try:
+            pin.style = row['Style']
+        except KeyError:
+            pin.style = DEFAULT_PIN_STYLE
+        try:
+            pin.type = row['Type']
+        except KeyError:
+            pin.type = DEFAULT_PIN_TYPE
 
         # Add the pin from this row of the CVS file to the pin dictionary.
         if bundle:
             # If bundling like-named pins, place all the pins into a list under their common name.
-            pin_data[pin.unit][pin.name].append(pin)
+            pin_data[pin.unit][pin.side][pin.name].append(pin)
         else:
             # If each like-named pin should be shown separately, place each pin into a 
             # single-element list under the pin name with the unique row index appended
             # to differentiate the pin names.
-            pin_data[pin.unit][pin.name + '_' + str(index)].append(pin)
+            pin_data[pin.unit][pin.side][pin.name + '_' + str(index)].append(pin)
 
     return part_num, pin_data  # Return the dictionary of pins extracted from the CVS file.
 
@@ -99,12 +121,14 @@ def generic_reader(csv_file, bundle):
 def xilinx7_reader(csv_file, bundle):
     '''Extract the pin data from a Xilinx CSV file and return a dictionary of pin data.'''
 
-    # Create a dictionary that uses the bank numbers as keys. Each entry in this dictionary
-    # contains another dictionary that uses the pin names in that bank as keys. Each entry
+    # Create a dictionary that uses the unit numbers as keys. Each entry in this dictionary
+    # contains another dictionary that uses the side of the symbol as a key. Each entry in
+    # that dictionary uses the pin names in that unit and on that side as keys. Each entry
     # in that dictionary is a list of Pin objects with each Pin object having the same name
-    # as the dictionary key. So the pins are separated into banks at the top level, and then
-    # pins with the same name within a bank are organized into lists on the second level.
-    pin_data = defaultdict(lambda: defaultdict(list))
+    # as the dictionary key. So the pins are separated into units at the top level, and then
+    # the sides of the symbol, and then the pins with the same name that are on that side
+    # of the unit.
+    pin_data = defaultdict(lambda: defaultdict(lambda: defaultdict(list)))
 
     # Read title line of the CSV file and extract the part number.
     title = csv_file.readline()
@@ -122,10 +146,12 @@ def xilinx7_reader(csv_file, bundle):
 
         # Get the pin attributes from the cells of the row of data.
         pin = Pin()
+        pin.index = index
         pin.name = row['Pin Name']
         pin.num = row['Pin']
         pin.unit = row['Bank']
-        pin.index = index
+        pin.side = DEFAULT_PIN_SIDE
+        pin.style = DEFAULT_PIN_STYLE
 
         # The type of the pin isn't given in the CSV file, so we'll have to infer it
         # from the name of the pin. Pin names starting with the following prefixes 
@@ -200,12 +226,12 @@ def xilinx7_reader(csv_file, bundle):
         # Add the pin from this row of the CVS file to the pin dictionary.
         if bundle:
             # If bundling like-named pins, place all the pins into a list under their common name.
-            pin_data[pin.unit][pin.name].append(pin)
+            pin_data[pin.unit][pin.side][pin.name].append(pin)
         else:
             # If each like-named pin should be shown separately, place each pin into a 
             # single-element list under the pin name with the unique row index appended
             # to differentiate the pin names.
-            pin_data[pin.unit][pin.name + '_' + str(index)].append(pin)
+            pin_data[pin.unit][pin.side][pin.name + '_' + str(index)].append(pin)
 
     return part_num, pin_data  # Return the dictionary of pins extracted from the CVS file.
 
@@ -219,12 +245,11 @@ YO = 0
 
 # Pin settings.
 PIN_LENGTH = 200
-PIN_X_SPACING = 0
-PIN_Y_SPACING = 100
+PIN_SPACING = 100
 PIN_NUM_SIZE = 50  # Font size for pin numbers.
 PIN_NAME_SIZE = 50  # Font size for pin names.
 PIN_NAME_OFFSET = 40  # Separation between pin and pin name.
-PIN_ORIENTATION = 'right'
+PIN_ORIENTATION = 'left'
 PIN_STYLE = 'line'
 SHOW_PIN_NUMBER = True  # Show pin numbers when True.
 SHOW_PIN_NAME = True  # Show pin names when True.
@@ -247,8 +272,12 @@ PART_NUM_X_OFFSET = PIN_LENGTH
 PART_NUM_Y_OFFSET = 150
 
 # Mapping from understandable pin orientation name to the orientation
-# indicator used in the KiCad part library.
-PIN_ORIENTATIONS = {'right': 'R', 'left': 'L', 'up': 'U', 'down': 'D'}
+# indicator used in the KiCad part library. This mapping looks backward,
+# but if pins are placed on the left side of the symbol, you actually
+# want to use the pin symbol where the line points to the right. 
+# The same goes for the other sides.
+PIN_ORIENTATIONS = {'left': 'R', 'right': 'L', 'bottom': 'U', 'top': 'D'}
+ROTATION = {'left':0, 'right':180, 'bottom':90, 'top':-90}
 
 # Mapping from understandable pin type name to the type
 # indicator used in the KiCad part library.
@@ -298,6 +327,84 @@ START_DRAW = 'DRAW\n'
 END_DRAW = 'ENDDRAW\n'
 BOX = 'S {x0} {y0} {x1} {y1} {unit_num} 1 {line_width} {fill}\n'
 PIN = 'X {name} {num} {x} {y} {length} {orientation} {num_sz} {name_sz} {unit_num} 1 {pin_type} {visibility}{pin_style}\n'
+    
+    
+def annotate_pins(unit_pins):
+    
+    for name, pins in unit_pins:
+        # If there are multiple pins with the same name in a unit, then append a
+        # distinctive suffix to the pin name to indicate multiple pins are placed
+        # at a single location on the unit. (This is done so multiple pins that
+        # should be on the same net (e.g. GND) can be connected using a single
+        # net connection in the schematic.)
+        name_suffix = SINGLE_PIN_SUFFIX
+        if len(pins) > 1:
+            name_suffix = MULTI_PIN_SUFFIX
+        for pin in pins:
+            pin.name += name_suffix
+
+
+def pins_bbox(unit_pins):
+    '''Return the bounding box of a column of pins with their names.'''
+    
+    if len(unit_pins) == 0:
+        return [[0,0], [0,0]] # No pins, so no bounding box.
+
+    width = 0
+    for name, pins in unit_pins:
+
+        # Update the maximum observed width of a pin name. This is used later to
+        # size the width of the box surrounding the pin names for this unit.
+        # (Don't use the pin name used for sorting the pins since that can have
+        # extra characters attached. Use the pin name from the first pin in the list
+        # since that's what will be displayed in the symbol.)
+        width = max(width, len(pins[0].name) * PIN_NAME_SIZE)
+
+    width += PIN_LENGTH + 2 * PIN_NAME_OFFSET
+    width = math.ceil(float(width) / PIN_SPACING) * PIN_SPACING
+    height = len(unit_pins) * PIN_SPACING
+        
+    return [[0, PIN_SPACING], [width, -height]]
+        
+
+
+def draw_pins(lib_file, unit_num, unit_pins, transform):
+
+    x = XO
+    y = YO
+    for name, pins in unit_pins:
+
+        # Start off creating visible part pins. If there are multiple pins with
+        # the same name, then the visibility will be turned off for any pins
+        # after the first.
+        visibility = VISIBILITY['visible']
+
+        (draw_x, draw_y) = transform * (x, y)
+
+        # Create all the pins with a particular name. If there are more than one,
+        # they are laid on top of each other and only the first is visible.
+        for pin in pins:
+            
+            # Create a pin using the pin data.
+            lib_file.write(
+                PIN.format(name=pin.name,
+                           num=pin.num,
+                           x=int(draw_x),
+                           y=int(draw_y),
+                           length=PIN_LENGTH,
+                           orientation=PIN_ORIENTATIONS[pin.side],
+                           num_sz=PIN_NUM_SIZE,
+                           name_sz=PIN_NAME_SIZE,
+                           unit_num=unit_num,
+                           pin_type=PIN_TYPES[pin.type],
+                           visibility=visibility,
+                           pin_style=PIN_STYLES[PIN_STYLE]))
+
+            # Turn off visibility after the first pin.
+            visibility = VISIBILITY['invisible']
+
+        # Move to the next pin placement location on this unit.
+        y = y - PIN_SPACING
 
 
 def kipart(reader_type, csv_file, lib_filename,
@@ -346,75 +453,52 @@ def kipart(reader_type, csv_file, lib_filename,
 
         # Get a reference to the sort-key generation routine.
         key_func = getattr(THIS_MODULE, '{}_key'.format(sort_type))
-        
+
         # Now create the units that make up the part. Unit numbers go from 1
         # up to the number of units in the part.
         for unit_num, unit in enumerate(pin_data.values(), 1):
-            # Start placing pins from this location.
-            x = XO
-            y = YO
 
-            # Set the maximum observed width of a pin name. (Zero since we haven't seen any yet.)
-            max_name_width = 0
+            X = 0
+            Y = 1
+        
+            anchor_pt = {}
+            bbox = {side:[(0,0),(0,0)] for side in ['left','right','top','bottom']}
+            box_pt = {side:[PIN_LENGTH, PIN_SPACING] for side in ['left','right','top','bottom']}
+            for side, side_pins in unit.items():
+                annotate_pins(side_pins.items())
+                bbox[side] = pins_bbox(side_pins.items())
+                anchor_pt[side] = [max(bbox[side][0][X],bbox[side][1][X]), max(bbox[side][0][Y],bbox[side][1][Y])]
+                box_pt[side] = [min(bbox[side][0][X],bbox[side][1][X])+PIN_LENGTH, max(bbox[side][0][Y],bbox[side][1][Y])]
+                
+            box_width = max(abs(bbox['top'][0][Y] - bbox['top'][1][Y]),
+                            abs(bbox['bottom'][0][Y] - bbox['bottom'][1][Y]))
+            box_height = max(abs(bbox['left'][0][Y] - bbox['left'][1][Y]),
+                            abs(bbox['left'][0][Y] - bbox['right'][1][Y]))
+                
+            for side, side_pins in unit.items():
+            
+                sorted_side_pins = sorted(side_pins.items(), key=key_func)
 
-            # Create the pins for this unit in row, pin number, or alphabetical order depending
-            # upon the sorting-key routine that's used.
-            for name, pins in sorted(unit.items(), key=key_func):
-
-                # If there are multiple pins with the same name in a unit, then append a
-                # distinctive suffix to the pin name to indicate multiple pins are placed
-                # at a single location on the unit. (This is done so multiple pins that
-                # should be on the same net (e.g. GND) can be connected using a single
-                # net connection in the schematic.)
-                name_suffix = SINGLE_PIN_SUFFIX
-                if len(pins) > 1:
-                    name_suffix = MULTI_PIN_SUFFIX
-
-                # Update the maximum observed width of a pin name. This is used later to
-                # size the width of the box surrounding the pin names for this unit.
-                # (Don't use the pin name used for sorting the pins since that can have
-                # extra characters attached. Use the pin name from the first pin in the list
-                # since that's what will be displayed in the symbol.)
-                max_name_width = max(max_name_width,
-                                     len(pins[0].name + name_suffix) * PIN_NAME_SIZE)
-
-                # Start off creating visible part pins. If there are multiple pins with
-                # the same name, then the visibility will be turned off for any pins
-                # after the first.
-                visibility = VISIBILITY['visible']
-
-                # Create all the pins with a particular name. If there are more than one,
-                # they are laid on top of each other and only the first is visible.
-                for pin in pins:
-
-                    # Create a pin using the pin data.
-                    lib_file.write(PIN.format(
-                        name=pin.name + name_suffix,
-                        num=pin.num,
-                        x=x,
-                        y=y,
-                        length=PIN_LENGTH,
-                        orientation=PIN_ORIENTATIONS[PIN_ORIENTATION],
-                        num_sz=PIN_NUM_SIZE,
-                        name_sz=PIN_NAME_SIZE,
-                        unit_num=unit_num,
-                        pin_type=PIN_TYPES[pin.type],
-                        visibility=visibility,
-                        pin_style=PIN_STYLES[PIN_STYLE]))
-
-                    # Turn off visibility after the first pin.
-                    visibility = VISIBILITY['invisible']
-
-                # Move to the next pin placement location on this unit.
-                x = x + PIN_X_SPACING
-                y = y - PIN_Y_SPACING
-
-            # Create the box around this unit's pins.
-            lib_file.write(BOX.format(x0=XO + PIN_LENGTH,
-                                      y0=PIN_Y_SPACING,
-                                      x1=XO + PIN_LENGTH + PIN_NAME_OFFSET +
-                                      max_name_width + PIN_NAME_OFFSET,
-                                      y1=y,
+                transform = Affine.rotation(ROTATION[side])
+                rot_anchor_pt = transform * anchor_pt[side]
+                translate_x = anchor_pt['left'][X] - rot_anchor_pt[X]
+                translate_y = anchor_pt['left'][Y] - rot_anchor_pt[Y]
+                if side == 'right':
+                    translate_x += box_width
+                    translate_y -= box_height 
+                elif side == 'bottom':
+                    translate_y -= box_height 
+                elif side == 'top':
+                    translate_x += box_width
+                transform = Affine.translation(translate_x, translate_y) * transform
+                box_pt[side] = transform * box_pt[side]
+                draw_pins(lib_file, unit_num, sorted_side_pins, transform)
+                
+            # Create the box around the unit's pins.
+            lib_file.write(BOX.format(x0=int(box_pt['left'][X]),
+                                      y0=int(box_pt['top'][Y]),
+                                      x1=int(box_pt['right'][X]),
+                                      y1=int(box_pt['bottom'][Y]),
                                       unit_num=unit_num,
                                       line_width=BOX_LINE_WIDTH,
                                       fill=FILLS[FILL]))
@@ -450,7 +534,6 @@ def num_key(pin):
             return int(pin[1][0].num)
         except:
             return pin[1][0].num
-            
 
 
 def name_key(pin):
