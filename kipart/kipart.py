@@ -461,9 +461,11 @@ def kipart(reader_type, csv_file, lib_filename,
             X = 0
             Y = 1
         
-            anchor_pt = {}
-            bbox = {side:[(0,0),(0,0)] for side in ['left','right','top','bottom']}
-            box_pt = {side:[PIN_LENGTH, PIN_SPACING] for side in ['left','right','top','bottom']}
+            all_sides = ['left','right','top','bottom']
+            bbox = {side:[(0,0),(0,0)] for side in all_sides}
+            box_pt = {side:[PIN_LENGTH, PIN_SPACING] for side in all_sides}
+            anchor_pt = {side:[PIN_LENGTH, PIN_SPACING] for side in all_sides}
+            transform = {}
             for side, side_pins in unit.items():
                 annotate_pins(side_pins.items())
                 bbox[side] = pins_bbox(side_pins.items())
@@ -474,13 +476,10 @@ def kipart(reader_type, csv_file, lib_filename,
                             abs(bbox['bottom'][0][Y] - bbox['bottom'][1][Y]))
             box_height = max(abs(bbox['left'][0][Y] - bbox['left'][1][Y]),
                             abs(bbox['left'][0][Y] - bbox['right'][1][Y]))
-                
-            for side, side_pins in unit.items():
             
-                sorted_side_pins = sorted(side_pins.items(), key=key_func)
-
-                transform = Affine.rotation(ROTATION[side])
-                rot_anchor_pt = transform * anchor_pt[side]
+            for side in all_sides:
+                transform[side] = Affine.rotation(ROTATION[side])
+                rot_anchor_pt = transform[side] * anchor_pt[side]
                 translate_x = anchor_pt['left'][X] - rot_anchor_pt[X]
                 translate_y = anchor_pt['left'][Y] - rot_anchor_pt[Y]
                 if side == 'right':
@@ -490,9 +489,12 @@ def kipart(reader_type, csv_file, lib_filename,
                     translate_y -= box_height 
                 elif side == 'top':
                     translate_x += box_width
-                transform = Affine.translation(translate_x, translate_y) * transform
-                box_pt[side] = transform * box_pt[side]
-                draw_pins(lib_file, unit_num, sorted_side_pins, transform)
+                transform[side] = Affine.translation(translate_x, translate_y) * transform[side]
+                box_pt[side] = transform[side] * box_pt[side]
+            
+            for side, side_pins in unit.items():
+                sorted_side_pins = sorted(side_pins.items(), key=key_func)
+                draw_pins(lib_file, unit_num, sorted_side_pins, transform[side])
                 
             # Create the box around the unit's pins.
             lib_file.write(BOX.format(x0=int(box_pt['left'][X]),
