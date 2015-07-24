@@ -118,7 +118,8 @@ def generic_reader(csv_file, bundle):
             # If each like-named pin should be shown separately, place each pin into a 
             # single-element list under the pin name with the unique row index appended
             # to differentiate the pin names.
-            pin_data[pin.unit][pin.side][pin.name + '_' + str(index)].append(pin)
+            pin_data[pin.unit][pin.side][pin.name + '_' + str(index)].append(
+                pin)
 
     return part_num, pin_data  # Return the dictionary of pins extracted from the CVS file.
 
@@ -236,7 +237,8 @@ def xilinx7_reader(csv_file, bundle):
             # If each like-named pin should be shown separately, place each pin into a 
             # single-element list under the pin name with the unique row index appended
             # to differentiate the pin names.
-            pin_data[pin.unit][pin.side][pin.name + '_' + str(index)].append(pin)
+            pin_data[pin.unit][pin.side][pin.name + '_' + str(index)].append(
+                pin)
 
     return part_num, pin_data  # Return the dictionary of pins extracted from the CVS file.
 
@@ -280,7 +282,7 @@ PART_NUM_Y_OFFSET = 150
 # want to use the pin symbol where the line points to the right. 
 # The same goes for the other sides.
 PIN_ORIENTATIONS = {'left': 'R', 'right': 'L', 'bottom': 'U', 'top': 'D'}
-ROTATION = {'left':0, 'right':180, 'bottom':90, 'top':-90}
+ROTATION = {'left': 0, 'right': 180, 'bottom': 90, 'top': -90}
 
 # Mapping from understandable pin type name to the type
 # indicator used in the KiCad part library.
@@ -330,8 +332,8 @@ START_DRAW = 'DRAW\n'
 END_DRAW = 'ENDDRAW\n'
 BOX = 'S {x0} {y0} {x1} {y1} {unit_num} 1 {line_width} {fill}\n'
 PIN = 'X {name} {num} {x} {y} {length} {orientation} {num_sz} {name_sz} {unit_num} 1 {pin_type} {visibility}{pin_style}\n'
-    
-    
+
+
 def annotate_pins(unit_pins):
     '''Annotate pin names to indicate special information.'''
     for name, pins in unit_pins:
@@ -349,9 +351,9 @@ def annotate_pins(unit_pins):
 
 def pins_bbox(unit_pins):
     '''Return the bounding box of a column of pins and their names.'''
-    
+
     if len(unit_pins) == 0:
-        return [[XO,YO], [XO,YO]] # No pins, so no bounding box.
+        return [[XO, YO], [XO, YO]]  # No pins, so no bounding box.
 
     width = 0
     for name, pins in unit_pins:
@@ -365,18 +367,17 @@ def pins_bbox(unit_pins):
     # Make bounding box an integer number of pin spaces so pin connections are always on the grid.
     width = math.ceil(float(width) / PIN_SPACING) * PIN_SPACING
     height = len(unit_pins) * PIN_SPACING
-        
-    return [[XO, YO+PIN_SPACING], [XO+width, YO-height]]
-        
+
+    return [[XO, YO + PIN_SPACING], [XO + width, YO - height]]
 
 
 def draw_pins(lib_file, unit_num, unit_pins, transform):
     '''Draw a column of pins rotated/translated by the transform matrix.'''
-    
+
     # Start drawing pins from the origin.
     x = XO
     y = YO
-    
+
     for name, pins in unit_pins:
 
         # Start off creating visible part pins. If there are multiple pins with
@@ -390,199 +391,26 @@ def draw_pins(lib_file, unit_num, unit_pins, transform):
         # Create all the pins with a particular name. If there are more than one,
         # they are laid on top of each other and only the first is visible.
         for pin in pins:
-            
+
             # Create a pin using the pin data.
-            lib_file.write(
-                PIN.format(name=pin.name,
-                           num=pin.num,
-                           x=int(draw_x),
-                           y=int(draw_y),
-                           length=PIN_LENGTH,
-                           orientation=PIN_ORIENTATIONS[pin.side],
-                           num_sz=PIN_NUM_SIZE,
-                           name_sz=PIN_NAME_SIZE,
-                           unit_num=unit_num,
-                           pin_type=PIN_TYPES[pin.type],
-                           visibility=visibility,
-                           pin_style=PIN_STYLES[PIN_STYLE]))
+            lib_file.write(PIN.format(name=pin.name,
+                                      num=pin.num,
+                                      x=int(draw_x),
+                                      y=int(draw_y),
+                                      length=PIN_LENGTH,
+                                      orientation=PIN_ORIENTATIONS[pin.side],
+                                      num_sz=PIN_NUM_SIZE,
+                                      name_sz=PIN_NAME_SIZE,
+                                      unit_num=unit_num,
+                                      pin_type=PIN_TYPES[pin.type],
+                                      visibility=visibility,
+                                      pin_style=PIN_STYLES[PIN_STYLE]))
 
             # Turn off visibility after the first pin.
             visibility = VISIBILITY['invisible']
 
         # Move to the next pin placement location on this unit.
         y = y - PIN_SPACING
-
-
-def kipart(reader_type, csv_file, lib_filename,
-           append_to_lib=False,
-           sort_type='name',
-           bundle=False,
-           debug_level=0):
-    '''Read part pin data from a CSV file and write or append it to a library file.'''
-
-    # Get the part number and pin data from the CSV file.
-    part_reader = getattr(THIS_MODULE, '{}_reader'.format(reader_type))
-    part_num, pin_data = part_reader(csv_file, bundle)
-
-    # Either write the part definition to a new KiCad library or append it to an existing library.
-    if append_to_lib:
-        lib_filemode = 'ab'
-    else:
-        lib_filemode = 'wb'
-    with open(lib_filename, lib_filemode) as lib_file:
-
-        # Write the library header if this is a new library.
-        if not append_to_lib:
-            lib_file.write(LIB_HEADER)
-
-        # Start the part definition with the header.
-        lib_file.write(
-            START_DEF.format(name=part_num,
-                             ref=REF_PREFIX,
-                             pin_name_offset=PIN_NAME_OFFSET,
-                             show_pin_number=SHOW_PIN_NUMBER and 'Y' or 'N',
-                             show_pin_name=SHOW_PIN_NAME and 'Y' or 'N',
-                             num_units=len(pin_data)))
-
-        # Determine if there are pins across the top of the symbol.
-        # If so, right-justify the reference and part number so they don't
-        # run into the top pins. If not, stick with left-justification.
-        horiz_just = 'L'
-        horiz_offset = PIN_LENGTH
-        for unit in pin_data.values():
-            if 'top' in unit.keys():
-                horiz_just = 'R'
-                horiz_offset = PIN_LENGTH - 50
-                break
-                
-        # Create the field that stores the part reference.
-        lib_file.write(REF_FIELD.format(ref_prefix=REF_PREFIX,
-                                        x=XO + horiz_offset,
-                                        y=YO + REF_Y_OFFSET,
-                                        horiz_just = horiz_just,
-                                        ref_size=REF_SIZE))
-                                        
-        # Create the field that stores the part number.
-        lib_file.write(PART_FIELD.format(part_num=part_num,
-                                         x=XO + horiz_offset,
-                                         y=YO + PART_NUM_Y_OFFSET,
-                                         horiz_just = horiz_just,
-                                         ref_size=PART_NUM_SIZE))
-
-        # Start the section of the part definition that holds the part's units.
-        lib_file.write(START_DRAW)
-
-        # Get a reference to the sort-key generation routine.
-        key_func = getattr(THIS_MODULE, '{}_key'.format(sort_type))
-
-        # Now create the units that make up the part. Unit numbers go from 1
-        # up to the number of units in the part.
-        for unit_num, unit in enumerate(pin_data.values(), 1):
-
-            # The indices of the X and Y coordinates in a list of point coords.
-            X = 0
-            Y = 1
-        
-            # Initialize data structures that store info for each side of a schematic symbol unit.
-            all_sides = ['left','right','top','bottom']
-            bbox = {side:[(XO,YO),(XO,YO)] for side in all_sides}
-            box_pt = {side:[XO+PIN_LENGTH, YO+PIN_SPACING] for side in all_sides}
-            anchor_pt = {side:[XO+PIN_LENGTH, YO+PIN_SPACING] for side in all_sides}
-            transform = {}
-            
-            # Annotate the pins for each side of the symbol and determine the bounding box
-            # and various points for each side.
-            for side, side_pins in unit.items():
-                annotate_pins(side_pins.items())
-                bbox[side] = pins_bbox(side_pins.items())
-                #
-                #     C     B-------A
-                #           |       |
-                #     ------| name1 |
-                #           |       |
-                #     ------| name2 |
-                #
-                # A = anchor point = upper-right corner of bounding box.
-                # B = box point = upper-left corner of bounding box + pin length.
-                # C = upper-left corner of bounding box.
-                anchor_pt[side] = [max(bbox[side][0][X],bbox[side][1][X]), max(bbox[side][0][Y],bbox[side][1][Y])]
-                box_pt[side] = [min(bbox[side][0][X],bbox[side][1][X])+PIN_LENGTH, max(bbox[side][0][Y],bbox[side][1][Y])]
-
-            # AL = left-side anchor point.
-            # AB = bottom-side anchor point.
-            # AR = right-side anchor point.
-            # AT = top-side anchor-point.
-            #        +-------------+          
-            #        |             |          
-            #        |     TOP     |          
-            #        |             |          
-            # +------AL------------AT         
-            # |      |                        
-            # |      |             +---------+
-            # |      |             |         |
-            # |  L   |             |         |
-            # |  E   |             |    R    |
-            # |  F   |             |    I    |
-            # |  T   |             |    G    |
-            # |      |             |    H    |
-            # |      |             |    T    |
-            # |      |             |         |
-            # +------AB-------+    AR--------+
-            #        | BOTTOM |               
-            #        +--------+               
-            #
-            # This is the width and height of the box in the middle of the pins on each side.
-            box_width = max(abs(bbox['top'][0][Y] - bbox['top'][1][Y]),
-                            abs(bbox['bottom'][0][Y] - bbox['bottom'][1][Y]))
-            box_height = max(abs(bbox['left'][0][Y] - bbox['left'][1][Y]),
-                            abs(bbox['left'][0][Y] - bbox['right'][1][Y]))
-            
-            for side in all_sides:
-                # Each side of pins starts off with the orientation of a left-hand side of pins.
-                # Transformation matrix starts by rotating the side of pins.
-                transform[side] = Affine.rotation(ROTATION[side])
-                # Now rotate the anchor point to see where it goes.
-                rot_anchor_pt = transform[side] * anchor_pt[side]
-                # Translate the rotated anchor point to coincide with the AL anchor point.
-                translate_x = anchor_pt['left'][X] - rot_anchor_pt[X]
-                translate_y = anchor_pt['left'][Y] - rot_anchor_pt[Y]
-                # Make additional translation to bring the AL point to the correct position.
-                if side == 'right':
-                    # Translate AL to AR.
-                    translate_x += box_width
-                    translate_y -= box_height 
-                elif side == 'bottom':
-                    # Translate AL to AB
-                    translate_y -= box_height 
-                elif side == 'top':
-                    # Translate AL to AT
-                    translate_x += box_width
-                # Create the complete transformation matrix = rotation followed by translation.
-                transform[side] = Affine.translation(translate_x, translate_y) * transform[side]
-                # Also translate the point on each side that defines the box around the symbol.
-                box_pt[side] = transform[side] * box_pt[side]
-            
-            # Draw the transformed pins for each side of the symbol.
-            for side, side_pins in unit.items():
-                # Sort the pins names for the desired order: row-wise, numeric, alphabetical.
-                sorted_side_pins = sorted(side_pins.items(), key=key_func)
-                # Draw the transformed pins for this side of the symbol.
-                draw_pins(lib_file, unit_num, sorted_side_pins, transform[side])
-                
-            # Create the box around the unit's pins.
-            lib_file.write(BOX.format(x0=int(box_pt['left'][X]),
-                                      y0=int(box_pt['top'][Y]),
-                                      x1=int(box_pt['right'][X]),
-                                      y1=int(box_pt['bottom'][Y]),
-                                      unit_num=unit_num,
-                                      line_width=BOX_LINE_WIDTH,
-                                      fill=FILLS[FILL]))
-
-        # Close the section that holds the part's units.
-        lib_file.write(END_DRAW)
-
-        # Close the part definition.
-        lib_file.write(END_DEF)
 
 
 def row_key(pin):
@@ -626,3 +454,202 @@ def name_key(pin):
         return prefix + num
     except:
         return pin[0]
+
+
+def draw_symbol(lib_file, part_num, pin_data, sort_type):
+    '''Add a symbol for a part to the library.'''
+    
+    # Start the part definition with the header.
+    lib_file.write(
+        START_DEF.format(name=part_num,
+                         ref=REF_PREFIX,
+                         pin_name_offset=PIN_NAME_OFFSET,
+                         show_pin_number=SHOW_PIN_NUMBER and 'Y' or 'N',
+                         show_pin_name=SHOW_PIN_NAME and 'Y' or 'N',
+                         num_units=len(pin_data)))
+
+    # Determine if there are pins across the top of the symbol.
+    # If so, right-justify the reference and part number so they don't
+    # run into the top pins. If not, stick with left-justification.
+    horiz_just = 'L'
+    horiz_offset = PIN_LENGTH
+    for unit in pin_data.values():
+        if 'top' in unit.keys():
+            horiz_just = 'R'
+            horiz_offset = PIN_LENGTH - 50
+            break
+
+            # Create the field that stores the part reference.
+    lib_file.write(REF_FIELD.format(ref_prefix=REF_PREFIX,
+                                    x=XO + horiz_offset,
+                                    y=YO + REF_Y_OFFSET,
+                                    horiz_just=horiz_just,
+                                    ref_size=REF_SIZE))
+
+    # Create the field that stores the part number.
+    lib_file.write(PART_FIELD.format(part_num=part_num,
+                                     x=XO + horiz_offset,
+                                     y=YO + PART_NUM_Y_OFFSET,
+                                     horiz_just=horiz_just,
+                                     ref_size=PART_NUM_SIZE))
+
+    # Start the section of the part definition that holds the part's units.
+    lib_file.write(START_DRAW)
+
+    # Get a reference to the sort-key generation routine.
+    key_func = getattr(THIS_MODULE, '{}_key'.format(sort_type))
+
+    # Now create the units that make up the part. Unit numbers go from 1
+    # up to the number of units in the part.
+    for unit_num, unit in enumerate(pin_data.values(), 1):
+
+        # The indices of the X and Y coordinates in a list of point coords.
+        X = 0
+        Y = 1
+
+        # Initialize data structures that store info for each side of a schematic symbol unit.
+        all_sides = ['left', 'right', 'top', 'bottom']
+        bbox = {side: [(XO, YO), (XO, YO)] for side in all_sides}
+        box_pt = {
+            side: [XO + PIN_LENGTH, YO + PIN_SPACING]
+            for side in all_sides
+        }
+        anchor_pt = {
+            side: [XO + PIN_LENGTH, YO + PIN_SPACING]
+            for side in all_sides
+        }
+        transform = {}
+
+        # Annotate the pins for each side of the symbol and determine the bounding box
+        # and various points for each side.
+        for side, side_pins in unit.items():
+            annotate_pins(side_pins.items())
+            bbox[side] = pins_bbox(side_pins.items())
+            #
+            #     C     B-------A
+            #           |       |
+            #     ------| name1 |
+            #           |       |
+            #     ------| name2 |
+            #
+            # A = anchor point = upper-right corner of bounding box.
+            # B = box point = upper-left corner of bounding box + pin length.
+            # C = upper-left corner of bounding box.
+            anchor_pt[side] = [max(bbox[side][0][X], bbox[side][1][X]),
+                               max(bbox[side][0][Y], bbox[side][1][Y])]
+            box_pt[side] = [
+                min(bbox[side][0][X], bbox[side][1][X]) + PIN_LENGTH,
+                max(bbox[side][0][Y], bbox[side][1][Y])
+            ]
+
+        # AL = left-side anchor point.
+        # AB = bottom-side anchor point.
+        # AR = right-side anchor point.
+        # AT = top-side anchor-point.
+        #        +-------------+          
+        #        |             |          
+        #        |     TOP     |          
+        #        |             |          
+        # +------AL------------AT         
+        # |      |                        
+        # |      |             +---------+
+        # |      |             |         |
+        # |  L   |             |         |
+        # |  E   |             |    R    |
+        # |  F   |             |    I    |
+        # |  T   |             |    G    |
+        # |      |             |    H    |
+        # |      |             |    T    |
+        # |      |             |         |
+        # +------AB-------+    AR--------+
+        #        | BOTTOM |               
+        #        +--------+               
+        #
+        # This is the width and height of the box in the middle of the pins on each side.
+        box_width = max(abs(bbox['top'][0][Y] - bbox['top'][1][Y]),
+                        abs(bbox['bottom'][0][Y] - bbox['bottom'][1][Y]))
+        box_height = max(abs(bbox['left'][0][Y] - bbox['left'][1][Y]),
+                         abs(bbox['left'][0][Y] - bbox['right'][1][Y]))
+
+        for side in all_sides:
+            # Each side of pins starts off with the orientation of a left-hand side of pins.
+            # Transformation matrix starts by rotating the side of pins.
+            transform[side] = Affine.rotation(ROTATION[side])
+            # Now rotate the anchor point to see where it goes.
+            rot_anchor_pt = transform[side] * anchor_pt[side]
+            # Translate the rotated anchor point to coincide with the AL anchor point.
+            translate_x = anchor_pt['left'][X] - rot_anchor_pt[X]
+            translate_y = anchor_pt['left'][Y] - rot_anchor_pt[Y]
+            # Make additional translation to bring the AL point to the correct position.
+            if side == 'right':
+                # Translate AL to AR.
+                translate_x += box_width
+                translate_y -= box_height
+            elif side == 'bottom':
+                # Translate AL to AB
+                translate_y -= box_height
+            elif side == 'top':
+                # Translate AL to AT
+                translate_x += box_width
+            # Create the complete transformation matrix = rotation followed by translation.
+            transform[side] = Affine.translation(translate_x,
+                                                 translate_y) * transform[side]
+            # Also translate the point on each side that defines the box around the symbol.
+            box_pt[side] = transform[side] * box_pt[side]
+
+        # Draw the transformed pins for each side of the symbol.
+        for side, side_pins in unit.items():
+            # Sort the pins names for the desired order: row-wise, numeric, alphabetical.
+            sorted_side_pins = sorted(side_pins.items(), key=key_func)
+            # Draw the transformed pins for this side of the symbol.
+            draw_pins(lib_file, unit_num, sorted_side_pins, transform[side])
+
+            # Create the box around the unit's pins.
+        lib_file.write(BOX.format(x0=int(box_pt['left'][X]),
+                                  y0=int(box_pt['top'][Y]),
+                                  x1=int(box_pt['right'][X]),
+                                  y1=int(box_pt['bottom'][Y]),
+                                  unit_num=unit_num,
+                                  line_width=BOX_LINE_WIDTH,
+                                  fill=FILLS[FILL]))
+
+    # Close the section that holds the part's units.
+    lib_file.write(END_DRAW)
+
+    # Close the part definition.
+    lib_file.write(END_DEF)
+
+
+def kipart(reader_type, csv_file, lib_filename,
+           append_to_lib=False,
+           sort_type='name',
+           bundle=False,
+           debug_level=0):
+    '''Read part pin data from a CSV file and write or append it to a library file.'''
+
+    # Get the part number and pin data from the CSV file.
+    part_reader = getattr(THIS_MODULE, '{}_reader'.format(reader_type))
+    part_num, pin_data = part_reader(csv_file, bundle)
+
+    # Either write the part definition to a new KiCad library or append it to an existing library.
+    if append_to_lib:
+        lib_filemode = 'ab'
+    else:
+        lib_filemode = 'wb'
+    with open(lib_filename, lib_filemode) as lib_file:
+
+        # Write the library header if this is a new library.
+        if not append_to_lib:
+            lib_file.write(LIB_HEADER)
+
+        # Draw the schematic symbol into the library.
+        draw_symbol(lib_file=lib_file,
+                    part_num=part_num,
+                    pin_data=pin_data,
+                    sort_type=sort_type)
+
+        # Close the section that holds the part's units.
+        lib_file.write(END_DRAW)
+
+        # Close the part definition.
+        lib_file.write(END_DEF)

@@ -63,6 +63,9 @@ parser.add_argument(
     '-b', '--bundle',
     action='store_true',
     help='Bundle multiple pins with the same name into a single schematic pin.')
+parser.add_argument('-a', '--append',
+                    action='store_true',
+                    help='Append to an existing part library.')
 parser.add_argument('-w', '--overwrite',
                     action='store_true',
                     help='Allow overwriting of an existing part library.')
@@ -82,11 +85,12 @@ else:
     args.output = os.path.splitext(args.output)[0] + '.lib'
 
 if os.path.isfile(args.output):
-    if not args.overwrite:
-        print 'Output file {} already exists! Use the --overwrite option to replace it.'.format(
+    if not args.overwrite and not args.append:
+        print 'Output file {} already exists! Use the --overwrite option to replace it or the --append option to append to it.'.format(
             args.output)
         sys.exit(1)
-        
+
+
 def call_kipart(csv_file):
     '''Helper routine for calling kipart.'''
     kipart(reader_type=args.reader,
@@ -97,7 +101,8 @@ def call_kipart(csv_file):
            bundle=args.bundle,
            debug_level=args.debug)
 
-append_to_lib = False
+
+append_to_lib = args.append
 for input_file in args.input_files:
     file_ext = os.path.splitext(input_file)[-1]
     if file_ext == '.zip':
@@ -114,4 +119,3 @@ for input_file in args.input_files:
             append_to_lib = True
     else:
         continue
-        
