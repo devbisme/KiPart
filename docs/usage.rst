@@ -5,11 +5,11 @@ Usage
 KiPart is mainly intended to be  used as a script::
 
     usage: kipart [-h] [-v] [-r [generic|xilinx7]] [-s [row|num|name]]
-                  [-o [file.lib]] [-b] [-w] [-d [LEVEL]]
+                  [-o [file.lib]] [-b] [-a] [-w] [-d [LEVEL]]
                   file1.[csv|zip] file2.[csv|zip] ... [file1.[csv|zip]
                   file2.[csv|zip] ... ...]
 
-    Generate KiCad multi-unit schematic symbols from a CSV file.
+    Generate multi-unit schematic symbols for KiCad from a CSV file.
 
     positional arguments:
       file1.[csv|zip] file2.[csv|zip] ...
@@ -28,26 +28,34 @@ KiPart is mainly intended to be  used as a script::
                             Generated KiCad library for part.
       -b, --bundle          Bundle multiple pins with the same name into a single
                             schematic pin.
+      -a, --append          Append to an existing part library.
       -w, --overwrite       Allow overwriting of an existing part library.
       -d [LEVEL], --debug [LEVEL]
                             Print debugging info. (Larger LEVEL means more info.)
-                        
+                            
 A generic part file is expected when the `-r generic` option is specified.
 It contains the following items:
 
 #. The part name or number is on the first line.
 #. The second line is blank.
-#. The third line contains the column headers. The required headers are 'Pin', 'Name', 'Unit', and 'Type'.
+#. The third line contains the column headers. The required headers are 'Pin' and 'Name'.
+   Optional columns are 'Unit', 'Side', 'Type', and 'Style'.
    These can be placed in any order and in any column.
 #. On each row, enter the pin number, name, unit identifier (if the schematic symbol will have multiple units),
-   and pin type. Each of these items should be entered in the column with the appropriate header.
+   pin type and style. Each of these items should be entered in the column with the appropriate header.
 
    * Pin numbers can be either numeric (e.g., '69') if the part is a DIP or QFP, or they can be
      alphanumeric (e.g., 'C10') if a BGA or CSP is used.
    * Pin names can be any combination of letters, numbers and special characters (except a comma).
-   * The unit identifier can be any combination of letters, numbers and special characters (except a comma).
+   * The unit identifier can be blank or any combination of letters, numbers and special characters (except a comma).
      A separate unit will be generated in the schematic symbol for each distinct unit identifier.
-   * The allowable pin types are:
+   * The side column specifies the side of the symbol the pin will be placed on.
+     The allowable values are:
+        * left
+        * right
+        * top
+        * bottom
+   * The type column specifies the electrical type of the pin. The allowable values are:
         * input
         * output
         * bidirectional
@@ -59,6 +67,16 @@ It contains the following items:
         * open_collector
         * open_emitter
         * no_connect
+   * The style column specifies the graphic representation of the pin. The allowable pin styles are:
+        * line
+        * inverted
+        * clock
+        * inverted_clock
+        * input_low
+        * clock_low
+        * output_low
+        * falling_edge_clock
+        * non_logic
 
 When the option `-r xilinx7` is used, the individual CSV pin files or entire .zip archives
 `for the Xilinx 7-Series FPGAs <http://www.xilinx.com/support/packagefiles/>`_ can be processed.
@@ -113,3 +131,49 @@ The command `kipart -b example.csv -o example4.lib` will bundle pins with identi
 (like `GND` and `VCC`) into single pins like so:
 
 .. image:: example4.png
+
+Or you could divide the part into two units: one for I/O pins and the other for power pins
+like this::
+
+    example_part
+
+    Pin,    Unit,   Type,           Name
+    23,     IO,     input,          A5
+    90,     IO,     output,         B1
+    88,     IO,     bidirectional,  C3
+    56,     IO,     tristate,       D22
+    84,     IO,     tristate,       D3
+    16,     PWR,    power_in,       VCC
+    5,      PWR,    power_in,       GND
+    29,     PWR,    power_in,       VCC
+    98,     PWR,    power_in,       GND
+    99,     PWR,    power_in,       VCC
+    59,     PWR,    power_in,       GND
+    
+Then the command `kipart -b example.csv -o example5.lib` results in a part symbol having two separate units:
+
+.. image:: example5_1.png
+
+.. image:: example5_2.png
+
+As an alternative, you could go back to a single unit with all the inputs on the left side,
+all the outputs on the right side, the `VCC` pins on the top and the `GND` pins on the bottom::
+
+    example_part
+
+    Pin,    Unit,   Type,           Name    Side
+    23,     1,      input,          A5      left
+    90,     1,      output,         B1      right
+    88,     1,      bidirectional,  C3      left
+    56,     1,      tristate,       D22     right
+    84,     1,      tristate,       D3      right
+    16,     1,      power_in,       VCC     top
+    5,      1,      power_in,       GND     bottom
+    29,     1,      power_in,       VCC     top
+    98,     1,      power_in,       GND     bottom
+    99,     1,      power_in,       VCC     top
+    59,     1,      power_in,       GND     bottom
+    
+Running the command `kipart -b example.csv -o example6.lib` generates a part symbol with pins on all four sides:
+
+.. image:: example6.png

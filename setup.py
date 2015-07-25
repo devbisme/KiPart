@@ -18,7 +18,7 @@ with open('HISTORY.rst') as history_file:
     history = history_file.read().replace('.. :changelog:', '')
 
 requirements = [
-    # TODO: put package requirements here
+    'affine >= 1.2.0',
 ]
 
 test_requirements = [
@@ -35,7 +35,7 @@ setup(
     url='https://github.com/xesscorp/kipart',
 #    packages=['kipart',],
     packages=setuptools.find_packages(),
-    entry_points={'console_scripts':['kipart = kipart.__main__']},
+    entry_points={'console_scripts':['kipart = kipart.__main__:main']},
     package_dir={'kipart':
                  'kipart'},
     include_package_data=True,

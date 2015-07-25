@@ -3,6 +3,13 @@
 History
 -------
 
+0.1.2 (2015-07-24)
+---------------------
+* Symbols can now have pins on any combination of left, right, top and bottom sides.
+* Added option to append parts to an existing library.
+* Refactored kipart routine into subroutines.
+* Added documentation.
+
 0.1.1 (2015-07-21)
 ---------------------
 
