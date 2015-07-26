@@ -314,10 +314,6 @@ PIN_STYLES = {
     'non_logic': 'X'
 }
 
-# Mapping from understandable visibility indicator to the visibility
-# indicator used in the KiCad part library.
-VISIBILITY = {'visible': '', 'invisible': 'N'}
-
 # Mapping from understandable box fill-type name to the fill-type
 # indicator used in the KiCad part library.
 FILLS = {'no_fill': 'N', 'fg_fill': 'F', 'bg_fill': 'f'}
@@ -331,7 +327,7 @@ PART_FIELD = 'F1 "{part_num}" {x} {y} {ref_size} H V {horiz_just} CNN\n'
 START_DRAW = 'DRAW\n'
 END_DRAW = 'ENDDRAW\n'
 BOX = 'S {x0} {y0} {x1} {y1} {unit_num} 1 {line_width} {fill}\n'
-PIN = 'X {name} {num} {x} {y} {length} {orientation} {num_sz} {name_sz} {unit_num} 1 {pin_type} {visibility}{pin_style}\n'
+PIN = 'X {name} {num} {x} {y} {length} {orientation} {num_sz} {name_sz} {unit_num} 1 {pin_type} {pin_style}\n'
 
 
 def annotate_pins(unit_pins):
@@ -380,10 +376,10 @@ def draw_pins(lib_file, unit_num, unit_pins, transform):
 
     for name, pins in unit_pins:
 
-        # Start off creating visible part pins. If there are multiple pins with
-        # the same name, then the visibility will be turned off for any pins
-        # after the first.
-        visibility = VISIBILITY['visible']
+        # Start off creating visible pin numbers. If there are multiple pins with
+        # the same name, then the 'visibility' will be turned off for any pins
+        # after the first by reducing their pin number size to zero.
+        num_size = PIN_NUM_SIZE
 
         # Rotate/translate the current drawing point.
         (draw_x, draw_y) = transform * (x, y)
@@ -399,15 +395,14 @@ def draw_pins(lib_file, unit_num, unit_pins, transform):
                                       y=int(draw_y),
                                       length=PIN_LENGTH,
                                       orientation=PIN_ORIENTATIONS[pin.side],
-                                      num_sz=PIN_NUM_SIZE,
+                                      num_sz=num_size,
                                       name_sz=PIN_NAME_SIZE,
                                       unit_num=unit_num,
                                       pin_type=PIN_TYPES[pin.type],
-                                      visibility=visibility,
                                       pin_style=PIN_STYLES[PIN_STYLE]))
 
             # Turn off visibility after the first pin.
-            visibility = VISIBILITY['invisible']
+            num_size = 0
 
         # Move to the next pin placement location on this unit.
         y = y - PIN_SPACING

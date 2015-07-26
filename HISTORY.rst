@@ -3,6 +3,11 @@
 History
 -------
 
+0.1.3 (2015-07-26)
+---------------------
+* Multiple pins with the same name are now hidden by reducing their pin number size to zero
+  (rather than enabling the hidden flag which can cause problems with power-in pins).
+
 0.1.2 (2015-07-24)
 ---------------------
 * Symbols can now have pins on any combination of left, right, top and bottom sides.
