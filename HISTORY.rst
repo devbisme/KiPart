@@ -3,6 +3,10 @@
 History
 -------
 
+0.1.4 (2015-07-27)
+---------------------
+* Added option for approximate (fuzzy) matching for pin types, styles and orientations (sides).
+
 0.1.3 (2015-07-26)
 ---------------------
 * Multiple pins with the same name are now hidden by reducing their pin number size to zero

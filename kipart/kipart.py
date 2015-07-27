@@ -29,6 +29,7 @@ import re
 import csv
 from collections import defaultdict
 from affine import Affine
+import difflib
 
 __all__ = ['kipart']  # Only export this routine for use by the outside world.
 
@@ -281,38 +282,86 @@ PART_NUM_Y_OFFSET = 150
 # but if pins are placed on the left side of the symbol, you actually
 # want to use the pin symbol where the line points to the right. 
 # The same goes for the other sides.
-PIN_ORIENTATIONS = {'left': 'R', 'right': 'L', 'bottom': 'U', 'top': 'D'}
+PIN_ORIENTATIONS = {'':'R', 'left': 'R', 'right': 'L', 'bottom': 'U', 'down':'U', 'top': 'D', 'up':'D',}
+scrubber = re.compile('[\W.]+')
+PIN_ORIENTATIONS = {scrubber.sub('', k).lower():v for k,v in PIN_ORIENTATIONS.items()}
+
 ROTATION = {'left': 0, 'right': 180, 'bottom': 90, 'top': -90}
 
 # Mapping from understandable pin type name to the type
 # indicator used in the KiCad part library.
 PIN_TYPES = {
     'input': 'I',
+    'inp': 'I',
+    'in': 'I',
+    'clk': 'I',
     'output': 'O',
+    'outp': 'O',
+    'out': 'O',
     'bidirectional': 'B',
+    'bidir': 'B',
+    'bi': 'B',
+    'inout': 'B',
+    'io': 'B',
     'tristate': 'T',
+    'tri': 'T',
     'passive': 'P',
+    'pass': 'P',
     'unspecified': 'U',
+    'un': 'U',
+    '': 'U',
+    'analog': 'U',
     'power_in': 'W',
+    'pwr_in': 'W',
+    'pwr': 'W',
+    'ground': 'W',
+    'gnd': 'W',
     'power_out': 'w',
+    'pwr_out': 'w',
+    'pwr_o': 'w',
     'open_collector': 'C',
+    'open_coll': 'C',
+    'oc': 'C',
     'open_emitter': 'E',
+    'open_emit': 'E',
+    'oe': 'E',
     'no_connect': 'N',
+    'no_conn': 'N',
+    'nc': 'N',
 }
+PIN_TYPES = {scrubber.sub('', k).lower():v for k,v in PIN_TYPES.items()}
 
 # Mapping from understandable pin drawing style to the style
 # indicator used in the KiCad part library.
 PIN_STYLES = {
     'line': '',
+    '': '',
     'inverted': 'I',
+    'inv': 'I',
     'clock': 'C',
+    'clk': 'C',
+    'rising_clk': 'C',
     'inverted_clock': 'IC',
+    'inv_clk': 'IC',
     'input_low': 'L',
+    'inp_low': 'L',
+    'in_lw': 'L',
+    'in_b': 'L',
     'clock_low': 'CL',
+    'clk_low': 'CL',
+    'clk_lw': 'CL',
+    'clk_b': 'CL',
     'output_low': 'V',
+    'outp_low': 'V',
+    'out_lw': 'V',
+    'out_b': 'V',
     'falling_edge_clock': 'F',
-    'non_logic': 'X'
+    'falling_clk': 'F',
+    'non_logic': 'X',
+    'nl': 'X',
+    'analog': 'X',
 }
+PIN_STYLES = {scrubber.sub('', k).lower():v for k,v in PIN_STYLES.items()}
 
 # Mapping from understandable box fill-type name to the fill-type
 # indicator used in the KiCad part library.
@@ -366,8 +415,25 @@ def pins_bbox(unit_pins):
 
     return [[XO, YO + PIN_SPACING], [XO + width, YO - height]]
 
+    
+def find_closest_match(name, name_dict, fuzzy_match, threshold=0.0):
+    '''Approximate matching subroutine'''
+    # Scrub non-alphanumerics from name and lowercase it.
+    scrubber = re.compile('[\W.]+')
+    name = scrubber.sub('', name).lower()
+    
+    # Return regular dictionary lookup if fuzzy matching is not enabled.
+    if fuzzy_match == False:
+        return name_dict[name]
 
-def draw_pins(lib_file, unit_num, unit_pins, transform):
+    # Find the closest fuzzy match to the given name in the scrubbed list.
+    # Set the matching threshold to 0 so it always gives some result.
+    match = difflib.get_close_matches(name, name_dict.keys(), 1, threshold)[0]
+
+    return name_dict[match]
+
+
+def draw_pins(lib_file, unit_num, unit_pins, transform, fuzzy_match):
     '''Draw a column of pins rotated/translated by the transform matrix.'''
 
     # Start drawing pins from the origin.
@@ -383,6 +449,11 @@ def draw_pins(lib_file, unit_num, unit_pins, transform):
 
         # Rotate/translate the current drawing point.
         (draw_x, draw_y) = transform * (x, y)
+        
+        # Use approximate matching to determine the pin's type, style and orientation.
+        pin_type = find_closest_match(pins[0].type, PIN_TYPES, fuzzy_match)
+        pin_style = find_closest_match(pins[0].style, PIN_STYLES, fuzzy_match)
+        pin_side = find_closest_match(pins[0].side, PIN_ORIENTATIONS, fuzzy_match)
 
         # Create all the pins with a particular name. If there are more than one,
         # they are laid on top of each other and only the first is visible.
@@ -394,12 +465,12 @@ def draw_pins(lib_file, unit_num, unit_pins, transform):
                                       x=int(draw_x),
                                       y=int(draw_y),
                                       length=PIN_LENGTH,
-                                      orientation=PIN_ORIENTATIONS[pin.side],
+                                      orientation=pin_side,
                                       num_sz=num_size,
                                       name_sz=PIN_NAME_SIZE,
                                       unit_num=unit_num,
-                                      pin_type=PIN_TYPES[pin.type],
-                                      pin_style=PIN_STYLES[PIN_STYLE]))
+                                      pin_type=pin_type,
+                                      pin_style=pin_style))
 
             # Turn off visibility after the first pin.
             num_size = 0
@@ -451,7 +522,7 @@ def name_key(pin):
         return pin[0]
 
 
-def draw_symbol(lib_file, part_num, pin_data, sort_type):
+def draw_symbol(lib_file, part_num, pin_data, sort_type, fuzzy_match):
     '''Add a symbol for a part to the library.'''
     
     # Start the part definition with the header.
@@ -597,7 +668,7 @@ def draw_symbol(lib_file, part_num, pin_data, sort_type):
             # Sort the pins names for the desired order: row-wise, numeric, alphabetical.
             sorted_side_pins = sorted(side_pins.items(), key=key_func)
             # Draw the transformed pins for this side of the symbol.
-            draw_pins(lib_file, unit_num, sorted_side_pins, transform[side])
+            draw_pins(lib_file, unit_num, sorted_side_pins, transform[side], fuzzy_match)
 
             # Create the box around the unit's pins.
         lib_file.write(BOX.format(x0=int(box_pt['left'][X]),
@@ -618,6 +689,7 @@ def draw_symbol(lib_file, part_num, pin_data, sort_type):
 def kipart(reader_type, csv_file, lib_filename,
            append_to_lib=False,
            sort_type='name',
+           fuzzy_match=False,
            bundle=False,
            debug_level=0):
     '''Read part pin data from a CSV file and write or append it to a library file.'''
@@ -641,7 +713,8 @@ def kipart(reader_type, csv_file, lib_filename,
         draw_symbol(lib_file=lib_file,
                     part_num=part_num,
                     pin_data=pin_data,
-                    sort_type=sort_type)
+                    sort_type=sort_type,
+                    fuzzy_match=fuzzy_match)
 
         # Close the section that holds the part's units.
         lib_file.write(END_DRAW)

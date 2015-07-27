@@ -62,6 +62,11 @@ def main():
                         metavar='file.lib',
                         help='Generated KiCad library for part.')
     parser.add_argument(
+        '-f', '--fuzzy_match',
+        action='store_true',
+        help=
+        'Use approximate string matching when looking-up the pin type, style and orientation.')
+    parser.add_argument(
         '-b', '--bundle',
         action='store_true',
         help=
@@ -100,6 +105,7 @@ def main():
                lib_filename=args.output,
                append_to_lib=append_to_lib,
                sort_type=args.sort,
+               fuzzy_match=args.fuzzy_match,
                bundle=args.bundle,
                debug_level=args.debug)
 
