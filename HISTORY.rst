@@ -3,6 +3,14 @@
 History
 -------
 
+0.1.5 (2015-07-29)
+---------------------
+* Multiple parts can now be described in a single CSV file.
+* Added function and option for reading Cypress PSoC5LP CSV files.
+* Simplified key generators for sorting pins by name or number.
+* Improved ordering of pins by name.
+* Bumped version number.
+
 0.1.4 (2015-07-27)
 ---------------------
 * Added option for approximate (fuzzy) matching for pin types, styles and orientations (sides).

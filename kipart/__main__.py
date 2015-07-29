@@ -44,9 +44,9 @@ def main():
         help='Files for parts in CSV format or as CSV files in .zip archives.')
     parser.add_argument('-r', '--reader',
                         nargs='?',
-                        choices=['generic', 'xilinx7'],
+                        choices=['generic', 'xilinx7', 'psoc5lp'],
                         default='generic',
-                        metavar='generic|xilinx7',
+                        metavar='generic|xilinx7|psoc5lp',
                         help='Name of function for reading the CSV file.')
     parser.add_argument(
         '-s', '--sort',
