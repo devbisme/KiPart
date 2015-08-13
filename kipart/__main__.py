@@ -31,7 +31,7 @@ from kipart import *
 def main():
     parser = ap.ArgumentParser(
         description=
-        'Generate multi-unit schematic symbols for KiCad from a CSV file.')
+        'Generate single & multi-unit schematic symbols for KiCad from a CSV file.')
 
     parser.add_argument('-v', '--version',
                         action='version',
@@ -44,16 +44,16 @@ def main():
         help='Files for parts in CSV format or as CSV files in .zip archives.')
     parser.add_argument('-r', '--reader',
                         nargs='?',
+                        type=str.lower,
                         choices=['generic', 'xilinx7', 'psoc5lp'],
                         default='generic',
-                        metavar='generic|xilinx7|psoc5lp',
                         help='Name of function for reading the CSV file.')
     parser.add_argument(
         '-s', '--sort',
         nargs='?',
+        type=str.lower,
         choices=['row', 'num', 'name'],
         default='row',
-        metavar='row|num|name',
         help=
         'Sort the part pins by their entry order in the CSV file, their pin number, or their pin name.')
     parser.add_argument('-o', '--output',
