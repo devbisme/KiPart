@@ -3,6 +3,12 @@
 History
 -------
 
+0.1.6 (2015-08-13)
+---------------------
+* Fuzzy string matching is now used for the column headers.
+* Choice-type options are now case-insensitive.
+* Bumped version number.
+
 0.1.5 (2015-07-29)
 ---------------------
 * Multiple parts can now be described in a single CSV file.
