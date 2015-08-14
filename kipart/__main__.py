@@ -45,7 +45,7 @@ def main():
     parser.add_argument('-r', '--reader',
                         nargs='?',
                         type=str.lower,
-                        choices=['generic', 'xilinx7', 'psoc5lp'],
+                        choices=['generic', 'xilinx7', 'xilinx6s', 'xilinx6v', 'psoc5lp'],
                         default='generic',
                         help='Name of function for reading the CSV file.')
     parser.add_argument(
@@ -100,14 +100,14 @@ def main():
 
     def call_kipart(csv_file):
         '''Helper routine for calling kipart.'''
-        kipart(reader_type=args.reader,
-               csv_file=csv_file,
-               lib_filename=args.output,
-               append_to_lib=append_to_lib,
-               sort_type=args.sort,
-               fuzzy_match=args.fuzzy_match,
-               bundle=args.bundle,
-               debug_level=args.debug)
+        return kipart(reader_type=args.reader,
+                   csv_file=csv_file,
+                   lib_filename=args.output,
+                   append_to_lib=append_to_lib,
+                   sort_type=args.sort,
+                   fuzzy_match=args.fuzzy_match,
+                   bundle=args.bundle,
+                   debug_level=args.debug)
 
     append_to_lib = args.append
     for input_file in args.input_files:
@@ -116,14 +116,12 @@ def main():
             zip_file = zipfile.ZipFile(input_file, 'r')
             zipped_files = zip_file.infolist()
             for zipped_file in zipped_files:
-                if os.path.splitext(zipped_file.filename)[-1] == '.csv':
+                if os.path.splitext(zipped_file.filename)[-1] in ['.csv', '.txt']:
                     with zip_file.open(zipped_file, 'r') as csv_file:
-                        call_kipart(csv_file)
-                        append_to_lib = True
-        elif file_ext == '.csv':
+                        append_to_lib = call_kipart(csv_file)
+        elif file_ext in ['.csv', '.txt']:
             with open(input_file, 'r') as csv_file:
-                call_kipart(csv_file)
-                append_to_lib = True
+                append_to_lib = call_kipart(csv_file)
         else:
             continue
 
