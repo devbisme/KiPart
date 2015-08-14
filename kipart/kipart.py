@@ -25,6 +25,7 @@
 import sys
 import warnings
 import math
+import copy
 import re
 import csv
 from collections import defaultdict
@@ -35,17 +36,27 @@ __all__ = ['kipart']  # Only export this routine for use by the outside world.
 
 THIS_MODULE = sys.modules[__name__]  # Ref to this module for making named calls.
 
-DEFAULT_UNIT = 1
-DEFAULT_PIN_TYPE = 'bidirectional'
-DEFAULT_PIN_STYLE = 'line'
-DEFAULT_PIN_SIDE = 'left'
+# DEFAULT_UNIT = 1
+# DEFAULT_PIN_TYPE = 'bidirectional'
+# DEFAULT_PIN_STYLE = 'line'
+# DEFAULT_PIN_SIDE = 'left'
 
+COLUMN_NAMES = {'pin':'num', 'num':'num', 'name':'name', 'type':'type', 'style':'style', 'side':'side', 'unit':'unit', 'bank':'unit'}
 
 # This is just a vanilla object class for device pins. 
 # We'll add attributes to it as needed.
 class Pin:
     pass
+    
+DEFAULT_PIN = Pin()
+DEFAULT_PIN.num = None
+DEFAULT_PIN.name = ''
+DEFAULT_PIN.type = 'io'
+DEFAULT_PIN.style = 'line'
+DEFAULT_PIN.unit = 1
+DEFAULT_PIN.side = 'left'
 
+    
 def num_row_elements(row):
     '''Get number of elements in CSV row.'''
     try:
@@ -54,13 +65,15 @@ def num_row_elements(row):
         return len(rowset)
     except TypeError:
         return 0
-    
+
+        
 def get_nonblank_row(csv_reader):
     '''Return the first non-blank row encountered from the current point in a CSV file.'''
     for row in csv_reader:
         if num_row_elements(row) > 0:
             return row
     return None
+
     
 def get_part_num(csv_reader):
     '''Get the part number from a row of the CSV file.'''
@@ -72,6 +85,29 @@ def get_part_num(csv_reader):
     except TypeError:
         return None
 
+    
+def find_closest_match(name, name_dict, fuzzy_match, threshold=0.0):
+    '''Approximate matching subroutine'''
+    # Scrub non-alphanumerics from name and lowercase it.
+    scrubber = re.compile('[\W.]+')
+    name = scrubber.sub('', name).lower()
+    
+    # Return regular dictionary lookup if fuzzy matching is not enabled.
+    if fuzzy_match == False:
+        return name_dict[name]
+
+    # Find the closest fuzzy match to the given name in the scrubbed list.
+    # Set the matching threshold to 0 so it always gives some result.
+    match = difflib.get_close_matches(name, name_dict.keys(), 1, threshold)[0]
+
+    return name_dict[match]
+    
+    
+def clean_headers(headers):
+    '''Return a list of the closest valid column headers for the headers found in the file.'''
+    return [find_closest_match(h,COLUMN_NAMES,True) for h in headers]
+
+    
 def generic_reader(csv_file, bundle):
     '''Extract pin data from a CSV file and return a dictionary of pin data.
        The CSV file contains one or more groups of rows formatted as follows:
@@ -112,7 +148,7 @@ def generic_reader(csv_file, bundle):
             break
 
         # Get the column header row for the part's pin data.
-        headers = get_nonblank_row(csv_reader)
+        headers = clean_headers(get_nonblank_row(csv_reader))
         
         # Now create a DictReader for grabbing the pin data in each row.
         dict_reader = csv.DictReader(csv_file, headers, skipinitialspace=True)
@@ -123,26 +159,36 @@ def generic_reader(csv_file, bundle):
                 break
 
             # Get the pin attributes from the cells of the row of data.
-            pin = Pin()
+            pin = copy.copy(DEFAULT_PIN)
             pin.index = index
-            pin.name = row['Name']
-            pin.num = row['Pin']
-            try:
-                pin.unit = row['Unit']
-            except KeyError:
-                pin.unit = DEFAULT_UNIT
-            try:
-                pin.side = row['Side']
-            except KeyError:
-                pin.side = DEFAULT_PIN_SIDE
-            try:
-                pin.style = row['Style']
-            except KeyError:
-                pin.style = DEFAULT_PIN_STYLE
-            try:
-                pin.type = row['Type']
-            except KeyError:
-                pin.type = DEFAULT_PIN_TYPE
+            for c, a in COLUMN_NAMES.items():
+                try:
+                    setattr(pin, a, row[c])
+                except KeyError:
+                    pass
+            if pin.num is None:
+                raise Exception('ERROR: No pin number on row {index} of {part_num}'.format(index=index, part_num=part_num))
+            # pin.name = row['name']
+            # pin.num = row['pin']
+            # try:
+                # pin.unit = row['unit']
+            # except KeyError:
+                # try:
+                    # pin.unit = row['bank']
+                # except KeyError:
+                    # pin.unit = DEFAULT_UNIT
+            # try:
+                # pin.side = row['side']
+            # except KeyError:
+                # pin.side = DEFAULT_PIN_SIDE
+            # try:
+                # pin.style = row['style']
+            # except KeyError:
+                # pin.style = DEFAULT_PIN_STYLE
+            # try:
+                # pin.type = row['type']
+            # except KeyError:
+                # pin.type = DEFAULT_PIN_TYPE
 
             # Add the pin from this row of the CVS file to the pin dictionary.
             if bundle:
@@ -214,7 +260,7 @@ def psoc5lp_reader(csv_file, bundle):
             break
 
         # Get the column header row for the part's pin data.
-        headers = get_nonblank_row(csv_reader)
+        headers = clean_headers(get_nonblank_row(csv_reader))
         
         # Now create a DictReader for grabbing the pin data in each row.
         dict_reader = csv.DictReader(csv_file, headers, skipinitialspace=True)
@@ -225,27 +271,18 @@ def psoc5lp_reader(csv_file, bundle):
                 break
 
             # Get the pin attributes from the cells of the row of data.
-            pin = Pin()
+            pin = copy.copy(DEFAULT_PIN)
             pin.index = index
-            pin.name = psoc5lp_pin_name_process(row['Name'])
-            pin.num = row['Pin']
-            try:
-                pin.unit = row['Unit']
-            except KeyError:
-                pin.unit = DEFAULT_UNIT
-            try:
-                pin.side = row['Side']
-            except KeyError:
-                pin.side = DEFAULT_PIN_SIDE
-            try:
-                pin.style = row['Style']
-            except KeyError:
-                pin.style = DEFAULT_PIN_STYLE
-            try:
-                pin.type = row['Type']
-                if pin.type == '':
-                    raise KeyError
-            except KeyError:
+            pin.type = ''
+            for c, a in COLUMN_NAMES.items():
+                try:
+                    setattr(pin, a, row[c])
+                except KeyError:
+                    pass
+            if pin.num is None:
+                raise Exception('ERROR: No pin number on row {index} of {part_num}'.format(index=index, part_num=part_num))
+            pin.name = psoc5lp_pin_name_process(pin.name)
+            if pin.type == '':
                 # No explicit pin type, so infer it from the pin name.
                 DEFAULT_PIN_TYPE = 'input'  # Assign this pin type if name inference can't be made.
                 PIN_TYPE_PREFIXES = {
@@ -267,6 +304,49 @@ def psoc5lp_reader(csv_file, bundle):
                     warnings.warn('No match for {} on {}, assigning as {}'.format(
                         pin.name, part_num, DEFAULT_PIN_TYPE))
                     pin.type = DEFAULT_PIN_TYPE
+
+            # pin = Pin()
+            # pin.index = index
+            # pin.name = psoc5lp_pin_name_process(row['name'])
+            # pin.num = row['pin']
+            # try:
+                # pin.unit = row['unit']
+            # except KeyError:
+                # pin.unit = DEFAULT_UNIT
+            # try:
+                # pin.side = row['side']
+            # except KeyError:
+                # pin.side = DEFAULT_PIN_SIDE
+            # try:
+                # pin.style = row['style']
+            # except KeyError:
+                # pin.style = DEFAULT_PIN_STYLE
+            # try:
+                # pin.type = row['type']
+                # if pin.type == '':
+                    # raise KeyError
+            # except KeyError:
+                # # No explicit pin type, so infer it from the pin name.
+                # DEFAULT_PIN_TYPE = 'input'  # Assign this pin type if name inference can't be made.
+                # PIN_TYPE_PREFIXES = {
+                    # r'P[0-9]+\[[0-9]+\]': 'bidirectional',
+                    # r'VCC': 'power_out',
+                    # r'VDD': 'power_in',
+                    # r'VSS': 'power_in',
+                    # r'IND': 'passive',
+                    # r'VBOOST': 'input',
+                    # r'VBAT': 'power_in',
+                    # r'XRES': 'input',
+                    # r'NC': 'no_connect',
+                # }
+                # for prefix, typ in PIN_TYPE_PREFIXES.items():
+                    # if re.match(prefix, pin.name, re.IGNORECASE):
+                        # pin.type = typ
+                        # break
+                # else:
+                    # warnings.warn('No match for {} on {}, assigning as {}'.format(
+                        # pin.name, part_num, DEFAULT_PIN_TYPE))
+                    # pin.type = DEFAULT_PIN_TYPE
 
             # Add the pin from this row of the CVS file to the pin dictionary.
             if bundle:
@@ -470,6 +550,7 @@ PIN_TYPES = {
     'analog': 'U',
     'power_in': 'W',
     'pwr_in': 'W',
+    'power': 'W',
     'pwr': 'W',
     'ground': 'W',
     'gnd': 'W',
@@ -571,23 +652,6 @@ def pins_bbox(unit_pins):
     height = len(unit_pins) * PIN_SPACING
 
     return [[XO, YO + PIN_SPACING], [XO + width, YO - height]]
-
-    
-def find_closest_match(name, name_dict, fuzzy_match, threshold=0.0):
-    '''Approximate matching subroutine'''
-    # Scrub non-alphanumerics from name and lowercase it.
-    scrubber = re.compile('[\W.]+')
-    name = scrubber.sub('', name).lower()
-    
-    # Return regular dictionary lookup if fuzzy matching is not enabled.
-    if fuzzy_match == False:
-        return name_dict[name]
-
-    # Find the closest fuzzy match to the given name in the scrubbed list.
-    # Set the matching threshold to 0 so it always gives some result.
-    match = difflib.get_close_matches(name, name_dict.keys(), 1, threshold)[0]
-
-    return name_dict[match]
 
 
 def draw_pins(lib_file, unit_num, unit_pins, transform, fuzzy_match):
