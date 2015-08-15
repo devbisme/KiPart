@@ -34,8 +34,8 @@ def main():
         'Generate single & multi-unit schematic symbols for KiCad from a CSV file.')
 
     parser.add_argument('-v', '--version',
-                        action='version',
-                        version='KiPart ' + __version__)
+        action='version',
+        version='KiPart ' + __version__)
     parser.add_argument(
         'input_files',
         nargs='+',
@@ -43,11 +43,11 @@ def main():
         metavar='file1.[csv|zip] file2.[csv|zip] ...',
         help='Files for parts in CSV format or as CSV files in .zip archives.')
     parser.add_argument('-r', '--reader',
-                        nargs='?',
-                        type=str.lower,
-                        choices=['generic', 'xilinx7', 'xilinx6s', 'xilinx6v', 'psoc5lp'],
-                        default='generic',
-                        help='Name of function for reading the CSV file.')
+        nargs='?',
+        type=str.lower,
+        choices=['generic', 'xilinx7', 'xilinx6s', 'xilinx6v', 'psoc5lp'],
+        default='generic',
+        help='Name of function for reading the CSV file.')
     parser.add_argument(
         '-s', '--sort',
         nargs='?',
@@ -57,10 +57,10 @@ def main():
         help=
         'Sort the part pins by their entry order in the CSV file, their pin number, or their pin name.')
     parser.add_argument('-o', '--output',
-                        nargs='?',
-                        type=str,
-                        metavar='file.lib',
-                        help='Generated KiCad library for part.')
+        nargs='?',
+        type=str,
+        metavar='file.lib',
+        help='Generated KiCad library for part.')
     parser.add_argument(
         '-f', '--fuzzy_match',
         action='store_true',
@@ -72,11 +72,11 @@ def main():
         help=
         'Bundle multiple pins with the same name into a single schematic pin.')
     parser.add_argument('-a', '--append',
-                        action='store_true',
-                        help='Append to an existing part library.')
+        action='store_true',
+        help='Append to an existing part library.')
     parser.add_argument('-w', '--overwrite',
-                        action='store_true',
-                        help='Allow overwriting of an existing part library.')
+        action='store_true',
+        help='Allow overwriting of an existing part library.')
     parser.add_argument(
         '-d', '--debug',
         nargs='?',
@@ -98,10 +98,10 @@ def main():
                 args.output)
             sys.exit(1)
 
-    def call_kipart(csv_file):
+    def call_kipart(part_data_file):
         '''Helper routine for calling kipart.'''
         return kipart(reader_type=args.reader,
-                   csv_file=csv_file,
+                   part_data_file=part_data_file,
                    lib_filename=args.output,
                    append_to_lib=append_to_lib,
                    sort_type=args.sort,
@@ -117,11 +117,11 @@ def main():
             zipped_files = zip_file.infolist()
             for zipped_file in zipped_files:
                 if os.path.splitext(zipped_file.filename)[-1] in ['.csv', '.txt']:
-                    with zip_file.open(zipped_file, 'r') as csv_file:
-                        append_to_lib = call_kipart(csv_file)
+                    with zip_file.open(zipped_file, 'r') as part_data_file:
+                        append_to_lib = call_kipart(part_data_file)
         elif file_ext in ['.csv', '.txt']:
-            with open(input_file, 'r') as csv_file:
-                append_to_lib = call_kipart(csv_file)
+            with open(input_file, 'r') as part_data_file:
+                append_to_lib = call_kipart(part_data_file)
         else:
             continue
 
