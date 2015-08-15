@@ -25,592 +25,15 @@
 import sys
 import warnings
 import math
-import copy
 import re
-import csv
-from collections import defaultdict
+import importlib
 from affine import Affine
-import difflib
+from common import *
 
 __all__ = ['kipart']  # Only export this routine for use by the outside world.
 
 THIS_MODULE = sys.modules[__name__]  # Ref to this module for making named calls.
 
-COLUMN_NAMES = {'pin':'num', 'num':'num', 'name':'name', 'type':'type', 'style':'style', 'side':'side', 'unit':'unit', 'bank':'unit'}
-
-# This is just a vanilla object class for device pins. 
-# We'll add attributes to it as needed.
-class Pin:
-    pass
-    
-DEFAULT_PIN = Pin()
-DEFAULT_PIN.num = None
-DEFAULT_PIN.name = ''
-DEFAULT_PIN.type = 'io'
-DEFAULT_PIN.style = 'line'
-DEFAULT_PIN.unit = 1
-DEFAULT_PIN.side = 'left'
-
-    
-def num_row_elements(row):
-    '''Get number of elements in CSV row.'''
-    try:
-        rowset = set(row)
-        rowset.discard('')
-        return len(rowset)
-    except TypeError:
-        return 0
-
-        
-def get_nonblank_row(csv_reader):
-    '''Return the first non-blank row encountered from the current point in a CSV file.'''
-    for row in csv_reader:
-        if num_row_elements(row) > 0:
-            return row
-    return None
-
-    
-def get_part_num(csv_reader):
-    '''Get the part number from a row of the CSV file.'''
-    part_num = get_nonblank_row(csv_reader)
-    try:
-        part_num = set(part_num)
-        part_num.discard('')
-        return part_num.pop()
-    except TypeError:
-        return None
-
-    
-def find_closest_match(name, name_dict, fuzzy_match, threshold=0.0):
-    '''Approximate matching subroutine'''
-    # Scrub non-alphanumerics from name and lowercase it.
-    scrubber = re.compile('[\W.]+')
-    name = scrubber.sub('', name).lower()
-    
-    # Return regular dictionary lookup if fuzzy matching is not enabled.
-    if fuzzy_match == False:
-        return name_dict[name]
-
-    # Find the closest fuzzy match to the given name in the scrubbed list.
-    # Set the matching threshold to 0 so it always gives some result.
-    match = difflib.get_close_matches(name, name_dict.keys(), 1, threshold)[0]
-
-    return name_dict[match]
-    
-    
-def clean_headers(headers):
-    '''Return a list of the closest valid column headers for the headers found in the file.'''
-    return [find_closest_match(h,COLUMN_NAMES,True) for h in headers]
-
-    
-def generic_reader(csv_file, bundle):
-    '''Extract pin data from a CSV file and return a dictionary of pin data.
-       The CSV file contains one or more groups of rows formatted as follows:
-           A row with a single field containing the part number.
-           Zero or more blank rows.
-           A row containing the column headers:
-               'Pin', 'Unit', 'Type', 'Style', 'Side', and 'Name'.
-               (Only 'Pin' and 'Name' are required. The order of
-               the columns is not important.)
-           Each succeeding row should contain:
-               The 'Pin' column should contain the pin number.
-               The 'Unit' column specifies the bank or unit number for the pin.
-               The 'Type' column specifies the pin type (input, output,...).
-               The 'Style' column specifies the pin's schematic style.
-               The 'Side' column specifies the side of the symbol the pin is on.
-               The 'Name' column contains the pin name.
-           A blank row terminates the pin data for the part and begins
-           a new group of rows for another part.
-    '''
-
-    while True:
-        # Create a dictionary that uses the unit numbers as keys. Each entry in this dictionary
-        # contains another dictionary that uses the side of the symbol as a key. Each entry in
-        # that dictionary uses the pin names in that unit and on that side as keys. Each entry
-        # in that dictionary is a list of Pin objects with each Pin object having the same name
-        # as the dictionary key. So the pins are separated into units at the top level, and then
-        # the sides of the symbol, and then the pins with the same name that are on that side
-        # of the unit.
-        pin_data = defaultdict(lambda: defaultdict(lambda: defaultdict(list)))
-        
-        # Create a reader that starts from the current position in the CSV file.
-        csv_reader = csv.reader(csv_file,  skipinitialspace=True)
-        
-        # Extract part number from the first non-blank line. Break out of the infinite
-        # while loop and stop processing this file if no part number is found.
-        part_num = get_part_num(csv_reader)
-        if part_num is None:
-            break
-
-        # Get the column header row for the part's pin data.
-        headers = clean_headers(get_nonblank_row(csv_reader))
-        
-        # Now create a DictReader for grabbing the pin data in each row.
-        dict_reader = csv.DictReader(csv_file, headers, skipinitialspace=True)
-        for index, row in enumerate(dict_reader):
-        
-            # A blank line signals the end of the pin data.
-            if num_row_elements(row.values()) == 0:
-                break
-
-            # Get the pin attributes from the cells of the row of data.
-            pin = copy.copy(DEFAULT_PIN)
-            pin.index = index
-            for c, a in COLUMN_NAMES.items():
-                try:
-                    setattr(pin, a, row[c])
-                except KeyError:
-                    pass
-            if pin.num is None:
-                raise Exception('ERROR: No pin number on row {index} of {part_num}'.format(index=index, part_num=part_num))
-
-            # Add the pin from this row of the CVS file to the pin dictionary.
-            if bundle:
-                # If bundling like-named pins, place all the pins into a list under their common name.
-                pin_data[pin.unit][pin.side][pin.name].append(pin)
-            else:
-                # If each like-named pin should be shown separately, place each pin into a 
-                # single-element list under the pin name with the unique row index appended
-                # to differentiate the pin names.
-                pin_data[pin.unit][pin.side][pin.name + '_' + str(index)].append(
-                    pin)
-
-        yield part_num, pin_data  # Return the dictionary of pins extracted from the CVS file.
-
-        
-def psoc5lp_pin_name_process(name):
-#    leading_paren = re.compile(r'^\s*(?P<paren>\([^)]*\))\s*(?<pin_name>.+)$', re.IGNORECASE)
-#    leading_paren = re.compile(r'^\s*(?P<paren>\([^)]*\))', re.IGNORECASE)
-    leading_paren = re.compile(r'^\s*(?P<paren>\([^)]*\))\s*(?P<pin_name>.+)$', re.IGNORECASE)
-    m = leading_paren.match(name)
-    if m is not None:
-        name = m.group('pin_name') + ' ' + m.group('paren')
-    name = re.sub(r'^\s+','',name) # Remove leading spaces.
-    name = re.sub(r'\s+$','',name) # Remove trailing spaces.
-    name = re.sub(r'\s*([-@#$%^&*_=+|",.<>!;?]+)\s*',r'\1',name) # Remove spaces around punc.
-    name = re.sub(r'([\[\{\(]+)\s*',r'\1',name) # Remove spaces around braces and such.
-    name = re.sub(r'\s*([\]\}\)]+)',r'\1',name) # Remove spaces around braces and such.
-    name = re.sub(r'\s+','_',name) # Replace spaces with underscores.
-    return name
-
-        
-def psoc5lp_reader(csv_file, bundle):
-    '''Extract pin data from a Cypress PSoC5LP CSV file and return a dictionary of pin data.
-       The CSV file contains one or more groups of rows formatted as follows:
-           A row with a single field containing the part number.
-           Zero or more blank rows.
-           A row containing the column headers:
-               'Pin', 'Unit', 'Type', 'Style', 'Side', and 'Name'.
-               (Only 'Pin' and 'Name' are required. The order of
-               the columns is not important.)
-           Each succeeding row should contain:
-               The 'Pin' column should contain the pin number.
-               The 'Unit' column specifies the bank or unit number for the pin.
-               The 'Type' column specifies the pin type (input, output,...).
-               The 'Style' column specifies the pin's schematic style.
-               The 'Side' column specifies the side of the symbol the pin is on.
-               The 'Name' column contains the pin name.
-           A blank row terminates the pin data for the part and begins
-           a new group of rows for another part.
-    '''
-
-    while True:
-        # Create a dictionary that uses the unit numbers as keys. Each entry in this dictionary
-        # contains another dictionary that uses the side of the symbol as a key. Each entry in
-        # that dictionary uses the pin names in that unit and on that side as keys. Each entry
-        # in that dictionary is a list of Pin objects with each Pin object having the same name
-        # as the dictionary key. So the pins are separated into units at the top level, and then
-        # the sides of the symbol, and then the pins with the same name that are on that side
-        # of the unit.
-        pin_data = defaultdict(lambda: defaultdict(lambda: defaultdict(list)))
-        
-        # Create a reader that starts from the current position in the CSV file.
-        csv_reader = csv.reader(csv_file,  skipinitialspace=True)
-        
-        # Extract part number from the first non-blank line. Break out of the infinite
-        # while loop and stop processing this file if no part number is found.
-        part_num = get_part_num(csv_reader)
-        if part_num is None:
-            break
-
-        # Get the column header row for the part's pin data.
-        headers = clean_headers(get_nonblank_row(csv_reader))
-        
-        # Now create a DictReader for grabbing the pin data in each row.
-        dict_reader = csv.DictReader(csv_file, headers, skipinitialspace=True)
-        for index, row in enumerate(dict_reader):
-        
-            # A blank line signals the end of the pin data.
-            if num_row_elements(row.values()) == 0:
-                break
-
-            # Get the pin attributes from the cells of the row of data.
-            pin = copy.copy(DEFAULT_PIN)
-            pin.index = index
-            pin.type = ''
-            for c, a in COLUMN_NAMES.items():
-                try:
-                    setattr(pin, a, row[c])
-                except KeyError:
-                    pass
-            if pin.num is None:
-                raise Exception('ERROR: No pin number on row {index} of {part_num}'.format(index=index, part_num=part_num))
-            pin.name = psoc5lp_pin_name_process(pin.name)
-            if pin.type == '':
-                # No explicit pin type, so infer it from the pin name.
-                DEFAULT_PIN_TYPE = 'input'  # Assign this pin type if name inference can't be made.
-                PIN_TYPE_PREFIXES = {
-                    r'P[0-9]+\[[0-9]+\]': 'bidirectional',
-                    r'VCC': 'power_out',
-                    r'VDD': 'power_in',
-                    r'VSS': 'power_in',
-                    r'IND': 'passive',
-                    r'VBOOST': 'input',
-                    r'VBAT': 'power_in',
-                    r'XRES': 'input',
-                    r'NC': 'no_connect',
-                }
-                for prefix, typ in PIN_TYPE_PREFIXES.items():
-                    if re.match(prefix, pin.name, re.IGNORECASE):
-                        pin.type = typ
-                        break
-                else:
-                    warnings.warn('No match for {} on {}, assigning as {}'.format(
-                        pin.name, part_num, DEFAULT_PIN_TYPE))
-                    pin.type = DEFAULT_PIN_TYPE
-
-            # Add the pin from this row of the CVS file to the pin dictionary.
-            if bundle:
-                # If bundling like-named pins, place all the pins into a list under their common name.
-                pin_data[pin.unit][pin.side][pin.name].append(pin)
-            else:
-                # If each like-named pin should be shown separately, place each pin into a 
-                # single-element list under the pin name with the unique row index appended
-                # to differentiate the pin names.
-                pin_data[pin.unit][pin.side][pin.name + '_' + str(index)].append(
-                    pin)
-
-        yield part_num, pin_data  # Return the dictionary of pins extracted from the CVS file.
-
-
-def xilinx7_reader(csv_file, bundle):
-    '''Extract the pin data from a Xilinx CSV file and return a dictionary of pin data.'''
-
-    # Create a dictionary that uses the unit numbers as keys. Each entry in this dictionary
-    # contains another dictionary that uses the side of the symbol as a key. Each entry in
-    # that dictionary uses the pin names in that unit and on that side as keys. Each entry
-    # in that dictionary is a list of Pin objects with each Pin object having the same name
-    # as the dictionary key. So the pins are separated into units at the top level, and then
-    # the sides of the symbol, and then the pins with the same name that are on that side
-    # of the unit.
-    pin_data = defaultdict(lambda: defaultdict(lambda: defaultdict(list)))
-
-    # Read title line of the CSV file and extract the part number.
-    title = csv_file.readline()
-    try:
-        _, part_num, date, time, _ = re.split('\s+', title)
-    except:
-        return
-
-    # Dump the blank line between the title and the part's pin data.
-    _ = csv_file.readline()
-
-    # Create a reader object for the rows of the CSV file and read it row-by-row.
-    csv_reader = csv.DictReader(csv_file, skipinitialspace=True)
-    for index, row in enumerate(csv_reader):
-        # A blank line signals the end of the pin data.
-        try:
-            if row['Pin'] == '':
-                break
-        except KeyError:
-            # Abort if a TXT file is being processed instead of a CSV file.
-            return
-
-        # Get the pin attributes from the cells of the row of data.
-        pin = copy.copy(DEFAULT_PIN)
-        pin.index = index
-        pin.name = row['Pin Name']
-        pin.num = row['Pin']
-        pin.unit = row['Bank']
-
-        # The type of the pin isn't given in the CSV file, so we'll have to infer it
-        # from the name of the pin. Pin names starting with the following prefixes 
-        # are assigned the given pin type.
-        DEFAULT_PIN_TYPE = 'input'  # Assign this pin type if name inference can't be made.
-        PIN_TYPE_PREFIXES = {
-            r'VCC': 'power_in',
-            r'GND': 'power_in',
-            r'IO_': 'bidirectional',
-            r'DONE': 'output',
-            r'VREF[PN]_': 'input',
-            r'TCK': 'input',
-            r'TDI': 'input',
-            r'TDO': 'output',
-            r'TMS': 'input',
-            r'CCLK': 'input',
-            r'M0': 'input',
-            r'M1': 'input',
-            r'M2': 'input',
-            r'INIT_B': 'input',
-            r'PROG': 'input',
-            r'NC': 'no_connect',
-            r'VP_': 'input',
-            r'VN_': 'input',
-            r'DXP_': 'passive',
-            r'DXN_': 'passive',
-            r'CFGBVS_': 'input',
-            r'MGTZ?REFCLK[0-9]+[NP]_': 'input',
-            r'MGTZ_OBS_CLK_[PN]_': 'input',
-            r'MGT[ZPHX]TX[NP][0-9]+_': 'output',
-            r'MGT[ZPHX]RX[NP][0-9]+_': 'input',
-            r'MGTAVTTRCAL_': 'passive',
-            r'MGTRREF_': 'passive',
-            r'MGTVCCAUX_?': 'power_in',
-            r'MGTAVTT_?': 'power_in',
-            r'MGTZ_THERM_IN_': 'input',
-            r'MGTZ_THERM_OUT_': 'input',
-            r'MGTZ?A(VCC|GND)_?': 'power_in',
-            r'MGTZVCC[LH]_': 'power_in',
-            r'MGTZ_SENSE_(A?VCC|A?GND)[LH]?_': 'power_in',
-            r'RSVD(VCC[1-3]|GND)': 'power_in',
-            r'PS_CLK_': 'input',
-            r'PS_POR_B': 'input',
-            r'PS_SRST_B': 'input',
-            r'PS_DDR_CK[PN]_': 'output',
-            r'PS_DDR_CKE_': 'output',
-            r'PS_DDR_CS_B_': 'output',
-            r'PS_DDR_RAS_B_': 'output',
-            r'PS_DDR_CAS_B_': 'output',
-            r'PS_DDR_WE_B_': 'output',
-            r'PS_DDR_BA[0-9]+_': 'output',
-            r'PS_DDR_A[0-9]+_': 'output',
-            r'PS_DDR_ODT_': 'output',
-            r'PS_DDR_DRST_B_': 'output',
-            r'PS_DDR_DQ[0-9]+_': 'bidirectional',
-            r'PS_DDR_DM[0-9]+_': 'output',
-            r'PS_DDR_DQS_[PN][0-9]+_': 'bidirectional',
-            r'PS_DDR_VR[PN]_': 'power_out',
-            r'PS_DDR_VREF[0-9]+_': 'power_in',
-            r'PS_MIO_VREF_': 'power_in',
-            r'PS_MIO[0-9]+_': 'bidirectional',
-        }
-        for prefix, typ in PIN_TYPE_PREFIXES.items():
-            if re.match(prefix, pin.name, re.IGNORECASE):
-                pin.type = typ
-                break
-        else:
-            warnings.warn('No match for {} on {}, assigning as {}'.format(
-                pin.name, part_num[:4], DEFAULT_PIN_TYPE))
-            pin.type = DEFAULT_PIN_TYPE
-
-        # Add the pin from this row of the CVS file to the pin dictionary.
-        if bundle:
-            # If bundling like-named pins, place all the pins into a list under their common name.
-            pin_data[pin.unit][pin.side][pin.name].append(pin)
-        else:
-            # If each like-named pin should be shown separately, place each pin into a 
-            # single-element list under the pin name with the unique row index appended
-            # to differentiate the pin names.
-            pin_data[pin.unit][pin.side][pin.name + '_' + str(index)].append(
-                pin)
-
-    yield part_num, pin_data  # Return the dictionary of pins extracted from the CVS file.
-
-
-def xilinx6s_reader(txt_file, bundle):
-    '''Extract the pin data from a Xilinx Spartan-6 TXT file and return a dictionary of pin data.'''
-
-    # Create a dictionary that uses the unit numbers as keys. Each entry in this dictionary
-    # contains another dictionary that uses the side of the symbol as a key. Each entry in
-    # that dictionary uses the pin names in that unit and on that side as keys. Each entry
-    # in that dictionary is a list of Pin objects with each Pin object having the same name
-    # as the dictionary key. So the pins are separated into units at the top level, and then
-    # the sides of the symbol, and then the pins with the same name that are on that side
-    # of the unit.
-    pin_data = defaultdict(lambda: defaultdict(lambda: defaultdict(list)))
-
-    # Read title line of the TXT file and extract the part number.
-    part_num = txt_file.readline().split()[1]
-
-    # Dump the lines between the title and the part's pin data.
-    _ = txt_file.readline()
-    _ = txt_file.readline()
-    _ = txt_file.readline()
-
-    # Read all the pin data.
-    pin_list = txt_file.readlines()
-    
-    # Process the pin data line-by-line.
-    for index, line in enumerate(pin_list,4):
-        pin = copy.copy(DEFAULT_PIN)
-        pin.index = index
-        # Get the pin attributes from a line of pin data.
-        fields = line.split()
-        if len(fields) == 0:
-            break  # A blank line signals the end of pin data.
-        pin.num = fields[0]
-        if fields[1].upper() == 'NOPAD/UNCONNECTED':
-            pin.unit = 'NA'
-            pin.name = 'NC'
-        else:
-            pin.unit = fields[1]
-            pin.name = fields[3]
-            
-        # The type of the pin isn't given in the text file, so we'll have to infer it
-        # from the name of the pin. Pin names starting with the following prefixes 
-        # are assigned the given pin type.
-        DEFAULT_PIN_TYPE = 'input'  # Assign this pin type if name inference can't be made.
-        PIN_TYPE_PREFIXES = {
-            r'CMPCS_B': 'input',
-            r'DONE': 'output',
-            r'VCC': 'power_in',
-            r'GND': 'power_in',
-            r'IO_': 'bidirectional',
-            r'MGTAVCC': 'power_in',
-            r'MGTAVTTRCAL_': 'passive',
-            r'MGTREFCLK[0-9]?[NP]_': 'input',
-            r'MGTRX[NP][0-9]+_': 'input',
-            r'MGTRREF_': 'passive',
-            r'MGTAVTT[RT]_?': 'power_in',
-            r'MGTTX[NP][0-9]+_': 'output',
-            r'NC': 'no_connect',
-            r'PROGRAM_B': 'input',
-            r'RFUSE': 'input',
-            r'SUSPEND': 'input',
-            r'TCK': 'input',
-            r'TDI': 'input',
-            r'TDO': 'output',
-            r'TMS': 'input',
-            r'VFS': 'power_in',
-            r'VBATT': 'power_in',
-        }
-        for prefix, typ in PIN_TYPE_PREFIXES.items():
-            if re.match(prefix, pin.name, re.IGNORECASE):
-                pin.type = typ
-                break
-        else:
-            warnings.warn('No match for {} on {}, assigning as {}'.format(
-                pin.name, part_num[:4], DEFAULT_PIN_TYPE))
-            pin.type = DEFAULT_PIN_TYPE
-
-        # Add the pin from this row of the TXT file to the pin dictionary.
-        if bundle:
-            # If bundling like-named pins, place all the pins into a list under their common name.
-            pin_data[pin.unit][pin.side][pin.name].append(pin)
-        else:
-            # If each like-named pin should be shown separately, place each pin into a 
-            # single-element list under the pin name with the unique row index appended
-            # to differentiate the pin names.
-            pin_data[pin.unit][pin.side][pin.name + '_' + str(index)].append(
-                pin)
-
-    yield part_num, pin_data  # Return the dictionary of pins extracted from the TXT file.
-
-
-def xilinx6v_reader(txt_file, bundle):
-    '''Extract the pin data from a Xilinx Virtex-6 TXT file and return a dictionary of pin data.'''
-
-    # Create a dictionary that uses the unit numbers as keys. Each entry in this dictionary
-    # contains another dictionary that uses the side of the symbol as a key. Each entry in
-    # that dictionary uses the pin names in that unit and on that side as keys. Each entry
-    # in that dictionary is a list of Pin objects with each Pin object having the same name
-    # as the dictionary key. So the pins are separated into units at the top level, and then
-    # the sides of the symbol, and then the pins with the same name that are on that side
-    # of the unit.
-    pin_data = defaultdict(lambda: defaultdict(lambda: defaultdict(list)))
-
-    # Read title line of the TXT file and extract the part number.
-    part_num = txt_file.readline().split()[1]
-
-    # Dump the lines between the title and the part's pin data.
-    _ = txt_file.readline()
-
-    # Read all the pin data.
-    pin_list = txt_file.readlines()
-    
-    # Process the pin data line-by-line.
-    for index, line in enumerate(pin_list,4):
-        pin = copy.copy(DEFAULT_PIN)
-        pin.index = index
-        # Get the pin attributes from a line of pin data.
-        fields = line.split()
-        if len(fields) == 0:
-            break  # A blank line signals the end of pin data.
-        pin.num = fields[0]
-        if fields[1].upper() == 'NOPAD/UNCONNECTED':
-            pin.unit = 'NA'
-            pin.name = 'NC'
-        else:
-            pin.unit = fields[1]
-            pin.name = fields[2]
-            
-        # The type of the pin isn't given in the text file, so we'll have to infer it
-        # from the name of the pin. Pin names starting with the following prefixes 
-        # are assigned the given pin type.
-        DEFAULT_PIN_TYPE = 'input'  # Assign this pin type if name inference can't be made.
-        PIN_TYPE_PREFIXES = {
-            r'VCC': 'power_in',
-            r'GND': 'power_in',
-            r'IO_': 'bidirectional',
-            r'VREF[PN]_': 'input',
-            r'NC': 'no_connect',
-            r'VP_': 'input',
-            r'VN_': 'input',
-            r'DXP_': 'passive',
-            r'DXN_': 'passive',
-            r'CCLK': 'input',
-            r'CSI_B': 'input',
-            r'DIN': 'input',
-            r'DOUT_BUSY': 'output',
-            r'HSWAPEN': 'input',
-            r'RDWR_B': 'input',
-            r'M0': 'input',
-            r'M1': 'input',
-            r'M2': 'input',
-            r'INIT_B': 'input',
-            r'PROGRAM_B': 'input',
-            r'DONE': 'output',
-            r'TCK': 'input',
-            r'TDI': 'input',
-            r'TDO': 'output',
-            r'TMS': 'input',
-            r'VFS': 'power_in',
-            r'RSVD': 'nc',
-            r'VREF[NP]': 'power_in',
-            r'VBATT': 'power_in',
-            r'A(VDD|VSS)_': 'power_in',
-            r'MGTA(VCC|VTT)': 'power_in',
-            r'MGTHA(VCC|GND|VTT)': 'power_in',
-            r'MGTRBIAS_': 'passive',
-            r'MGTREFCLK[0-9]?[NP]_': 'input',
-            r'MGTRX[NP][0-9]+_': 'input',
-            r'MGTTX[NP][0-9]+_': 'output',
-            r'MGTRREF_': 'passive',
-        }
-        for prefix, typ in PIN_TYPE_PREFIXES.items():
-            if re.match(prefix, pin.name, re.IGNORECASE):
-                pin.type = typ
-                break
-        else:
-            warnings.warn('No match for {} on {}, assigning as {}'.format(
-                pin.name, part_num[:4], DEFAULT_PIN_TYPE))
-            pin.type = DEFAULT_PIN_TYPE
-
-        # Add the pin from this row of the TXT file to the pin dictionary.
-        if bundle:
-            # If bundling like-named pins, place all the pins into a list under their common name.
-            pin_data[pin.unit][pin.side][pin.name].append(pin)
-        else:
-            # If each like-named pin should be shown separately, place each pin into a 
-            # single-element list under the pin name with the unique row index appended
-            # to differentiate the pin names.
-            pin_data[pin.unit][pin.side][pin.name + '_' + str(index)].append(
-                pin)
-
-    yield part_num, pin_data  # Return the dictionary of pins extracted from the TXT file.
-
-    
-###########################################################################################
 # Settings for creating the KiCad schematic part symbol.
 # Dimensions are given in mils (0.001").
 
@@ -649,9 +72,20 @@ PART_NUM_Y_OFFSET = 150
 # but if pins are placed on the left side of the symbol, you actually
 # want to use the pin symbol where the line points to the right. 
 # The same goes for the other sides.
-PIN_ORIENTATIONS = {'':'R', 'left': 'R', 'right': 'L', 'bottom': 'U', 'down':'U', 'top': 'D', 'up':'D',}
+PIN_ORIENTATIONS = {
+    '': 'R',
+    'left': 'R',
+    'right': 'L',
+    'bottom': 'U',
+    'down': 'U',
+    'top': 'D',
+    'up': 'D',
+}
 scrubber = re.compile('[\W.]+')
-PIN_ORIENTATIONS = {scrubber.sub('', k).lower():v for k,v in PIN_ORIENTATIONS.items()}
+PIN_ORIENTATIONS = {
+    scrubber.sub('', k).lower(): v
+    for k, v in PIN_ORIENTATIONS.items()
+}
 
 ROTATION = {'left': 0, 'right': 180, 'bottom': 90, 'top': -90}
 
@@ -697,7 +131,7 @@ PIN_TYPES = {
     'no_conn': 'N',
     'nc': 'N',
 }
-PIN_TYPES = {scrubber.sub('', k).lower():v for k,v in PIN_TYPES.items()}
+PIN_TYPES = {scrubber.sub('', k).lower(): v for k, v in PIN_TYPES.items()}
 
 # Mapping from understandable pin drawing style to the style
 # indicator used in the KiCad part library.
@@ -729,7 +163,7 @@ PIN_STYLES = {
     'nl': 'X',
     'analog': 'X',
 }
-PIN_STYLES = {scrubber.sub('', k).lower():v for k,v in PIN_STYLES.items()}
+PIN_STYLES = {scrubber.sub('', k).lower(): v for k, v in PIN_STYLES.items()}
 
 # Mapping from understandable box fill-type name to the fill-type
 # indicator used in the KiCad part library.
@@ -800,11 +234,12 @@ def draw_pins(lib_file, unit_num, unit_pins, transform, fuzzy_match):
 
         # Rotate/translate the current drawing point.
         (draw_x, draw_y) = transform * (x, y)
-        
+
         # Use approximate matching to determine the pin's type, style and orientation.
         pin_type = find_closest_match(pins[0].type, PIN_TYPES, fuzzy_match)
         pin_style = find_closest_match(pins[0].style, PIN_STYLES, fuzzy_match)
-        pin_side = find_closest_match(pins[0].side, PIN_ORIENTATIONS, fuzzy_match)
+        pin_side = find_closest_match(pins[0].side, PIN_ORIENTATIONS,
+                                      fuzzy_match)
 
         # Create all the pins with a particular name. If there are more than one,
         # they are laid on top of each other and only the first is visible.
@@ -841,7 +276,8 @@ def num_key(pin):
     # Pad all numeric strings in the pin name with leading 0's.
     # Thus, 'A10' and 'A2' will become 'A00010' and 'A00002' and A2 will
     # appear before A10 in a list.
-    return re.sub(r'\d+', lambda mtch: '0'*(8-len(mtch.group(0))) + mtch.group(0), pin[1][0].num)
+    return re.sub(r'\d+', lambda mtch: '0' *
+                  (8 - len(mtch.group(0))) + mtch.group(0), pin[1][0].num)
 
 
 def name_key(pin):
@@ -850,12 +286,13 @@ def name_key(pin):
     # Pad all numeric strings in the pin name with leading 0's.
     # Thus, 'adc10' and 'adc2' will become 'adc00010' and 'adc00002' and adc2 will
     # appear before adc10 in a list.
-    return re.sub(r'\d+', lambda mtch: '0'*(8-len(mtch.group(0))) + mtch.group(0), pin[1][0].name)
+    return re.sub(r'\d+', lambda mtch: '0' *
+                  (8 - len(mtch.group(0))) + mtch.group(0), pin[1][0].name)
 
 
 def draw_symbol(lib_file, part_num, pin_data, sort_type, fuzzy_match):
     '''Add a symbol for a part to the library.'''
-    
+
     # Start the part definition with the header.
     lib_file.write(
         START_DEF.format(name=part_num,
@@ -999,7 +436,8 @@ def draw_symbol(lib_file, part_num, pin_data, sort_type, fuzzy_match):
             # Sort the pins names for the desired order: row-wise, numeric, alphabetical.
             sorted_side_pins = sorted(side_pins.items(), key=key_func)
             # Draw the transformed pins for this side of the symbol.
-            draw_pins(lib_file, unit_num, sorted_side_pins, transform[side], fuzzy_match)
+            draw_pins(lib_file, unit_num, sorted_side_pins, transform[side],
+                      fuzzy_match)
 
             # Create the box around the unit's pins.
         lib_file.write(BOX.format(x0=int(box_pt['left'][X]),
@@ -1017,7 +455,7 @@ def draw_symbol(lib_file, part_num, pin_data, sort_type, fuzzy_match):
     lib_file.write(END_DEF)
 
 
-def kipart(reader_type, csv_file, lib_filename,
+def kipart(reader_type, part_data_file, lib_filename,
            append_to_lib=False,
            sort_type='name',
            fuzzy_match=False,
@@ -1025,23 +463,26 @@ def kipart(reader_type, csv_file, lib_filename,
            debug_level=0):
     '''Read part pin data from a CSV file and write or append it to a library file.'''
 
-    part_reader = getattr(THIS_MODULE, '{}_reader'.format(reader_type))
+    part_reader_module = '{}_reader'.format(reader_type)
+    importlib.import_module('kipart.' + part_reader_module)
+    READER_MODULE = sys.modules['kipart.' + part_reader_module]
+    part_reader = getattr(READER_MODULE, part_reader_module)
 
     # Either write the part definition to a new KiCad library or append it to an existing library.
     if append_to_lib:
         lib_filemode = 'ab'
     else:
         lib_filemode = 'wb'
-        
+
     with open(lib_filename, lib_filemode) as lib_file:
 
         # Get the part number and pin data from the CSV file.
-        for part_num, pin_data in part_reader(csv_file, bundle):
+        for part_num, pin_data in part_reader(part_data_file, bundle):
 
             # Write the library header if this is a new library.
             if not append_to_lib:
                 lib_file.write(LIB_HEADER)
-                append_to_lib = True # Any further iterations will append to the library.
+                append_to_lib = True  # Any further iterations will append to the library.
 
             # Draw the schematic symbol into the library.
             draw_symbol(lib_file=lib_file,
