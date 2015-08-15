@@ -3,6 +3,13 @@
 History
 -------
 
+0.1.7 (2015-08-14)
+---------------------
+* Added reader functions for Xilinx Virtex-6 and Spartan-6.
+* Broke-out reader functions into separate modules.
+* TXT and CSV files are now acceptable as part data files, but the reader has to be built to handle it.
+* Bumped version number.
+
 0.1.6 (2015-08-13)
 ---------------------
 * Fuzzy string matching is now used for the column headers.
