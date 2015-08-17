@@ -3,6 +3,11 @@
 History
 -------
 
+0.1.8 (2015-08-17)
+---------------------
+* Input data from the CSV file is now scanned for errors and fixed before it can cause problems
+  in the library file.
+
 0.1.7 (2015-08-14)
 ---------------------
 * Added reader functions for Xilinx Virtex-6 and Spartan-6.
