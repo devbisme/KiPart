@@ -54,6 +54,8 @@ def xilinx6v_reader(txt_file, bundle):
         pin.index = index
         # Get the pin attributes from a line of pin data.
         fields = line.split()
+        # Fix common errors in pin data.
+        fields = map(lambda d: fix_pin_data(d,part_num), fields)
         if len(fields) == 0:
             break  # A blank line signals the end of pin data.
         pin.num = fields[0]

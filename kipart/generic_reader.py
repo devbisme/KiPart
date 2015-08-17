@@ -72,18 +72,23 @@ def generic_reader(csv_file, bundle):
         # Now create a DictReader for grabbing the pin data in each row.
         dict_reader = csv.DictReader(csv_file, headers, skipinitialspace=True)
         for index, row in enumerate(dict_reader):
+        
+            # Fix common errors in pin data.
+            fix_pin_data
 
             # A blank line signals the end of the pin data.
             if num_row_elements(row.values()) == 0:
                 break
 
             # Get the pin attributes from the cells of the row of data.
-            pin = copy.copy(DEFAULT_PIN)
+            pin = copy.copy(DEFAULT_PIN) # Start off with default values for the pin.
             pin.index = index
             for c, a in COLUMN_NAMES.items():
                 try:
-                    setattr(pin, a, row[c])
+                    setattr(pin, a, fix_pin_data(row[c], part_num))
                 except KeyError:
+                    # If a column doesn't exist, KeyError is raised and 
+                    # the default pin value will remain instead.
                     pass
             if pin.num is None:
                 raise Exception(

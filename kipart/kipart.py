@@ -23,7 +23,6 @@
 # THE SOFTWARE.
 
 import sys
-import warnings
 import math
 import re
 import importlib

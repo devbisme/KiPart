@@ -99,3 +99,23 @@ def find_closest_match(name, name_dict, fuzzy_match, threshold=0.0):
 def clean_headers(headers):
     '''Return a list of the closest valid column headers for the headers found in the file.'''
     return [find_closest_match(h, COLUMN_NAMES, True) for h in headers]
+    
+    
+def issue(msg, level='warning'):
+    if level=='warning':
+        print 'Warning: {}'.format(msg)
+    elif level == 'error':
+        print 'ERROR: {}'.format(msg)
+        raise Exception('Unrecoverable error')
+    else:
+        print msg
+    
+    
+def fix_pin_data(pin_data, part_num):
+    '''Fix common errors in pin data.'''
+    fixed_pin_data = pin_data
+    if re.search('\s', pin_data) is not None:
+        fixed_pin_data = re.sub('\s', '_', pin_data)
+        issue("Replaced whitespace with '_' in pin '{pin_data}' of part {part_num}.".format(**locals()))
+    return fixed_pin_data
+        

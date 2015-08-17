@@ -103,15 +103,16 @@ def psoc5lp_reader(csv_file, bundle):
             pin.type = ''
             for c, a in COLUMN_NAMES.items():
                 try:
+                    if c == 'name':
+                        row[c] = psoc5lp_pin_name_process(row[c])
                     setattr(pin, a, row[c])
                 except KeyError:
                     pass
             if pin.num is None:
-                raise Exception(
+                issue(
                     'ERROR: No pin number on row {index} of {part_num}'.format(
                         index=index,
-                        part_num=part_num))
-            pin.name = psoc5lp_pin_name_process(pin.name)
+                        part_num=part_num), level='error')
             if pin.type == '':
                 # No explicit pin type, so infer it from the pin name.
                 DEFAULT_PIN_TYPE = 'input'  # Assign this pin type if name inference can't be made.
@@ -131,8 +132,8 @@ def psoc5lp_reader(csv_file, bundle):
                         pin.type = typ
                         break
                 else:
-                    warnings.warn(
-                        'No match for {} on {}, assigning as {}'.format(
+                    issue(
+                        'No match for pin {} on part {}, assigning as {}'.format(
                             pin.name, part_num, DEFAULT_PIN_TYPE))
                     pin.type = DEFAULT_PIN_TYPE
 

@@ -63,9 +63,9 @@ def xilinx7_reader(csv_file, bundle):
         # Get the pin attributes from the cells of the row of data.
         pin = copy.copy(DEFAULT_PIN)
         pin.index = index
-        pin.name = row['Pin Name']
-        pin.num = row['Pin']
-        pin.unit = row['Bank']
+        pin.name = fix_pin_data(row['Pin Name'], part_num)
+        pin.num = fix_pin_data(row['Pin'], part_num)
+        pin.unit = fix_pin_data(row['Bank'], part_num)
 
         # The type of the pin isn't given in the CSV file, so we'll have to infer it
         # from the name of the pin. Pin names starting with the following prefixes 
@@ -136,6 +136,7 @@ def xilinx7_reader(csv_file, bundle):
             warnings.warn('No match for {} on {}, assigning as {}'.format(
                 pin.name, part_num[:4], DEFAULT_PIN_TYPE))
             pin.type = DEFAULT_PIN_TYPE
+        pin.type = fix_pin_data(pin.type, part_num)
 
         # Add the pin from this row of the CVS file to the pin dictionary.
         if bundle:
