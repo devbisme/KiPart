@@ -3,6 +3,11 @@
 History
 -------
 
+0.1.9 (2015-08-21)
+---------------------
+* The bundling option now only bundles pins where that operation makes sense:
+  power input pins (e.g., VCC and GND) and no-connect pins.
+
 0.1.8 (2015-08-17)
 ---------------------
 * Input data from the CSV file is now scanned for errors and fixed before it can cause problems
@@ -13,13 +18,11 @@ History
 * Added reader functions for Xilinx Virtex-6 and Spartan-6.
 * Broke-out reader functions into separate modules.
 * TXT and CSV files are now acceptable as part data files, but the reader has to be built to handle it.
-* Bumped version number.
 
 0.1.6 (2015-08-13)
 ---------------------
 * Fuzzy string matching is now used for the column headers.
 * Choice-type options are now case-insensitive.
-* Bumped version number.
 
 0.1.5 (2015-07-29)
 ---------------------
@@ -27,7 +30,6 @@ History
 * Added function and option for reading Cypress PSoC5LP CSV files.
 * Simplified key generators for sorting pins by name or number.
 * Improved ordering of pins by name.
-* Bumped version number.
 
 0.1.4 (2015-07-27)
 ---------------------
