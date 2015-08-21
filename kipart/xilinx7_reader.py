@@ -27,7 +27,7 @@ from common import *
 from kipart import *
 
 
-def xilinx7_reader(csv_file, bundle):
+def xilinx7_reader(csv_file):
     '''Extract the pin data from a Xilinx CSV file and return a dictionary of pin data.'''
 
     # Create a dictionary that uses the unit numbers as keys. Each entry in this dictionary
@@ -139,14 +139,8 @@ def xilinx7_reader(csv_file, bundle):
         pin.type = fix_pin_data(pin.type, part_num)
 
         # Add the pin from this row of the CVS file to the pin dictionary.
-        if bundle:
-            # If bundling like-named pins, place all the pins into a list under their common name.
-            pin_data[pin.unit][pin.side][pin.name].append(pin)
-        else:
-            # If each like-named pin should be shown separately, place each pin into a 
-            # single-element list under the pin name with the unique row index appended
-            # to differentiate the pin names.
-            pin_data[pin.unit][pin.side][pin.name + '_' + str(index)].append(
-                pin)
+        # Place all the like-named pins into a list under their common name.
+        # We'll unbundle them later, if necessary.
+        pin_data[pin.unit][pin.side][pin.name].append(pin)
 
     yield part_num, pin_data  # Return the dictionary of pins extracted from the CVS file.

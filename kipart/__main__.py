@@ -70,7 +70,7 @@ def main():
         '-b', '--bundle',
         action='store_true',
         help=
-        'Bundle multiple pins with the same name into a single schematic pin.')
+        'Bundle multiple, identically-named power, ground and no-connect pins each into a single schematic pin.')
     parser.add_argument('-a', '--append',
         action='store_true',
         help='Append to an existing part library.')

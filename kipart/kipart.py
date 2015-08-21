@@ -452,6 +452,32 @@ def draw_symbol(lib_file, part_num, pin_data, sort_type, fuzzy_match):
 
     # Close the part definition.
     lib_file.write(END_DEF)
+    
+
+def is_pwr(pin, fuzzy_match):
+    '''Return true if this is a power input pin.'''
+    return find_closest_match(name=pin.type, name_dict=PIN_TYPES, fuzzy_match=fuzzy_match) == 'W'
+    
+
+def is_nc(pin, fuzzy_match):
+    '''Return true if this is a no-connect pin.'''
+    return find_closest_match(name=pin.type, name_dict=PIN_TYPES, fuzzy_match=fuzzy_match) == 'N'
+    
+
+def do_bundling(pin_data, bundle, fuzzy_match):
+    '''Handle bundling for power and NC pins. Unbundle everything else.'''
+    for unit in pin_data.values():
+        for side in unit.values():
+            for name, pins in side.items():
+                if len(pins) > 1:
+                    for index, p in enumerate(pins):
+                        if is_pwr(p, fuzzy_match) and bundle:
+                            side[p.name + '_pwr'].append(p)
+                        elif is_nc(p, fuzzy_match) and bundle:
+                            side[p.name + '_nc'].append(p)
+                        else:
+                            side[p.name + '_' + str(index)].append(p)
+                    del side[name]
 
 
 def kipart(reader_type, part_data_file, lib_filename,
@@ -476,7 +502,9 @@ def kipart(reader_type, part_data_file, lib_filename,
     with open(lib_filename, lib_filemode) as lib_file:
 
         # Get the part number and pin data from the CSV file.
-        for part_num, pin_data in part_reader(part_data_file, bundle):
+        for part_num, pin_data in part_reader(part_data_file):
+        
+            do_bundling(pin_data, bundle, fuzzy_match)
 
             # Write the library header if this is a new library.
             if not append_to_lib:
