@@ -1,3 +1,4 @@
+from __future__ import absolute_import
 # MIT license
 # 
 # Copyright (C) 2015 by XESS Corp.
@@ -23,8 +24,8 @@
 import csv
 import copy
 from collections import defaultdict
-from common import *
-from kipart import *
+from .common import *
+from .kipart import *
 
 
 def xilinx7_reader(csv_file):
@@ -128,7 +129,7 @@ def xilinx7_reader(csv_file):
             r'PS_MIO_VREF_': 'power_in',
             r'PS_MIO[0-9]+_': 'bidirectional',
         }
-        for prefix, typ in PIN_TYPE_PREFIXES.items():
+        for prefix, typ in list(PIN_TYPE_PREFIXES.items()):
             if re.match(prefix, pin.name, re.IGNORECASE):
                 pin.type = typ
                 break

@@ -1,3 +1,5 @@
+from __future__ import print_function
+from builtins import object
 # MIT license
 # 
 # Copyright (C) 2015 by XESS Corp.
@@ -37,7 +39,7 @@ COLUMN_NAMES = {
 
 # This is just a vanilla object class for device pins. 
 # We'll add attributes to it as needed.
-class Pin:
+class Pin(object):
     pass
 
 
@@ -91,7 +93,7 @@ def find_closest_match(name, name_dict, fuzzy_match, threshold=0.0):
 
     # Find the closest fuzzy match to the given name in the scrubbed list.
     # Set the matching threshold to 0 so it always gives some result.
-    match = difflib.get_close_matches(name, name_dict.keys(), 1, threshold)[0]
+    match = difflib.get_close_matches(name, list(name_dict.keys()), 1, threshold)[0]
 
     return name_dict[match]
 
@@ -103,12 +105,12 @@ def clean_headers(headers):
     
 def issue(msg, level='warning'):
     if level=='warning':
-        print 'Warning: {}'.format(msg)
+        print('Warning: {}'.format(msg))
     elif level == 'error':
-        print 'ERROR: {}'.format(msg)
+        print('ERROR: {}'.format(msg))
         raise Exception('Unrecoverable error')
     else:
-        print msg
+        print(msg)
     
     
 def fix_pin_data(pin_data, part_num):

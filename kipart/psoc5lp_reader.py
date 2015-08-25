@@ -1,3 +1,4 @@
+from __future__ import absolute_import
 # MIT license
 # 
 # Copyright (C) 2015 by XESS Corp.
@@ -23,8 +24,8 @@
 import csv
 import copy
 from collections import defaultdict
-from common import *
-from kipart import *
+from .common import *
+from .kipart import *
 
 
 def psoc5lp_pin_name_process(name):
@@ -94,14 +95,14 @@ def psoc5lp_reader(csv_file):
         for index, row in enumerate(dict_reader):
 
             # A blank line signals the end of the pin data.
-            if num_row_elements(row.values()) == 0:
+            if num_row_elements(list(row.values())) == 0:
                 break
 
             # Get the pin attributes from the cells of the row of data.
             pin = copy.copy(DEFAULT_PIN)
             pin.index = index
             pin.type = ''
-            for c, a in COLUMN_NAMES.items():
+            for c, a in list(COLUMN_NAMES.items()):
                 try:
                     if c == 'name':
                         row[c] = psoc5lp_pin_name_process(row[c])
@@ -127,7 +128,7 @@ def psoc5lp_reader(csv_file):
                     r'XRES': 'input',
                     r'NC': 'no_connect',
                 }
-                for prefix, typ in PIN_TYPE_PREFIXES.items():
+                for prefix, typ in list(PIN_TYPE_PREFIXES.items()):
                     if re.match(prefix, pin.name, re.IGNORECASE):
                         pin.type = typ
                         break

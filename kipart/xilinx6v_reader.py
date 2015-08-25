@@ -1,3 +1,4 @@
+from __future__ import absolute_import
 # MIT license
 # 
 # Copyright (C) 2015 by XESS Corp.
@@ -23,8 +24,8 @@
 import csv
 import copy
 from collections import defaultdict
-from common import *
-from kipart import *
+from .common import *
+from .kipart import *
 
 
 def xilinx6v_reader(txt_file):
@@ -55,7 +56,7 @@ def xilinx6v_reader(txt_file):
         # Get the pin attributes from a line of pin data.
         fields = line.split()
         # Fix common errors in pin data.
-        fields = map(lambda d: fix_pin_data(d,part_num), fields)
+        fields = [fix_pin_data(d,part_num) for d in fields]
         if len(fields) == 0:
             break  # A blank line signals the end of pin data.
         pin.num = fields[0]
@@ -109,7 +110,7 @@ def xilinx6v_reader(txt_file):
             r'MGTTX[NP][0-9]+_': 'output',
             r'MGTRREF_': 'passive',
         }
-        for prefix, typ in PIN_TYPE_PREFIXES.items():
+        for prefix, typ in list(PIN_TYPE_PREFIXES.items()):
             if re.match(prefix, pin.name, re.IGNORECASE):
                 pin.type = typ
                 break

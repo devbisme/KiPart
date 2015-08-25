@@ -22,12 +22,16 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 
+from __future__ import division
+from __future__ import absolute_import
+from builtins import str
+from past.utils import old_div
 import sys
 import math
 import re
 import importlib
 from affine import Affine
-from common import *
+from .common import *
 
 __all__ = ['kipart']  # Only export this routine for use by the outside world.
 
@@ -83,7 +87,7 @@ PIN_ORIENTATIONS = {
 scrubber = re.compile('[\W.]+')
 PIN_ORIENTATIONS = {
     scrubber.sub('', k).lower(): v
-    for k, v in PIN_ORIENTATIONS.items()
+    for k, v in list(PIN_ORIENTATIONS.items())
 }
 
 ROTATION = {'left': 0, 'right': 180, 'bottom': 90, 'top': -90}
@@ -130,7 +134,7 @@ PIN_TYPES = {
     'no_conn': 'N',
     'nc': 'N',
 }
-PIN_TYPES = {scrubber.sub('', k).lower(): v for k, v in PIN_TYPES.items()}
+PIN_TYPES = {scrubber.sub('', k).lower(): v for k, v in list(PIN_TYPES.items())}
 
 # Mapping from understandable pin drawing style to the style
 # indicator used in the KiCad part library.
@@ -162,7 +166,7 @@ PIN_STYLES = {
     'nl': 'X',
     'analog': 'X',
 }
-PIN_STYLES = {scrubber.sub('', k).lower(): v for k, v in PIN_STYLES.items()}
+PIN_STYLES = {scrubber.sub('', k).lower(): v for k, v in list(PIN_STYLES.items())}
 
 # Mapping from understandable box fill-type name to the fill-type
 # indicator used in the KiCad part library.
@@ -211,7 +215,7 @@ def pins_bbox(unit_pins):
     # Add the separation space before and after the pin name.
     width += PIN_LENGTH + 2 * PIN_NAME_OFFSET
     # Make bounding box an integer number of pin spaces so pin connections are always on the grid.
-    width = math.ceil(float(width) / PIN_SPACING) * PIN_SPACING
+    width = math.ceil(old_div(float(width), PIN_SPACING)) * PIN_SPACING
     height = len(unit_pins) * PIN_SPACING
 
     return [[XO, YO + PIN_SPACING], [XO + width, YO - height]]
@@ -306,8 +310,8 @@ def draw_symbol(lib_file, part_num, pin_data, sort_type, fuzzy_match):
     # run into the top pins. If not, stick with left-justification.
     horiz_just = 'L'
     horiz_offset = PIN_LENGTH
-    for unit in pin_data.values():
-        if 'top' in unit.keys():
+    for unit in list(pin_data.values()):
+        if 'top' in list(unit.keys()):
             horiz_just = 'R'
             horiz_offset = PIN_LENGTH - 50
             break
@@ -334,7 +338,8 @@ def draw_symbol(lib_file, part_num, pin_data, sort_type, fuzzy_match):
 
     # Now create the units that make up the part. Unit numbers go from 1
     # up to the number of units in the part.
-    for unit_num, unit in enumerate(pin_data.values(), 1):
+#    for unit_num, unit in enumerate(list(pin_data.values()), 1):
+    for unit_num, unit in enumerate([p[1] for p in sorted(pin_data.items())], 1):
 
         # The indices of the X and Y coordinates in a list of point coords.
         X = 0
@@ -355,9 +360,9 @@ def draw_symbol(lib_file, part_num, pin_data, sort_type, fuzzy_match):
 
         # Annotate the pins for each side of the symbol and determine the bounding box
         # and various points for each side.
-        for side, side_pins in unit.items():
-            annotate_pins(side_pins.items())
-            bbox[side] = pins_bbox(side_pins.items())
+        for side, side_pins in list(unit.items()):
+            annotate_pins(list(side_pins.items()))
+            bbox[side] = pins_bbox(list(side_pins.items()))
             #
             #     C     B-------A
             #           |       |
@@ -431,9 +436,9 @@ def draw_symbol(lib_file, part_num, pin_data, sort_type, fuzzy_match):
             box_pt[side] = transform[side] * box_pt[side]
 
         # Draw the transformed pins for each side of the symbol.
-        for side, side_pins in unit.items():
+        for side, side_pins in list(unit.items()):
             # Sort the pins names for the desired order: row-wise, numeric, alphabetical.
-            sorted_side_pins = sorted(side_pins.items(), key=key_func)
+            sorted_side_pins = sorted(list(side_pins.items()), key=key_func)
             # Draw the transformed pins for this side of the symbol.
             draw_pins(lib_file, unit_num, sorted_side_pins, transform[side],
                       fuzzy_match)
@@ -466,9 +471,9 @@ def is_nc(pin, fuzzy_match):
 
 def do_bundling(pin_data, bundle, fuzzy_match):
     '''Handle bundling for power and NC pins. Unbundle everything else.'''
-    for unit in pin_data.values():
-        for side in unit.values():
-            for name, pins in side.items():
+    for unit in list(pin_data.values()):
+        for side in list(unit.values()):
+            for name, pins in list(side.items()):
                 if len(pins) > 1:
                     for index, p in enumerate(pins):
                         if is_pwr(p, fuzzy_match) and bundle:
@@ -495,9 +500,9 @@ def kipart(reader_type, part_data_file, lib_filename,
 
     # Either write the part definition to a new KiCad library or append it to an existing library.
     if append_to_lib:
-        lib_filemode = 'ab'
+        lib_filemode = 'a'
     else:
-        lib_filemode = 'wb'
+        lib_filemode = 'w'
 
     with open(lib_filename, lib_filemode) as lib_file:
 
