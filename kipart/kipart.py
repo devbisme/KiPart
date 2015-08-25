@@ -334,7 +334,8 @@ def draw_symbol(lib_file, part_num, pin_data, sort_type, fuzzy_match):
 
     # Now create the units that make up the part. Unit numbers go from 1
     # up to the number of units in the part.
-    for unit_num, unit in enumerate(pin_data.values(), 1):
+#    for unit_num, unit in enumerate(pin_data.values(), 1):
+    for unit_num, unit in enumerate([p[1] for p in sorted(pin_data.items())], 1):
 
         # The indices of the X and Y coordinates in a list of point coords.
         X = 0
