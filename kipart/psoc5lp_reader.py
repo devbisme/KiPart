@@ -1,4 +1,3 @@
-from __future__ import absolute_import
 # MIT license
 # 
 # Copyright (C) 2015 by XESS Corp.
@@ -21,6 +20,7 @@ from __future__ import absolute_import
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 
+from __future__ import absolute_import
 import csv
 import copy
 from collections import defaultdict
@@ -117,18 +117,18 @@ def psoc5lp_reader(csv_file):
             if pin.type == '':
                 # No explicit pin type, so infer it from the pin name.
                 DEFAULT_PIN_TYPE = 'input'  # Assign this pin type if name inference can't be made.
-                PIN_TYPE_PREFIXES = {
-                    r'P[0-9]+\[[0-9]+\]': 'bidirectional',
-                    r'VCC': 'power_out',
-                    r'VDD': 'power_in',
-                    r'VSS': 'power_in',
-                    r'IND': 'passive',
-                    r'VBOOST': 'input',
-                    r'VBAT': 'power_in',
-                    r'XRES': 'input',
-                    r'NC': 'no_connect',
-                }
-                for prefix, typ in list(PIN_TYPE_PREFIXES.items()):
+                PIN_TYPE_PREFIXES = [
+                    (r'P[0-9]+\[[0-9]+\]', 'bidirectional'),
+                    (r'VCC', 'power_out'),
+                    (r'VDD', 'power_in'),
+                    (r'VSS', 'power_in'),
+                    (r'IND', 'passive'),
+                    (r'VBOOST', 'input'),
+                    (r'VBAT', 'power_in'),
+                    (r'XRES', 'input'),
+                    (r'NC', 'no_connect'),
+                ]
+                for prefix, typ in PIN_TYPE_PREFIXES:
                     if re.match(prefix, pin.name, re.IGNORECASE):
                         pin.type = typ
                         break

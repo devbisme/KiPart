@@ -1,4 +1,3 @@
-from __future__ import absolute_import
 # MIT license
 # 
 # Copyright (C) 2015 by XESS Corp.
@@ -21,6 +20,7 @@ from __future__ import absolute_import
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 
+from __future__ import absolute_import
 import csv
 import copy
 from collections import defaultdict
@@ -71,46 +71,46 @@ def xilinx6v_reader(txt_file):
             # from the name of the pin. Pin names starting with the following prefixes 
             # are assigned the given pin type.
         DEFAULT_PIN_TYPE = 'input'  # Assign this pin type if name inference can't be made.
-        PIN_TYPE_PREFIXES = {
-            r'VCC': 'power_in',
-            r'GND': 'power_in',
-            r'IO_': 'bidirectional',
-            r'VREF[PN]_': 'input',
-            r'NC': 'no_connect',
-            r'VP_': 'input',
-            r'VN_': 'input',
-            r'DXP_': 'passive',
-            r'DXN_': 'passive',
-            r'CCLK': 'input',
-            r'CSI_B': 'input',
-            r'DIN': 'input',
-            r'DOUT_BUSY': 'output',
-            r'HSWAPEN': 'input',
-            r'RDWR_B': 'input',
-            r'M0': 'input',
-            r'M1': 'input',
-            r'M2': 'input',
-            r'INIT_B': 'input',
-            r'PROGRAM_B': 'input',
-            r'DONE': 'output',
-            r'TCK': 'input',
-            r'TDI': 'input',
-            r'TDO': 'output',
-            r'TMS': 'input',
-            r'VFS': 'power_in',
-            r'RSVD': 'nc',
-            r'VREF[NP]': 'power_in',
-            r'VBATT': 'power_in',
-            r'A(VDD|VSS)_': 'power_in',
-            r'MGTA(VCC|VTT)': 'power_in',
-            r'MGTHA(VCC|GND|VTT)': 'power_in',
-            r'MGTRBIAS_': 'passive',
-            r'MGTREFCLK[0-9]?[NP]_': 'input',
-            r'MGTRX[NP][0-9]+_': 'input',
-            r'MGTTX[NP][0-9]+_': 'output',
-            r'MGTRREF_': 'passive',
-        }
-        for prefix, typ in list(PIN_TYPE_PREFIXES.items()):
+        PIN_TYPE_PREFIXES = [
+            (r'VCC', 'power_in'),
+            (r'GND', 'power_in'),
+            (r'IO_', 'bidirectional'),
+            (r'VREF[PN]_', 'input'),
+            (r'NC', 'no_connect'),
+            (r'VP_', 'input'),
+            (r'VN_', 'input'),
+            (r'DXP_', 'passive'),
+            (r'DXN_', 'passive'),
+            (r'CCLK', 'input'),
+            (r'CSI_B', 'input'),
+            (r'DIN', 'input'),
+            (r'DOUT_BUSY', 'output'),
+            (r'HSWAPEN', 'input'),
+            (r'RDWR_B', 'input'),
+            (r'M0', 'input'),
+            (r'M1', 'input'),
+            (r'M2', 'input'),
+            (r'INIT_B', 'input'),
+            (r'PROGRAM_B', 'input'),
+            (r'DONE', 'output'),
+            (r'TCK', 'input'),
+            (r'TDI', 'input'),
+            (r'TDO', 'output'),
+            (r'TMS', 'input'),
+            (r'VFS', 'power_in'),
+            (r'RSVD', 'nc'),
+            (r'VREF[NP]', 'power_in'),
+            (r'VBATT', 'power_in'),
+            (r'A(VDD|VSS)_', 'power_in'),
+            (r'MGTA(VCC|VTT)', 'power_in'),
+            (r'MGTHA(VCC|GND|VTT)', 'power_in'),
+            (r'MGTRBIAS_', 'passive'),
+            (r'MGTREFCLK[0-9]?[NP]_', 'input'),
+            (r'MGTRX[NP][0-9]+_', 'input'),
+            (r'MGTTX[NP][0-9]+_', 'output'),
+            (r'MGTRREF_', 'passive'),
+        ]
+        for prefix, typ in PIN_TYPE_PREFIXES:
             if re.match(prefix, pin.name, re.IGNORECASE):
                 pin.type = typ
                 break
