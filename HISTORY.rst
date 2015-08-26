@@ -3,6 +3,10 @@
 History
 -------
 
+0.1.10 (2015-08-26)
+---------------------
+* Now runs under both Python 2.7 and 3.4.
+
 0.1.9 (2015-08-21)
 ---------------------
 * The bundling option now only bundles pins where that operation makes sense:
