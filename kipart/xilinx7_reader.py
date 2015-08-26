@@ -20,11 +20,12 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 
+from __future__ import absolute_import
 import csv
 import copy
 from collections import defaultdict
-from common import *
-from kipart import *
+from .common import *
+from .kipart import *
 
 
 def xilinx7_reader(csv_file):
@@ -71,64 +72,64 @@ def xilinx7_reader(csv_file):
         # from the name of the pin. Pin names starting with the following prefixes 
         # are assigned the given pin type.
         DEFAULT_PIN_TYPE = 'input'  # Assign this pin type if name inference can't be made.
-        PIN_TYPE_PREFIXES = {
-            r'VCC': 'power_in',
-            r'GND': 'power_in',
-            r'IO_': 'bidirectional',
-            r'DONE': 'output',
-            r'VREF[PN]_': 'input',
-            r'TCK': 'input',
-            r'TDI': 'input',
-            r'TDO': 'output',
-            r'TMS': 'input',
-            r'CCLK': 'input',
-            r'M0': 'input',
-            r'M1': 'input',
-            r'M2': 'input',
-            r'INIT_B': 'input',
-            r'PROG': 'input',
-            r'NC': 'no_connect',
-            r'VP_': 'input',
-            r'VN_': 'input',
-            r'DXP_': 'passive',
-            r'DXN_': 'passive',
-            r'CFGBVS_': 'input',
-            r'MGTZ?REFCLK[0-9]+[NP]_': 'input',
-            r'MGTZ_OBS_CLK_[PN]_': 'input',
-            r'MGT[ZPHX]TX[NP][0-9]+_': 'output',
-            r'MGT[ZPHX]RX[NP][0-9]+_': 'input',
-            r'MGTAVTTRCAL_': 'passive',
-            r'MGTRREF_': 'passive',
-            r'MGTVCCAUX_?': 'power_in',
-            r'MGTAVTT_?': 'power_in',
-            r'MGTZ_THERM_IN_': 'input',
-            r'MGTZ_THERM_OUT_': 'input',
-            r'MGTZ?A(VCC|GND)_?': 'power_in',
-            r'MGTZVCC[LH]_': 'power_in',
-            r'MGTZ_SENSE_(A?VCC|A?GND)[LH]?_': 'power_in',
-            r'RSVD(VCC[1-3]|GND)': 'power_in',
-            r'PS_CLK_': 'input',
-            r'PS_POR_B': 'input',
-            r'PS_SRST_B': 'input',
-            r'PS_DDR_CK[PN]_': 'output',
-            r'PS_DDR_CKE_': 'output',
-            r'PS_DDR_CS_B_': 'output',
-            r'PS_DDR_RAS_B_': 'output',
-            r'PS_DDR_CAS_B_': 'output',
-            r'PS_DDR_WE_B_': 'output',
-            r'PS_DDR_BA[0-9]+_': 'output',
-            r'PS_DDR_A[0-9]+_': 'output',
-            r'PS_DDR_ODT_': 'output',
-            r'PS_DDR_DRST_B_': 'output',
-            r'PS_DDR_DQ[0-9]+_': 'bidirectional',
-            r'PS_DDR_DM[0-9]+_': 'output',
-            r'PS_DDR_DQS_[PN][0-9]+_': 'bidirectional',
-            r'PS_DDR_VR[PN]_': 'power_out',
-            r'PS_DDR_VREF[0-9]+_': 'power_in',
-            r'PS_MIO_VREF_': 'power_in',
-            r'PS_MIO[0-9]+_': 'bidirectional',
-        }
-        for prefix, typ in PIN_TYPE_PREFIXES.items():
+        PIN_TYPE_PREFIXES = [
+            (r'VCC', 'power_in'),
+            (r'GND', 'power_in'),
+            (r'IO_', 'bidirectional'),
+            (r'DONE', 'output'),
+            (r'VREF[PN]_', 'input'),
+            (r'TCK', 'input'),
+            (r'TDI', 'input'),
+            (r'TDO', 'output'),
+            (r'TMS', 'input'),
+            (r'CCLK', 'input'),
+            (r'M0', 'input'),
+            (r'M1', 'input'),
+            (r'M2', 'input'),
+            (r'INIT_B', 'input'),
+            (r'PROG', 'input'),
+            (r'NC', 'no_connect'),
+            (r'VP_', 'input'),
+            (r'VN_', 'input'),
+            (r'DXP_', 'passive'),
+            (r'DXN_', 'passive'),
+            (r'CFGBVS_', 'input'),
+            (r'MGTZ?REFCLK[0-9]+[NP]_', 'input'),
+            (r'MGTZ_OBS_CLK_[PN]_', 'input'),
+            (r'MGT[ZPHX]TX[NP][0-9]+_', 'output'),
+            (r'MGT[ZPHX]RX[NP][0-9]+_', 'input'),
+            (r'MGTAVTTRCAL_', 'passive'),
+            (r'MGTRREF_', 'passive'),
+            (r'MGTVCCAUX_?', 'power_in'),
+            (r'MGTAVTT_?', 'power_in'),
+            (r'MGTZ_THERM_IN_', 'input'),
+            (r'MGTZ_THERM_OUT_', 'input'),
+            (r'MGTZ?A(VCC|GND)_?', 'power_in'),
+            (r'MGTZVCC[LH]_', 'power_in'),
+            (r'MGTZ_SENSE_(A?VCC|A?GND)[LH]?_', 'power_in'),
+            (r'RSVD(VCC[1-3]|GND)', 'power_in'),
+            (r'PS_CLK_', 'input'),
+            (r'PS_POR_B', 'input'),
+            (r'PS_SRST_B', 'input'),
+            (r'PS_DDR_CK[PN]_', 'output'),
+            (r'PS_DDR_CKE_', 'output'),
+            (r'PS_DDR_CS_B_', 'output'),
+            (r'PS_DDR_RAS_B_', 'output'),
+            (r'PS_DDR_CAS_B_', 'output'),
+            (r'PS_DDR_WE_B_', 'output'),
+            (r'PS_DDR_BA[0-9]+_', 'output'),
+            (r'PS_DDR_A[0-9]+_', 'output'),
+            (r'PS_DDR_ODT_', 'output'),
+            (r'PS_DDR_DRST_B_', 'output'),
+            (r'PS_DDR_DQ[0-9]+_', 'bidirectional'),
+            (r'PS_DDR_DM[0-9]+_', 'output'),
+            (r'PS_DDR_DQS_[PN][0-9]+_', 'bidirectional'),
+            (r'PS_DDR_VR[PN]_', 'power_out'),
+            (r'PS_DDR_VREF[0-9]+_', 'power_in'),
+            (r'PS_MIO_VREF_', 'power_in'),
+            (r'PS_MIO[0-9]+_', 'bidirectional'),
+        ]
+        for prefix, typ in PIN_TYPE_PREFIXES:
             if re.match(prefix, pin.name, re.IGNORECASE):
                 pin.type = typ
                 break

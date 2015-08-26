@@ -20,12 +20,15 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 
+from __future__ import print_function
+from __future__ import absolute_import
 import argparse as ap
 import os
 import sys
+import io
 import zipfile
-from __init__ import __version__
-from kipart import *
+from .__init__ import __version__
+from .kipart import *
 
 
 def main():
@@ -94,8 +97,8 @@ def main():
 
     if os.path.isfile(args.output):
         if not args.overwrite and not args.append:
-            print 'Output file {} already exists! Use the --overwrite option to replace it or the --append option to append to it.'.format(
-                args.output)
+            print('Output file {} already exists! Use the --overwrite option to replace it or the --append option to append to it.'.format(
+                args.output))
             sys.exit(1)
 
     def call_kipart(part_data_file):
@@ -118,6 +121,7 @@ def main():
             for zipped_file in zipped_files:
                 if os.path.splitext(zipped_file.filename)[-1] in ['.csv', '.txt']:
                     with zip_file.open(zipped_file, 'r') as part_data_file:
+                        part_data_file = io.TextIOWrapper(part_data_file)
                         append_to_lib = call_kipart(part_data_file)
         elif file_ext in ['.csv', '.txt']:
             with open(input_file, 'r') as part_data_file:

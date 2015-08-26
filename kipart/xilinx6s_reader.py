@@ -20,11 +20,13 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 
+from __future__ import absolute_import
 import csv
 import copy
+import warnings
 from collections import defaultdict
-from common import *
-from kipart import *
+from .common import *
+from .kipart import *
 
 
 def xilinx6s_reader(txt_file):
@@ -57,7 +59,7 @@ def xilinx6s_reader(txt_file):
         # Get the pin attributes from a line of pin data.
         fields = line.split()
         # Fix common errors in pin data.
-        fields = map(lambda d: fix_pin_data(d,part_num), fields)
+        fields = [fix_pin_data(d,part_num) for d in fields]
         if len(fields) == 0:
             break  # A blank line signals the end of pin data.
         pin.num = fields[0]
@@ -72,31 +74,31 @@ def xilinx6s_reader(txt_file):
             # from the name of the pin. Pin names starting with the following prefixes 
             # are assigned the given pin type.
         DEFAULT_PIN_TYPE = 'input'  # Assign this pin type if name inference can't be made.
-        PIN_TYPE_PREFIXES = {
-            r'CMPCS_B': 'input',
-            r'DONE': 'output',
-            r'VCC': 'power_in',
-            r'GND': 'power_in',
-            r'IO_': 'bidirectional',
-            r'MGTAVCC': 'power_in',
-            r'MGTAVTTRCAL_': 'passive',
-            r'MGTREFCLK[0-9]?[NP]_': 'input',
-            r'MGTRX[NP][0-9]+_': 'input',
-            r'MGTRREF_': 'passive',
-            r'MGTAVTT[RT]_?': 'power_in',
-            r'MGTTX[NP][0-9]+_': 'output',
-            r'NC': 'no_connect',
-            r'PROGRAM_B': 'input',
-            r'RFUSE': 'input',
-            r'SUSPEND': 'input',
-            r'TCK': 'input',
-            r'TDI': 'input',
-            r'TDO': 'output',
-            r'TMS': 'input',
-            r'VFS': 'power_in',
-            r'VBATT': 'power_in',
-        }
-        for prefix, typ in PIN_TYPE_PREFIXES.items():
+        PIN_TYPE_PREFIXES = [
+            (r'CMPCS_B', 'input'),
+            (r'DONE', 'output'),
+            (r'VCC', 'power_in'),
+            (r'GND', 'power_in'),
+            (r'IO_', 'bidirectional'),
+            (r'MGTAVCC', 'power_in'),
+            (r'MGTAVTTRCAL_', 'passive'),
+            (r'MGTREFCLK[0-9]?[NP]_', 'input'),
+            (r'MGTRX[NP][0-9]+_', 'input'),
+            (r'MGTRREF_', 'passive'),
+            (r'MGTAVTT[RT]_?', 'power_in'),
+            (r'MGTTX[NP][0-9]+_', 'output'),
+            (r'NC', 'no_connect'),
+            (r'PROGRAM_B', 'input'),
+            (r'RFUSE', 'input'),
+            (r'SUSPEND', 'input'),
+            (r'TCK', 'input'),
+            (r'TDI', 'input'),
+            (r'TDO', 'output'),
+            (r'TMS', 'input'),
+            (r'VFS', 'power_in'),
+            (r'VBATT', 'power_in'),
+        ]
+        for prefix, typ in PIN_TYPE_PREFIXES:
             if re.match(prefix, pin.name, re.IGNORECASE):
                 pin.type = typ
                 break

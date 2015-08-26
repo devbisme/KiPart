@@ -20,11 +20,12 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 
+from __future__ import absolute_import
 import csv
 import copy
 from collections import defaultdict
-from common import *
-from kipart import *
+from .common import *
+from .kipart import *
 
 
 def generic_reader(csv_file):
@@ -77,13 +78,13 @@ def generic_reader(csv_file):
             fix_pin_data
 
             # A blank line signals the end of the pin data.
-            if num_row_elements(row.values()) == 0:
+            if num_row_elements(list(row.values())) == 0:
                 break
 
             # Get the pin attributes from the cells of the row of data.
             pin = copy.copy(DEFAULT_PIN) # Start off with default values for the pin.
             pin.index = index
-            for c, a in COLUMN_NAMES.items():
+            for c, a in list(COLUMN_NAMES.items()):
                 try:
                     setattr(pin, a, fix_pin_data(row[c], part_num))
                 except KeyError:
