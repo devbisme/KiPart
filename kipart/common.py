@@ -1,5 +1,3 @@
-from __future__ import print_function
-from builtins import object
 # MIT license
 # 
 # Copyright (C) 2015 by XESS Corp.
@@ -22,6 +20,8 @@ from builtins import object
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 
+from __future__ import print_function
+from builtins import object
 import re
 import difflib
 

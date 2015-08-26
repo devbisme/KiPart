@@ -1,4 +1,3 @@
-from __future__ import absolute_import
 # MIT license
 # 
 # Copyright (C) 2015 by XESS Corp.
@@ -21,6 +20,7 @@ from __future__ import absolute_import
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 
+from __future__ import absolute_import
 import csv
 import copy
 from collections import defaultdict
