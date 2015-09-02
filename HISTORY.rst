@@ -3,6 +3,10 @@
 History
 -------
 
+0.1.11 (2015-09-02)
+---------------------
+* future module requirement added to setup.py.
+
 0.1.10 (2015-08-26)
 ---------------------
 * Now runs under both Python 2.7 and 3.4.

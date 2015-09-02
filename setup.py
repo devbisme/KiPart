@@ -15,7 +15,7 @@ with open('README.rst') as readme_file:
 with open('HISTORY.rst') as history_file:
     history = history_file.read().replace('.. :changelog:', '')
 
-requirements = ['affine >= 1.2.0', ]
+requirements = ['affine >= 1.2.0', 'future >= 0.15.0' ]
 
 test_requirements = [  # TODO: put package test requirements here
 ]
