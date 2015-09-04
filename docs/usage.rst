@@ -47,7 +47,9 @@ It contains the following items:
    pin type and style. Each of these items should be entered in the column with the appropriate header.
 
    * Pin numbers can be either numeric (e.g., '69') if the part is a DIP or QFP, or they can be
-     alphanumeric (e.g., 'C10') if a BGA or CSP is used.
+     alphanumeric (e.g., 'C10') if a BGA or CSP is used. Placing a `*` at the start of a pin number
+     creates a non-existent "gap" pin that can be used to divide the pins into groups. This only works
+     when the `-s row` sorting option is selected.
    * Pin names can be any combination of letters, numbers and special characters (except a comma).
    * The unit identifier can be blank or any combination of letters, numbers and special characters (except a comma).
      A separate unit will be generated in the schematic symbol for each distinct unit identifier.

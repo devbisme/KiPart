@@ -3,6 +3,10 @@
 History
 -------
 
+0.1.12 (2015-09-03)
+---------------------
+* Added capability to insert non-existent "gap" pins that divide groups of pins into sections.
+
 0.1.11 (2015-09-02)
 ---------------------
 * future module requirement added to setup.py.
