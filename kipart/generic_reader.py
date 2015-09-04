@@ -73,9 +73,6 @@ def generic_reader(csv_file):
         # Now create a DictReader for grabbing the pin data in each row.
         dict_reader = csv.DictReader(csv_file, headers, skipinitialspace=True)
         for index, row in enumerate(dict_reader):
-        
-            # Fix common errors in pin data.
-            fix_pin_data
 
             # A blank line signals the end of the pin data.
             if num_row_elements(list(row.values())) == 0:

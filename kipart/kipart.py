@@ -230,11 +230,6 @@ def draw_pins(lib_file, unit_num, unit_pins, transform, fuzzy_match):
 
     for name, pins in unit_pins:
 
-        # Start off creating visible pin numbers. If there are multiple pins with
-        # the same name, then the 'visibility' will be turned off for any pins
-        # after the first by reducing their pin number size to zero.
-        num_size = PIN_NUM_SIZE
-
         # Rotate/translate the current drawing point.
         (draw_x, draw_y) = transform * (x, y)
 
@@ -246,6 +241,7 @@ def draw_pins(lib_file, unit_num, unit_pins, transform, fuzzy_match):
 
         # Create all the pins with a particular name. If there are more than one,
         # they are laid on top of each other and only the first is visible.
+        num_size = PIN_NUM_SIZE  # First pin will be visible.
         for pin in pins:
 
             # Create a pin using the pin data.
