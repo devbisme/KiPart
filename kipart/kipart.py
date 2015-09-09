@@ -194,7 +194,8 @@ def annotate_pins(unit_pins):
         # net connection in the schematic.)
         name_suffix = SINGLE_PIN_SUFFIX
         if len(pins) > 1:
-            name_suffix = MULTI_PIN_SUFFIX
+            #name_suffix = MULTI_PIN_SUFFIX
+            name_suffix = '[{}]'.format(len(pins))
         for pin in pins:
             pin.name += name_suffix
 
