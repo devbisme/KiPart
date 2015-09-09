@@ -3,6 +3,10 @@
 History
 -------
 
+0.1.13 (2015-09-09)
+---------------------
+* The number of pins in a bundle is now appended to the pin name instead of a *.
+
 0.1.12 (2015-09-03)
 ---------------------
 * Added capability to insert non-existent "gap" pins that divide groups of pins into sections.

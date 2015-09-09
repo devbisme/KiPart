@@ -141,8 +141,8 @@ where the pins are arranged by their names:
 
 .. image:: example3.png
 
-The command `kipart -b example.csv -o example4.lib` will bundle pins with identical names 
-(like `GND` and `VCC`) into single pins like so:
+The command `kipart -b example.csv -o example4.lib` will bundle power and no-connect pins with 
+identical names (like `GND`, `VCC`, and `NC`) into single pins like so:
 
 .. image:: example4.png
 
