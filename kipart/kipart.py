@@ -404,7 +404,7 @@ def draw_symbol(lib_file, part_num, pin_data, sort_type, fuzzy_match):
         box_width = max(abs(bbox['top'][0][Y] - bbox['top'][1][Y]),
                         abs(bbox['bottom'][0][Y] - bbox['bottom'][1][Y]))
         box_height = max(abs(bbox['left'][0][Y] - bbox['left'][1][Y]),
-                         abs(bbox['left'][0][Y] - bbox['right'][1][Y]))
+                         abs(bbox['right'][0][Y] - bbox['right'][1][Y]))
 
         for side in all_sides:
             # Each side of pins starts off with the orientation of a left-hand side of pins.

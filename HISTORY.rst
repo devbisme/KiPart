@@ -3,6 +3,10 @@
 History
 -------
 
+0.1.14 (2016-01-30)
+---------------------
+* Fixed incorrect y-offset of pins for symbols that only have pins along the right side.
+
 0.1.13 (2015-09-09)
 ---------------------
 * The number of pins in a bundle is now appended to the pin name instead of a *.

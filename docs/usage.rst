@@ -4,7 +4,7 @@ Usage
 
 KiPart is mainly intended to be  used as a script::
 
-    usage: __main__.py [-h] [-v] [-r [{generic,xilinx7,psoc5lp}]]
+    usage: kipart [-h] [-v] [-r [{generic,xilinx7,psoc5lp}]]
                        [-s [{row,num,name}]] [-o [file.lib]] [-f] [-b] [-a] [-w]
                        [-d [LEVEL]]
                        file1.[csv|zip] file2.[csv|zip] ... [file1.[csv|zip]
