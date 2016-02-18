@@ -89,10 +89,10 @@ def generic_reader(csv_file):
                     # the default pin value will remain instead.
                     pass
             if pin.num is None:
-                raise Exception(
+                issue(
                     'ERROR: No pin number on row {index} of {part_num}'.format(
                         index=index,
-                        part_num=part_num))
+                        part_num=part_num), level='error')
 
             # Add the pin from this row of the CVS file to the pin dictionary.
             # Place all the like-named pins into a list under their common name.

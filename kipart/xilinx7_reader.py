@@ -134,7 +134,7 @@ def xilinx7_reader(csv_file):
                 pin.type = typ
                 break
         else:
-            warnings.warn('No match for {} on {}, assigning as {}'.format(
+            issue('No match for {} on {}, assigning as {}'.format(
                 pin.name, part_num[:4], DEFAULT_PIN_TYPE))
             pin.type = DEFAULT_PIN_TYPE
         pin.type = fix_pin_data(pin.type, part_num)

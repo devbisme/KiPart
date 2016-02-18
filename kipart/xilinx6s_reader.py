@@ -23,7 +23,6 @@
 from __future__ import absolute_import
 import csv
 import copy
-import warnings
 from collections import defaultdict
 from .common import *
 from .kipart import *
@@ -103,7 +102,7 @@ def xilinx6s_reader(txt_file):
                 pin.type = typ
                 break
         else:
-            warnings.warn('No match for {} on {}, assigning as {}'.format(
+            issue('No match for {} on {}, assigning as {}'.format(
                 pin.name, part_num[:4], DEFAULT_PIN_TYPE))
             pin.type = DEFAULT_PIN_TYPE
 

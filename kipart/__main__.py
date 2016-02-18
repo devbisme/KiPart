@@ -30,7 +30,6 @@ import zipfile
 from .__init__ import __version__
 from .kipart import *
 
-
 def main():
     parser = ap.ArgumentParser(
         description=
@@ -48,7 +47,7 @@ def main():
     parser.add_argument('-r', '--reader',
         nargs='?',
         type=str.lower,
-        choices=['generic', 'xilinx7', 'xilinx6s', 'xilinx6v', 'psoc5lp'],
+        choices=['generic', 'xilinxultra', 'xilinx7', 'xilinx6s', 'xilinx6v', 'psoc5lp'],
         default='generic',
         help='Name of function for reading the CSV file.')
     parser.add_argument(

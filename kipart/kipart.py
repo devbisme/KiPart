@@ -56,6 +56,7 @@ SHOW_PIN_NUMBER = True  # Show pin numbers when True.
 SHOW_PIN_NAME = True  # Show pin names when True.
 SINGLE_PIN_SUFFIX = ''
 MULTI_PIN_SUFFIX = '*'
+PIN_SPACER_PREFIX = '*'
 
 # Settings for box drawn around pins in a unit.
 BOX_LINE_WIDTH = 12
@@ -217,7 +218,23 @@ def pins_bbox(unit_pins):
     width += PIN_LENGTH + 2 * PIN_NAME_OFFSET
     # Make bounding box an integer number of pin spaces so pin connections are always on the grid.
     width = math.ceil(old_div(float(width), PIN_SPACING)) * PIN_SPACING
-    height = len(unit_pins) * PIN_SPACING
+
+    # Compute the height of the column of pins, taking spacers into account.
+    height = 0
+    for name, pins in unit_pins:
+        pin_spacer = 0
+        pin_num_len = 0
+        for pin in pins:
+            pin_num = str(pin.num)
+            # spacer pins have pin numbers starting with a special prefix char.
+            if pin_num.startswith(PIN_SPACER_PREFIX):
+                pin_spacer = 1
+                pin_num = pin_num[1:] # Remove the spacer prefix.
+            pin_num_len = max(pin_num_len, len(pin_num))
+        height += pin_spacer * PIN_SPACING # Add more to height if there was a spacer.
+        # Add height of pin to bbox if the pin number was more than just a spacer prefix.
+        if pin_num_len > 0:
+            height += PIN_SPACING 
 
     return [[XO, YO + PIN_SPACING], [XO + width, YO - height]]
 
@@ -230,6 +247,20 @@ def draw_pins(lib_file, unit_num, unit_pins, transform, fuzzy_match):
     y = YO
 
     for name, pins in unit_pins:
+
+        # Detect pins with "spacer" pin numbers.
+        pin_spacer = 0
+        pin_num_len = 0
+        for pin in pins:
+            pin_num = str(pin.num)
+            # spacer pins have pin numbers starting with a special prefix char.
+            if pin_num.startswith(PIN_SPACER_PREFIX):
+                pin_spacer = 1
+                pin_num = pin_num[1:] # Remove the spacer prefix.
+            pin_num_len = max(pin_num_len, len(pin_num))
+        y -= pin_spacer * PIN_SPACING # Add space between pins if there was a spacer.
+        if pin_num_len == 0:
+            continue # Omit pin if it only had a spacer prefix and no actual pin number.
 
         # Rotate/translate the current drawing point.
         (draw_x, draw_y) = transform * (x, y)
@@ -245,9 +276,15 @@ def draw_pins(lib_file, unit_num, unit_pins, transform, fuzzy_match):
         num_size = PIN_NUM_SIZE  # First pin will be visible.
         for pin in pins:
 
+            pin_num = str(pin.num)
+
+            # Remove any spacer prefix on the pin numbers.
+            if pin_num.startswith(PIN_SPACER_PREFIX):
+                pin_num = pin_num[1:]
+
             # Create a pin using the pin data.
             lib_file.write(PIN.format(name=pin.name,
-                                      num=pin.num,
+                                      num=pin_num,
                                       x=int(draw_x),
                                       y=int(draw_y),
                                       length=PIN_LENGTH,
@@ -262,7 +299,7 @@ def draw_pins(lib_file, unit_num, unit_pins, transform, fuzzy_match):
             num_size = 0
 
         # Move to the next pin placement location on this unit.
-        y = y - PIN_SPACING
+        y -= PIN_SPACING
 
 
 def row_key(pin):
@@ -313,7 +350,7 @@ def draw_symbol(lib_file, part_num, pin_data, sort_type, fuzzy_match):
             horiz_offset = PIN_LENGTH - 50
             break
 
-            # Create the field that stores the part reference.
+    # Create the field that stores the part reference.
     lib_file.write(REF_FIELD.format(ref_prefix=REF_PREFIX,
                                     x=XO + horiz_offset,
                                     y=YO + REF_Y_OFFSET,

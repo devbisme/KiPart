@@ -3,6 +3,12 @@
 History
 -------
 
+0.1.15 (2016-02-17)
+---------------------
+* Added reader for Xilinx Ultrascale FPGAs.
+* Fixed insertion of spaces between groups of pins when pin number starts with '*'.
+* Replaced call to warnings.warn with issues() function.
+
 0.1.14 (2016-01-30)
 ---------------------
 * Fixed incorrect y-offset of pins for symbols that only have pins along the right side.
