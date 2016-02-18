@@ -8,6 +8,7 @@ History
 * Added reader for Xilinx Ultrascale FPGAs.
 * Fixed insertion of spaces between groups of pins when pin number starts with '*'.
 * Replaced call to warnings.warn with issues() function.
+* fix_pin_data() now strips leading/trailing spaces from pin information.
 
 0.1.14 (2016-01-30)
 ---------------------
