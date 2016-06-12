@@ -10,4 +10,4 @@ Development Lead
 Contributors
 ------------
 
-Hasan Yavuz ÖZDERYA (https://github.com/hyOzd)
+Hasan Yavuz OZDERYA (https://github.com/hyOzd)

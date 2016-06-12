@@ -5,7 +5,7 @@ History
 
 0.1.15 (2016-02-17)
 ---------------------
-* Added reader for CSV-formatted pinout files exported from the STM32CubeMx tool. (Thanks, Hasan Yavuz ÖZDERYA!)
+* Added reader for CSV-formatted pinout files exported from the STM32CubeMx tool. (Thanks, Hasan Yavuz OZDERYA!)
 
 0.1.15 (2016-02-17)
 ---------------------
