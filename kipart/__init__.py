@@ -2,4 +2,4 @@
 
 __author__ = 'XESS Corp.'
 __email__ = 'info@xess.com'
-__version__ = '0.1.15'
+__version__ = '0.1.16'

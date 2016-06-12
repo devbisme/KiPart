@@ -5,6 +5,10 @@ History
 
 0.1.15 (2016-02-17)
 ---------------------
+* Added reader for CSV-formatted pinout files exported from the STM32CubeMx tool. (Thanks, Hasan Yavuz ÖZDERYA!)
+
+0.1.15 (2016-02-17)
+---------------------
 * Added reader for Xilinx Ultrascale FPGAs.
 * Fixed insertion of spaces between groups of pins when pin number starts with '*'.
 * Replaced call to warnings.warn with issues() function.
