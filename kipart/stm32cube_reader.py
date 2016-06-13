@@ -95,6 +95,31 @@ def group_pins(pins):
     return ports
 
 def stm32cube_reader(csv_file):
+    """Reader for STM32CubeMx pin list output.
+
+    STM32CubeMx is a tool for creating firmware projects for STM32
+    MCUs. It also includes a pin layout designer which can export the
+    list of pins in the form of a CSV file. This will read the csv
+    file and return a dictionary of pin data.
+
+    An example output of the STM32CubeMx tool can be seen below:
+
+    "Position","Name","Type","Signal","Label"
+    "1","VBAT","Power","",""
+    "2","PC13-ANTI_TAMP","I/O","",""
+    "3","PC14-OSC32_IN","I/O","RCC_OSC32_IN",""
+    "4","PC15-OSC32_OUT","I/O","RCC_OSC32_OUT",""
+    ...
+
+    Pin names for the symbols will be constructed as "Name/Signal". If
+    user defined label is specified it will be used instead of
+    "Signal" column.
+
+    All IO pins will be grouped to units per their ports.
+    Configuration related pins such as boot, clock etc will be grouped
+    as a separate unit. Power pins will be a separate unit as well.
+
+    """
     pins = parse_csv_file(csv_file)
 
     ports = group_pins(pins)
