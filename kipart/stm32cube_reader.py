@@ -1,16 +1,12 @@
 import csv
 from collections import defaultdict
 import re
-import pprint
 from operator import itemgetter
-import argparse
 import os
 import copy
 from collections import defaultdict
 from .common import *
 from .kipart import *
-
-pp = pprint.PrettyPrinter(indent=4)
 
 def parse_csv_file(csv_file):
     """Parses the CSV file and returns a list of pins in the form of (number, 'name')"""
@@ -27,8 +23,6 @@ def parse_csv_file(csv_file):
             name += '/' + signal
 
         name = name.replace(' ', '_')
-
-        print("%s: %s" % (number, name))
         pins.append((number, name))
 
     return pins
@@ -79,13 +73,9 @@ def group_pins(pins):
     return ports
 
 def stm32cube_reader(csv_file):
-    print("Reading file %s..." % csv_file)
     pins = parse_csv_file(csv_file)
-    print("File read. %d pins." % len(pins))
 
     ports = group_pins(pins)
-    print("Pins are grouped as:")
-    pp.pprint(ports)
 
     # create pin data
     pin_data = defaultdict(lambda: defaultdict(lambda: defaultdict(list)))
