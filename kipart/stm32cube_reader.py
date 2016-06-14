@@ -30,8 +30,18 @@ from collections import defaultdict
 from .common import *
 from .kipart import *
 
+# Pin type mappings of STM32Cube output to kipart accepted values.
+type_mappings = {
+    "Power" : "power_in",
+    "Input" : "input",
+    "Output" : "output",
+    "I/O" : "inout",
+    "Reset" : "input",
+    "Boot" : "input"
+}
+
 def parse_csv_file(csv_file):
-    """Parses the CSV file and returns a list of pins in the form of (number, 'name')"""
+    """Parses the CSV file and returns a list of pins in the form of (number, 'name', 'type')"""
 
     pins = []
     reader = csv.reader(csv_file, delimiter=',', quotechar='"')
@@ -45,7 +55,9 @@ def parse_csv_file(csv_file):
             name += '/' + signal
 
         name = name.replace(' ', '_')
-        pins.append((number, name))
+        pin_type = type_mappings.get(ptype, "inout")
+
+        pins.append((number, name, pin_type))
 
     return pins
 
@@ -68,7 +80,7 @@ def group_pins(pins):
     config_names = ['OSC', 'NRST', 'SWCLK', 'SWDIO', 'BOOT']
 
     for pin in pins:
-        number, name = pin
+        number, name, ptype = pin
         if any(pn in name for pn in power_names):
             ports['power'].append(pin)
 
@@ -118,7 +130,6 @@ def stm32cube_reader(csv_file):
     All IO pins will be grouped to units per their ports.
     Configuration related pins such as boot, clock etc will be grouped
     as a separate unit. Power pins will be a separate unit as well.
-
     """
     pins = parse_csv_file(csv_file)
 
@@ -136,6 +147,7 @@ def stm32cube_reader(csv_file):
             pin.index = index = index + 1
             pin.num = p[0]
             pin.name = p[1]
+            pin.type = p[2]
             pin.unit = port_name
 
             pin_data[pin.unit][pin.side][pin.name].append(pin)
