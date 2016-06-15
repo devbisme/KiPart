@@ -91,6 +91,13 @@ When the option `-r xilinx7` is used, the individual CSV pin files or entire .zi
 When the option `-r psoc5lp` is used, the CSV pin file contains the pinout text
 extracted from a Cypress PSoC5LP datasheet.
 
+When the option '-r stm32cube' is used, input CSV file should be the
+pin layout file exported from the STM32CubeMx tool. To create this
+file; create a project with STM32CubeMx then from window menu select
+"Pinout -> Generate CSV pinout text file". If you select pin features
+or define labels for pins these will be reflected in the generated
+library symbol.
+
 The `-s` option specifies the arrangement of the pins in the schematic symbol:
 
 * `-s row` places the pins in the order they were entered into the CSV file.

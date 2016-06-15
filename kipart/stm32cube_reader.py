@@ -1,19 +1,47 @@
+# MIT license
+#
+# Copyright (C) 2016 Hasan Yavuz Ozderya
+#
+# Permission is hereby granted, free of charge, to any person obtaining a copy
+# of this software and associated documentation files (the "Software"), to deal
+# in the Software without restriction, including without limitation the rights
+# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+# copies of the Software, and to permit persons to whom the Software is
+# furnished to do so, subject to the following conditions:
+#
+# The above copyright notice and this permission notice shall be included in
+# all copies or substantial portions of the Software.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+# THE SOFTWARE.
+
 import csv
 from collections import defaultdict
 import re
-import pprint
 from operator import itemgetter
-import argparse
 import os
 import copy
 from collections import defaultdict
 from .common import *
 from .kipart import *
 
-pp = pprint.PrettyPrinter(indent=4)
+# Pin type mappings of STM32Cube output to kipart accepted values.
+type_mappings = {
+    "Power" : "power_in",
+    "Input" : "input",
+    "Output" : "output",
+    "I/O" : "inout",
+    "Reset" : "input",
+    "Boot" : "input"
+}
 
 def parse_csv_file(csv_file):
-    """Parses the CSV file and returns a list of pins in the form of (number, 'name')"""
+    """Parses the CSV file and returns a list of pins in the form of (number, 'name', 'type')"""
 
     pins = []
     reader = csv.reader(csv_file, delimiter=',', quotechar='"')
@@ -27,9 +55,9 @@ def parse_csv_file(csv_file):
             name += '/' + signal
 
         name = name.replace(' ', '_')
+        pin_type = type_mappings.get(ptype, "inout")
 
-        print("%s: %s" % (number, name))
-        pins.append((number, name))
+        pins.append((number, name, pin_type))
 
     return pins
 
@@ -52,7 +80,7 @@ def group_pins(pins):
     config_names = ['OSC', 'NRST', 'SWCLK', 'SWDIO', 'BOOT']
 
     for pin in pins:
-        number, name = pin
+        number, name, ptype = pin
         if any(pn in name for pn in power_names):
             ports['power'].append(pin)
 
@@ -79,13 +107,33 @@ def group_pins(pins):
     return ports
 
 def stm32cube_reader(csv_file):
-    print("Reading file %s..." % csv_file)
+    """Reader for STM32CubeMx pin list output.
+
+    STM32CubeMx is a tool for creating firmware projects for STM32
+    MCUs. It also includes a pin layout designer which can export the
+    list of pins in the form of a CSV file. This will read the csv
+    file and return a dictionary of pin data.
+
+    An example output of the STM32CubeMx tool can be seen below:
+
+    "Position","Name","Type","Signal","Label"
+    "1","VBAT","Power","",""
+    "2","PC13-ANTI_TAMP","I/O","",""
+    "3","PC14-OSC32_IN","I/O","RCC_OSC32_IN",""
+    "4","PC15-OSC32_OUT","I/O","RCC_OSC32_OUT",""
+    ...
+
+    Pin names for the symbols will be constructed as "Name/Signal". If
+    user defined label is specified it will be used instead of
+    "Signal" column.
+
+    All IO pins will be grouped to units per their ports.
+    Configuration related pins such as boot, clock etc will be grouped
+    as a separate unit. Power pins will be a separate unit as well.
+    """
     pins = parse_csv_file(csv_file)
-    print("File read. %d pins." % len(pins))
 
     ports = group_pins(pins)
-    print("Pins are grouped as:")
-    pp.pprint(ports)
 
     # create pin data
     pin_data = defaultdict(lambda: defaultdict(lambda: defaultdict(list)))
@@ -99,6 +147,7 @@ def stm32cube_reader(csv_file):
             pin.index = index = index + 1
             pin.num = p[0]
             pin.name = p[1]
+            pin.type = p[2]
             pin.unit = port_name
 
             pin_data[pin.unit][pin.side][pin.name].append(pin)
