@@ -3,7 +3,11 @@
 History
 -------
 
-0.1.15 (2016-02-17)
+0.1.17 (2016-06-15)
+---------------------
+* Use same type of sorting for unit names as for pin names so (for example) unit 'ADC_12' comes before unit 'ADC_2'.
+
+0.1.16 (2016-06-12)
 ---------------------
 * Added reader for CSV-formatted pinout files exported from the STM32CubeMx tool. (Thanks, Hasan Yavuz OZDERYA!)
 
