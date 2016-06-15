@@ -31,7 +31,6 @@ import math
 import re
 import importlib
 from affine import Affine
-from natsort import natsorted
 from .common import *
 
 __all__ = ['kipart']  # Only export this routine for use by the outside world.
@@ -303,9 +302,14 @@ def draw_pins(lib_file, unit_num, unit_pins, transform, fuzzy_match):
         y -= PIN_SPACING
 
 
-def row_key(pin):
-    '''Generate a key from the order the pins were entered into the CSV file.'''
-    return pin[1][0].index
+def zero_pad_nums(s):
+    # Pad all numbers in the string with leading 0's.
+    # Thus, 'A10' and 'A2' will become 'A00010' and 'A00002' and A2 will
+    # appear before A10 in a list.
+    try:
+        return re.sub(r'\d+', lambda mtch: '0' * (8 - len(mtch.group(0))) + mtch.group(0), s)
+    except TypeError:
+        return s # The input is probably not a string, so just return it unchanged.
 
 
 def num_key(pin):
@@ -314,8 +318,7 @@ def num_key(pin):
     # Pad all numeric strings in the pin name with leading 0's.
     # Thus, 'A10' and 'A2' will become 'A00010' and 'A00002' and A2 will
     # appear before A10 in a list.
-    return re.sub(r'\d+', lambda mtch: '0' *
-                  (8 - len(mtch.group(0))) + mtch.group(0), pin[1][0].num)
+    return zero_pad_nums(pin[1][0].num)
 
 
 def name_key(pin):
@@ -324,8 +327,12 @@ def name_key(pin):
     # Pad all numeric strings in the pin name with leading 0's.
     # Thus, 'adc10' and 'adc2' will become 'adc00010' and 'adc00002' and adc2 will
     # appear before adc10 in a list.
-    return re.sub(r'\d+', lambda mtch: '0' *
-                  (8 - len(mtch.group(0))) + mtch.group(0), pin[1][0].name)
+    return zero_pad_nums(pin[1][0].name)
+
+
+def row_key(pin):
+    '''Generate a key from the order the pins were entered into the CSV file.'''
+    return pin[1][0].index
 
 
 def draw_symbol(lib_file, part_num, pin_data, sort_type, fuzzy_match):
@@ -368,13 +375,16 @@ def draw_symbol(lib_file, part_num, pin_data, sort_type, fuzzy_match):
     # Start the section of the part definition that holds the part's units.
     lib_file.write(START_DRAW)
 
-    # Get a reference to the sort-key generation routine.
-    key_func = getattr(THIS_MODULE, '{}_key'.format(sort_type))
+    # Get a reference to the sort-key generation function for pins.
+    pin_key_func = getattr(THIS_MODULE, '{}_key'.format(sort_type))
+
+    # This is the sort-key generation function for unit names.
+    unit_key_func = lambda x: zero_pad_nums(x[0])
 
     # Now create the units that make up the part. Unit numbers go from 1
     # up to the number of units in the part. The units are sorted by their
     # names before assigning unit numbers.
-    for unit_num, unit in enumerate([p[1] for p in natsorted(pin_data.items())], 1):
+    for unit_num, unit in enumerate([p[1] for p in sorted(pin_data.items(),key=unit_key_func)], 1):
 
         # The indices of the X and Y coordinates in a list of point coords.
         X = 0
@@ -473,7 +483,7 @@ def draw_symbol(lib_file, part_num, pin_data, sort_type, fuzzy_match):
         # Draw the transformed pins for each side of the symbol.
         for side, side_pins in list(unit.items()):
             # Sort the pins names for the desired order: row-wise, numeric, alphabetical.
-            sorted_side_pins = sorted(list(side_pins.items()), key=key_func)
+            sorted_side_pins = sorted(list(side_pins.items()), key=pin_key_func)
             # Draw the transformed pins for this side of the symbol.
             draw_pins(lib_file, unit_num, sorted_side_pins, transform[side],
                       fuzzy_match)

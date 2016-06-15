@@ -4,11 +4,12 @@ Usage
 
 KiPart is mainly intended to be  used as a script::
 
-    usage: kipart [-h] [-v] [-r [{generic,xilinx7,psoc5lp}]]
-                       [-s [{row,num,name}]] [-o [file.lib]] [-f] [-b] [-a] [-w]
-                       [-d [LEVEL]]
-                       file1.[csv|zip] file2.[csv|zip] ... [file1.[csv|zip]
-                       file2.[csv|zip] ... ...]
+    usage: kipart [-h] [-v]
+                  [-r [{generic,xilinxultra,xilinx7,xilinx6s,xilinx6v,psoc5lp,stm32cube}]]
+                  [-s [{row,num,name}]] [-o [file.lib]] [-f] [-b] [-a]
+                  [-w] [-d [LEVEL]]
+                  file1.[csv|zip] file2.[csv|zip] ... [file1.[csv|zip]
+                  file2.[csv|zip] ... ...]
 
     Generate single & multi-unit schematic symbols for KiCad from a CSV file.
 
@@ -20,7 +21,7 @@ KiPart is mainly intended to be  used as a script::
     optional arguments:
       -h, --help            show this help message and exit
       -v, --version         show program's version number and exit
-      -r [{generic,xilinx7,psoc5lp}], --reader [{generic,xilinx7,psoc5lp}]
+      -r [{generic,xilinxultra,xilinx7,xilinx6s,xilinx6v,psoc5lp,stm32cube}], --reader [{generic,xilinxultra,xilinx7,xilinx6s,xilinx6v,psoc5lp,stm32cube}]
                             Name of function for reading the CSV file.
       -s [{row,num,name}], --sort [{row,num,name}]
                             Sort the part pins by their entry order in the CSV
@@ -29,8 +30,8 @@ KiPart is mainly intended to be  used as a script::
                             Generated KiCad library for part.
       -f, --fuzzy_match     Use approximate string matching when looking-up the
                             pin type, style and orientation.
-      -b, --bundle          Bundle multiple pins with the same name into a single
-                            schematic pin.
+      -b, --bundle          Bundle multiple, identically-named power, ground and
+                            no-connect pins each into a single schematic pin.
       -a, --append          Append to an existing part library.
       -w, --overwrite       Allow overwriting of an existing part library.
       -d [LEVEL], --debug [LEVEL]
