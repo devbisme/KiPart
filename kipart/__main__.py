@@ -29,6 +29,7 @@ import io
 import zipfile
 from .__init__ import __version__
 from .kipart import *
+from .common import DEFAULT_PIN
 
 def main():
     parser = ap.ArgumentParser(
@@ -58,6 +59,14 @@ def main():
         default='row',
         help=
         'Sort the part pins by their entry order in the CSV file, their pin number, or their pin name.')
+    parser.add_argument(
+        '--side',
+        nargs='?',
+        type=str.lower,
+        choices=['left', 'right', 'top', 'bottom'],
+        default='left',
+        help='which side to place the pins by default'
+    )
     parser.add_argument('-o', '--output',
         nargs='?',
         type=str,
@@ -110,6 +119,8 @@ def main():
                    fuzzy_match=args.fuzzy_match,
                    bundle=args.bundle,
                    debug_level=args.debug)
+
+    DEFAULT_PIN.side = args.side
 
     append_to_lib = args.append
     for input_file in args.input_files:
