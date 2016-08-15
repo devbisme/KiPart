@@ -60,12 +60,17 @@ def main():
         help=
         'Sort the part pins by their entry order in the CSV file, their pin number, or their pin name.')
     parser.add_argument(
+        '--reverse',
+        action = 'store_true',
+        help='Sort pins in reverse order.'
+    )
+    parser.add_argument(
         '--side',
         nargs='?',
         type=str.lower,
         choices=['left', 'right', 'top', 'bottom'],
         default='left',
-        help='which side to place the pins by default'
+        help='Which side to place the pins by default.'
     )
     parser.add_argument('-o', '--output',
         nargs='?',
@@ -116,6 +121,7 @@ def main():
                    lib_filename=args.output,
                    append_to_lib=append_to_lib,
                    sort_type=args.sort,
+                   reverse=args.reverse,
                    fuzzy_match=args.fuzzy_match,
                    bundle=args.bundle,
                    debug_level=args.debug)
