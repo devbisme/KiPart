@@ -77,7 +77,7 @@ def group_pins(pins):
     ports = defaultdict(list)
 
     power_names = ['VDD', 'VSS', 'VCAP', 'VBAT', 'VREF']
-    config_names = ['OSC', 'NRST', 'SWCLK', 'SWDIO', 'BOOT']
+    config_names = ['RCC_OSC', 'NRST', 'SWCLK', 'SWDIO', 'BOOT']
 
     for pin in pins:
         number, name, ptype = pin
