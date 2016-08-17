@@ -335,7 +335,7 @@ def row_key(pin):
     return pin[1][0].index
 
 
-def draw_symbol(lib_file, part_num, pin_data, sort_type, fuzzy_match):
+def draw_symbol(lib_file, part_num, pin_data, sort_type, reverse, fuzzy_match):
     '''Add a symbol for a part to the library.'''
 
     # Start the part definition with the header.
@@ -483,7 +483,7 @@ def draw_symbol(lib_file, part_num, pin_data, sort_type, fuzzy_match):
         # Draw the transformed pins for each side of the symbol.
         for side, side_pins in list(unit.items()):
             # Sort the pins names for the desired order: row-wise, numeric, alphabetical.
-            sorted_side_pins = sorted(list(side_pins.items()), key=pin_key_func)
+            sorted_side_pins = sorted(list(side_pins.items()), key=pin_key_func, reverse=reverse)
             # Draw the transformed pins for this side of the symbol.
             draw_pins(lib_file, unit_num, sorted_side_pins, transform[side],
                       fuzzy_match)
@@ -533,6 +533,7 @@ def do_bundling(pin_data, bundle, fuzzy_match):
 def kipart(reader_type, part_data_file, lib_filename,
            append_to_lib=False,
            sort_type='name',
+           reverse=False,
            fuzzy_match=False,
            bundle=False,
            debug_level=0):
@@ -566,6 +567,7 @@ def kipart(reader_type, part_data_file, lib_filename,
                         part_num=part_num,
                         pin_data=pin_data,
                         sort_type=sort_type,
+                        reverse=reverse,
                         fuzzy_match=fuzzy_match)
 
     # This enables library-appending if it was already on upon entry to the routine
