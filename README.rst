@@ -9,7 +9,7 @@ KiPart
 Generate multi-unit schematic symbols for KiCad from a CSV file.
 
 * Free software: MIT license
-* Documentation: https://xesscorp.github.io/kipart.
+* Documentation: https://xesscorp.github.io/KiPart.
 
 Features
 --------
