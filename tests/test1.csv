@@ -1,0 +1,14 @@
+example_part,,,,
+,,,,
+Pin,    Unit,   Type,           Name,Side
+23,D1,input,          A5,left
+90,D1,output,         B1,left
+88,D1,bidirectional,  C3,left
+56,A11,tristate,       D22,left
+84,A11,tristate,       D3,left
+16,B2,power_in,       VCC,left
+5,B2,power_in,       GND,left
+29,B33,power_in,       VCC,left
+98,B33,power_in,       GND,left
+99,A2,power_in,       VCC,left
+59,A2,power_in,       GND,left

@@ -3,6 +3,12 @@
 History
 -------
 
+0.1.18 (2016-09-14)
+______________________
+
+* kilib2csv utility added to convert KiCad schematic symbol libraries into CSV files suitable for input to KiPart.
+
+
 0.1.17 (2016-06-15)
 ______________________
 

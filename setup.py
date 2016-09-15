@@ -15,7 +15,7 @@ with open('README.rst') as readme_file:
 with open('HISTORY.rst') as history_file:
     history = history_file.read().replace('.. :changelog:', '')
 
-requirements = ['affine >= 1.2.0', 'future >= 0.15.0' ]
+requirements = ['affine >= 1.2.0', 'future >= 0.15.0', 'pyparsing']
 
 test_requirements = [  # TODO: put package test requirements here
 ]
@@ -28,7 +28,9 @@ setup(name='kipart',
       author_email=kipart.__email__,
       url='https://github.com/xesscorp/kipart',
       packages=setuptools.find_packages(),
-      entry_points={'console_scripts': ['kipart = kipart.__main__:main']},
+      entry_points={'console_scripts': 
+            ['kipart = kipart.__main__:main', 
+             'kilib2csv = kipart.kilib2csv:main']},
       package_dir={'kipart': 'kipart'},
       include_package_data=True,
       package_data={'kipart': ['*.gif', '*.png']},

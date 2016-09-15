@@ -1,0 +1,14 @@
+example_part,,,
+,,,
+Pin,    Unit,   Type,           Name
+23,IO,input,          A5
+90,IO,output,         B1
+88,IO,bidirectional,  C3
+56,IO,tristate,       D22
+84,IO,tristate,       D3
+16,PWR,power_in,       VCC
+5,PWR,power_in,       GND
+29,PWR,power_in,       VCC
+98,PWR,power_in,       GND
+99,PWR,power_in,       VCC
+59,PWR,power_in,       GND

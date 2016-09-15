@@ -1,0 +1,10 @@
+LT1512,,,
+pin,name,type,side
+1,Vc,un,bottom
+2,FB,un,right
+3,IFB,un,bottom
+4,S/S,un,left
+5,Vin,pwr,top
+6,GND S,pwr,bottom
+7,GND,pwr,bottom
+8,Vsw,un,right

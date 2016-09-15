@@ -9,7 +9,7 @@ KiPart
 Generate multi-unit schematic symbols for KiCad from a CSV file.
 
 * Free software: MIT license
-* Documentation: https://kipart.readthedocs.org.
+* Documentation: https://xesscorp.github.io/kipart.
 
 Features
 --------
@@ -20,3 +20,5 @@ Features
 * Each row of the CSV file lists the number, name, type, style, unit and side of a pin.
 * Pins on a unit with the same name (e.g., GND) are placed at the same location
   so they can all be tied to the same net with a single connection.
+* Also includes `kilib2csv` for converting schematic part libraries into
+  CSV files suitable for input to KiPart.

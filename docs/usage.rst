@@ -2,6 +2,9 @@
 Usage
 ========
 
+KiPart
+------------------
+
 KiPart is mainly intended to be  used as a script::
 
     usage: kipart [-h] [-v]
@@ -199,3 +202,40 @@ all the outputs on the right side, the `VCC` pins on the top and the `GND` pins 
 Running the command `kipart -b example.csv -o example6.lib` generates a part symbol with pins on all four sides:
 
 .. image:: example6.png
+
+
+kilib2csv
+---------------------
+
+Sometimes you have existing libraries that you want to manage with a spreadsheet
+instead of the KiCad symbol editor.
+The kilib2csv utility can take one or more library files and convert them
+into a CSV file.
+The CSV file can be manipulated with a spreadsheet and used as input to KiPart.
+
+::
+
+    usage: kilib2csv-script.py [-h] [-v] [-o [file.csv]] [-a] [-w]
+                               file.lib [file.lib ...]
+
+    Convert a KiCad schematic symbol library file into a CSV file for KiPart.
+
+    positional arguments:
+      file.lib              KiCad schematic symbol library.
+
+    optional arguments:
+      -h, --help            show this help message and exit
+      -v, --version         show program's version number and exit
+      -o [file.csv], --output [file.csv]
+                            CSV file created from schematic library file.
+      -a, --append          Append to an existing CSV file.
+      -w, --overwrite       Allow overwriting of an existing CSV file.
+
+The utility is easy to use::
+
+    kilib2csv my_lib1.lib my_lib2.lib -o my_library.csv
+
+Then you can generate a consistent library from the CSV file::
+
+    kipart my_library.csv -o my_library_new.lib
+
