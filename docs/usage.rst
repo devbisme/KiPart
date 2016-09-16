@@ -29,6 +29,9 @@ KiPart is mainly intended to be  used as a script::
       -s [{row,num,name}], --sort [{row,num,name}]
                             Sort the part pins by their entry order in the CSV
                             file, their pin number, or their pin name.
+      --reverse             Sort pins in reverse order.
+      --side [{left,right,top,bottom}]
+                            Which side to place the pins by default.
       -o [file.lib], --output [file.lib]
                             Generated KiCad library for part.
       -f, --fuzzy_match     Use approximate string matching when looking-up the
@@ -109,6 +112,12 @@ The `-s` option specifies the arrangement of the pins in the schematic symbol:
 * `-s row` places the pins in the order they were entered into the CSV file.
 * `-s num` places the pins such that their pin numbers are in increasing order.
 * `-s name` places the pins in increasing order of their names.
+
+The `--reverse` option reverses the sort order.
+
+Using the `--side` option you can set the default side for the
+pins. The option from the CSV file will override the command line
+option. Default choice is `left`.
 
 Specifying the `-f` option enables *fuzzy matching* on the pin types, styles and sides used in the
 CSV file.
