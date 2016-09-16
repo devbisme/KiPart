@@ -43,7 +43,9 @@ KiPart is mainly intended to be  used as a script::
 A generic part file is expected when the `-r generic` option is specified.
 It contains the following items:
 
-#. The part name or number stands alone on row.
+#. The part name or number stands alone on row. The reference prefix for the part
+   can also be placed on the same row in a cell following the name. (If omitted, the
+   reference prefix defaults to `U`.)
 #. The next non-blank row contains the column headers. The required headers are 'Pin' and 'Name'.
    Optional columns are 'Unit', 'Side', 'Type', and 'Style'.
    These can be placed in any order and in any column.

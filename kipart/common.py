@@ -70,15 +70,22 @@ def get_nonblank_row(csv_reader):
     return None
 
 
-def get_part_num(csv_reader):
-    '''Get the part number from a row of the CSV file.'''
-    part_num = get_nonblank_row(csv_reader)
+def get_part_info(csv_reader):
+    '''Get the part number and reference prefix from a row of the CSV file.'''
+    part_num = None
+    part_ref_prefix = 'U'
+    part_info = get_nonblank_row(csv_reader)
     try:
-        part_num = set(part_num)
-        part_num.discard('')
-        return part_num.pop()
-    except TypeError:
-        return None
+        try:
+            while True:
+                part_info.remove('')
+        except (ValueError, AttributeError):
+            pass
+        part_num = part_info[0]
+        part_ref_prefix = part_info[1]
+    except (IndexError, TypeError):
+        pass
+    return part_num, part_ref_prefix
 
 
 def find_closest_match(name, name_dict, fuzzy_match, threshold=0.0):

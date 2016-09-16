@@ -3,6 +3,12 @@
 History
 -------
 
+0.1.19 (2016-09-16)
+______________________
+
+* Added utility to test kilib2csv and kipart on randomly-generated CSV part files.
+
+
 0.1.18 (2016-09-14)
 ______________________
 

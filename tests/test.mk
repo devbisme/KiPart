@@ -1,10 +1,18 @@
 tests := example1 example2 example3 example4 example5 example6 lt1512 helwig test1
 examples := example1 example2 example3 example4 example5 example6
 
-all: $(tests:=.tst)
+all: randomtest
+#all: randomtest $(tests:=.tst)
 clean: $(tests:=.clean)
 examples: $(examples:=.lib)
 tests: $(tests:=.lib)
+
+randomtest:
+	python random_csv.py > randomtest.csv
+	kipart randomtest.csv -o randomtest.lib -w
+	kilib2csv randomtest.lib -o randomtest2.csv -w
+	@diff -s randomtest.csv randomtest2.csv
+	@echo "*********************************************************************"
 
 example1.lib: example1.csv
 	kipart $^ -o $@ -w

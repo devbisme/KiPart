@@ -35,11 +35,13 @@ from builtins import open
 from future import standard_library
 standard_library.install_aliases()
 
-from pyparsing import *
 import argparse as ap
 import os
 import sys
 import re
+from pyparsing import *
+
+from .py_2_3 import *
 
 from .__init__ import __version__
 
@@ -162,7 +164,7 @@ def _gen_csv(parsed_lib):
 
     type_tbl = {'I':'in', 'O':'out', 'B':'bidir', 'T':'tri', 'P':'passive', 'U':'unspecified', 'W':'pwr', 'w':'pwr_out', 'C':'open_collector', 'E':'open_emitter', 'N':'NC'}
     orientation_tbl = {'R':'left', 'L':'right', 'U':'bottom', 'D':'top'}
-    style_tbl = {'':'', 'I':'inv', 'C':'clk', 'IC':'inv_clk', 'L':'input_low', 'CL':'clk_low', 'V':'output_low', 'F':'falling_clk', 'N':'non_logic'}
+    style_tbl = {'':'', 'I':'inv', 'C':'clk', 'IC':'inv_clk', 'L':'input_low', 'CL':'clk_low', 'V':'output_low', 'F':'falling_clk', 'X':'non_logic'}
 
     csv = ''
     for part in parsed_lib.parts:
@@ -184,9 +186,13 @@ def _gen_csv(parsed_lib):
             # Pad all numeric strings in the pin name with leading 0's.
             # Thus, 'A10' and 'A2' will become 'A00010' and 'A00002' and A2 will
             # appear before A10 in a list.
-            return zero_pad_nums(pin.num)
+            return zero_pad_nums(pin.unit) + zero_pad_nums(pin.num)
 
         for p in sorted(part.pins, key=num_key):
+            # Replace commas in pin numbers, names and units so it doesn't screw-up the CSV file.
+            p.num = re.sub(',', ';', p.num)
+            p.name = re.sub(',', ';', p.name)
+            p.unit = re.sub(',', ';', p.unit)
             csv += ','.join([p.num, p.name, type_tbl[p.type], orientation_tbl[p.orientation], p.unit, style_tbl[p.style]]) + '\n'
         csv += ',,,,,\n'
     csv += '\n'

@@ -63,7 +63,6 @@ BOX_LINE_WIDTH = 12
 FILL = 'no_fill'
 
 # Part reference.
-REF_PREFIX = 'U'
 REF_SIZE = 60  # Font size.
 REF_Y_OFFSET = 250
 
@@ -335,13 +334,13 @@ def row_key(pin):
     return pin[1][0].index
 
 
-def draw_symbol(lib_file, part_num, pin_data, sort_type, reverse, fuzzy_match):
+def draw_symbol(lib_file, part_num, part_ref_prefix, pin_data, sort_type, reverse, fuzzy_match):
     '''Add a symbol for a part to the library.'''
 
     # Start the part definition with the header.
     lib_file.write(
         START_DEF.format(name=part_num,
-                         ref=REF_PREFIX,
+                         ref=part_ref_prefix,
                          pin_name_offset=PIN_NAME_OFFSET,
                          show_pin_number=SHOW_PIN_NUMBER and 'Y' or 'N',
                          show_pin_name=SHOW_PIN_NAME and 'Y' or 'N',
@@ -359,7 +358,7 @@ def draw_symbol(lib_file, part_num, pin_data, sort_type, reverse, fuzzy_match):
             break
 
     # Create the field that stores the part reference.
-    lib_file.write(REF_FIELD.format(ref_prefix=REF_PREFIX,
+    lib_file.write(REF_FIELD.format(ref_prefix=part_ref_prefix,
                                     x=XO + horiz_offset,
                                     y=YO + REF_Y_OFFSET,
                                     horiz_just=horiz_just,
@@ -553,7 +552,7 @@ def kipart(reader_type, part_data_file, lib_filename,
     with open(lib_filename, lib_filemode) as lib_file:
 
         # Get the part number and pin data from the CSV file.
-        for part_num, pin_data in part_reader(part_data_file):
+        for part_num, part_ref_prefix, pin_data in part_reader(part_data_file):
         
             do_bundling(pin_data, bundle, fuzzy_match)
 
@@ -565,6 +564,7 @@ def kipart(reader_type, part_data_file, lib_filename,
             # Draw the schematic symbol into the library.
             draw_symbol(lib_file=lib_file,
                         part_num=part_num,
+                        part_ref_prefix = part_ref_prefix,
                         pin_data=pin_data,
                         sort_type=sort_type,
                         reverse=reverse,
