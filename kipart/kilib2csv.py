@@ -71,11 +71,10 @@ def _parse_lib_kicad(text):
     # Part aliases. (Aliases are ignored.)
     aliases = ZeroOrMore(CaselessKeyword('ALIAS') + restOfLine()).suppress()
 
-    # Footprint section. (Footprints are ignored.)
-    foot_start = (CaselessKeyword('$FPLIST') + restOfLine).suppress()
-    foot_end = (CaselessKeyword('$ENDFPLIST') + restOfLine).suppress()
-    footprint = (anystring + restOfLine).suppress()
-    footprints = Optional(foot_start + ZeroOrMore(footprint) + foot_end).suppress()
+    # Footprint section. (Footprints are just skipped over and ignored.)
+    foot_start = CaselessKeyword('$FPLIST') + terminator
+    foot_end = CaselessKeyword('$ENDFPLIST') + terminator
+    footprints = Optional(foot_start + SkipTo(foot_end) + foot_end).suppress()
 
     # Draw section parser.
     draw_start = (CaselessKeyword('DRAW') + restOfLine).suppress()
