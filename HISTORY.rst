@@ -3,6 +3,12 @@
 History
 -------
 
+0.1.20 (2016-09-16)
+______________________
+
+* Fixed bug where kilib2csv was choking on footprint lists in part definitions.
+
+
 0.1.19 (2016-09-16)
 ______________________
 
