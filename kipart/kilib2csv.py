@@ -96,10 +96,11 @@ def _parse_lib_kicad(text):
     defs = ZeroOrMore(defn)
 
     # Parser for entire library.
-    version = CaselessKeyword('EESchema-LIBRARY').suppress() + \
-            CaselessKeyword('version').suppress() + fnum('version') + terminator
+    version = CaselessKeyword('version').suppress() + fnum
+    start = CaselessKeyword('EESchema-LIBRARY').suppress() + \
+            SkipTo(version) + version('version') + restOfLine.suppress()
     end_of_file = Optional(White()) + stringEnd
-    lib = version + defs('parts') + end_of_file
+    lib = start + defs('parts') + end_of_file
 
     #---------------------- End of parser -------------------------
 

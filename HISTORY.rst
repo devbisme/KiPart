@@ -3,6 +3,12 @@
 History
 -------
 
+0.1.21 (2016-09-20)
+______________________
+
+* Extra stuff on starting line of library no longer kill kilib2csv.
+
+
 0.1.20 (2016-09-16)
 ______________________
 
