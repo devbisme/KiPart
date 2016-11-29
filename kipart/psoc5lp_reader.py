@@ -143,4 +143,4 @@ def psoc5lp_reader(csv_file):
             # We'll unbundle them later, if necessary.
             pin_data[pin.unit][pin.side][pin.name].append(pin)
 
-        yield part_num, pin_data  # Return the dictionary of pins extracted from the CVS file.
+        yield part_num, 'U', pin_data  # Return the dictionary of pins extracted from the CVS file.

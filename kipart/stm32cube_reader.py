@@ -156,4 +156,4 @@ def stm32cube_reader(csv_file):
     part_name = os.path.splitext(os.path.split(csv_file.name)[1])[0]
 
     # what should be the part_num?
-    yield part_name, pin_data
+    yield part_name, 'U', pin_data
