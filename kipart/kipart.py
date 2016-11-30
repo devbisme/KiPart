@@ -402,11 +402,25 @@ def draw_symbol(lib_file, part_num, part_ref_prefix, pin_data, sort_type, revers
         }
         transform = {}
 
-        # Annotate the pins for each side of the symbol and determine the bounding box
-        # and various points for each side.
-        for side, side_pins in list(unit.items()):
+        # Annotate the pins for each side of the symbol.
+        for side_pins in list(unit.values()):
             annotate_pins(list(side_pins.items()))
+
+        # Determine the actual bounding box for each side.
+        for side, side_pins in list(unit.items()):
             bbox[side] = pins_bbox(list(side_pins.items()))
+
+        # Equalize the bounding boxes for the left/right and top/bottom sides.
+        for side1, side2 in [('left','right'),('top','bottom')]:
+            if side1 in list(unit.keys()) and side2 in list(unit.keys()):
+                bbox[side1][0][X] = min(bbox[side1][0][X],bbox[side2][0][X])
+                bbox[side1][0][Y] = max(bbox[side1][0][Y],bbox[side2][0][Y])
+                bbox[side1][1][X] = max(bbox[side1][1][X],bbox[side2][1][X])
+                bbox[side1][1][Y] = min(bbox[side1][1][Y],bbox[side2][1][Y])
+                bbox[side2] = bbox[side1]
+
+        # Determine some important points for each side of pins.
+        for side in unit:
             #
             #     C     B-------A
             #           |       |
