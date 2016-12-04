@@ -7,6 +7,7 @@ History
 ______________________
 
 * Fixed readers for Xilinx, STM32, PSoC devices.
+* Pins on multiple sides of a symbol are now distributed in a more attractive manner.
 
 
 0.1.21 (2016-09-20)
