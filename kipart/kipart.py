@@ -29,6 +29,8 @@ from past.utils import old_div
 import sys
 import math
 import re
+from copy import copy
+from pprint import pprint
 import importlib
 from affine import Affine
 from .common import *
@@ -200,6 +202,35 @@ def annotate_pins(unit_pins):
             pin.name += name_suffix
 
 
+def get_pin_num_and_spacer(pin):
+    pin_num = str(pin.num)
+    pin_spacer = 0
+    # spacer pins have pin numbers starting with a special prefix char.
+    if pin_num.startswith(PIN_SPACER_PREFIX):
+        pin_spacer = 1
+        pin_num = pin_num[1:] # Remove the spacer prefix.
+    return pin_num, pin_spacer
+
+
+def count_pin_slots(unit_pins):
+    '''Count the number of vertical pin slots needed for a column of pins.'''
+
+    # Compute the # of slots for the column of pins, taking spacers into account.
+    num_slots = 0
+    pin_num_len = 0
+    for name, pins in unit_pins:
+        pin_spacer = 0
+        pin_num_len = 0
+        for pin in pins:
+            pin_num, pin_spacer = get_pin_num_and_spacer(pin)
+            pin_num_len = max(pin_num_len, len(pin_num))
+        num_slots += pin_spacer # Add a slot if there was a spacer.
+        # Add a slot if the pin number was more than just a spacer prefix.
+        if pin_num_len > 0:
+            num_slots += 1
+    return num_slots
+
+
 def pins_bbox(unit_pins):
     '''Return the bounding box of a column of pins and their names.'''
 
@@ -215,35 +246,97 @@ def pins_bbox(unit_pins):
 
     # Add the separation space before and after the pin name.
     width += PIN_LENGTH + 2 * PIN_NAME_OFFSET
+
     # Make bounding box an integer number of pin spaces so pin connections are always on the grid.
     width = math.ceil(old_div(float(width), PIN_SPACING)) * PIN_SPACING
 
-    # Compute the height of the column of pins, taking spacers into account.
-    height = 0
-    for name, pins in unit_pins:
-        pin_spacer = 0
-        pin_num_len = 0
-        for pin in pins:
-            pin_num = str(pin.num)
-            # spacer pins have pin numbers starting with a special prefix char.
-            if pin_num.startswith(PIN_SPACER_PREFIX):
-                pin_spacer = 1
-                pin_num = pin_num[1:] # Remove the spacer prefix.
-            pin_num_len = max(pin_num_len, len(pin_num))
-        height += pin_spacer * PIN_SPACING # Add more to height if there was a spacer.
-        # Add height of pin to bbox if the pin number was more than just a spacer prefix.
-        if pin_num_len > 0:
-            height += PIN_SPACING 
+    # Compute the height of the column of pins.
+    height = count_pin_slots(unit_pins) * PIN_SPACING
 
     return [[XO, YO + PIN_SPACING], [XO + width, YO - height]]
 
 
-def draw_pins(lib_file, unit_num, unit_pins, transform, fuzzy_match):
+def balance_bboxes(bboxes):
+    '''Make the symbol more balanced by adjusting the bounding boxes of the pins on each side.'''
+    X = 0
+    Y = 1
+    def find_bbox_bbox(*bboxes):
+        '''Find the bounding box for a set of bounding boxes.'''
+        bb = [[0,0], [0,0]]
+        for bbox in bboxes:
+            bb[0][X] = min(bb[0][X], bbox[0][X])
+            bb[1][X] = max(bb[1][X], bbox[1][X])
+            bb[0][Y] = max(bb[0][Y], bbox[0][Y])
+            bb[1][Y] = min(bb[1][Y], bbox[1][Y])
+        return bb
+        
+    # Determine the number of sides of the symbol with pins.
+    num_sides = len(bboxes)
+
+    if num_sides == 4:
+        # If the symbol has pins on all four sides, then check to see if there
+        # are approximately the same number of pins on all four sides. If so, 
+        # then equalize the bounding box for each side. Otherwise, equalize
+        # the left & right bounding boxes and the top & bottom bounding boxes.
+        lr_bbox = find_bbox_bbox(bboxes['left'], bboxes['right'])
+        lr_hgt = abs(lr_bbox[0][Y] - lr_bbox[1][Y])
+        tb_bbox = find_bbox_bbox(bboxes['top'], bboxes['bottom'])
+        tb_hgt = abs(tb_bbox[0][Y] - tb_bbox[1][Y])
+        if 0.75 <= float(lr_hgt)/float(tb_hgt) <= 1/0.75:
+            bal_bbox = find_bbox_bbox(*list(bboxes.values()))
+            for side in bboxes:
+                bboxes[side] = copy(bal_bbox)
+        else:
+            bboxes['left'] = copy(lr_bbox)
+            bboxes['right'] = copy(lr_bbox)
+            bboxes['top'] = copy(tb_bbox)
+            bboxes['bottom'] = copy(tb_bbox)
+    elif num_sides == 3:
+        # If the symbol only has pins on threee sides, then equalize the
+        # bounding boxes for the pins on opposite sides and leave the
+        # bounding box on the other side unchanged.
+        if 'left' not in bboxes or 'right' not in bboxes:
+            # Top & bottom side pins, but the left or right side is empty.
+            bal_bbox = find_bbox_bbox(bboxes['top'], bboxes['bottom'])
+            bboxes['top'] = copy(bal_bbox)
+            bboxes['bottom'] = copy(bal_bbox)
+        elif 'top' not in bboxes or 'bottom' not in bboxes:
+            # Left & right side pins, but the top or bottom side is empty.
+            bal_bbox = find_bbox_bbox(bboxes['left'], bboxes['right'])
+            bboxes['left'] = copy(bal_bbox)
+            bboxes['right'] = copy(bal_bbox)
+    elif num_sides == 2:
+        # If the symbol only has pins on two opposing sides, then equalize the
+        # height of the bounding boxes for each side. Leave the width unchanged.
+        if 'left' in bboxes and 'right' in bboxes:
+            bal_bbox = find_bbox_bbox(bboxes['left'], bboxes['right'])
+            bboxes['left'][0][Y] = bal_bbox[0][Y]
+            bboxes['left'][1][Y] = bal_bbox[1][Y]
+            bboxes['right'][0][Y] = bal_bbox[0][Y]
+            bboxes['right'][1][Y] = bal_bbox[1][Y]
+        elif 'top' in bboxes and 'bottom' in bboxes:
+            bal_bbox = find_bbox_bbox(bboxes['top'], bboxes['bottom'])
+            bboxes['top'][0][Y] = bal_bbox[0][Y]
+            bboxes['top'][1][Y] = bal_bbox[1][Y]
+            bboxes['bottom'][0][Y] = bal_bbox[0][Y]
+            bboxes['bottom'][1][Y] = bal_bbox[1][Y]
+
+
+def draw_pins(lib_file, unit_num, unit_pins, bbox, transform, fuzzy_match):
     '''Draw a column of pins rotated/translated by the transform matrix.'''
+
+    # Find the actual height of the column of pins and subtract it from the
+    # bounding box (which should be at least as large). Half the difference 
+    # will be the offset needed to center the pins on the side of the symbol.
+    Y = 1 # Index for Y coordinate.
+    pins_bb = pins_bbox(unit_pins)
+    height_offset = abs(bbox[0][Y]-bbox[1][Y]) - abs(pins_bb[0][Y]-pins_bb[1][Y])
+    height_offset /= 2
+    height_offset -= height_offset % PIN_SPACING # Keep everything on the PIN_SPACING grid.
 
     # Start drawing pins from the origin.
     x = XO
-    y = YO
+    y = YO - height_offset
 
     for name, pins in unit_pins:
 
@@ -251,11 +344,7 @@ def draw_pins(lib_file, unit_num, unit_pins, transform, fuzzy_match):
         pin_spacer = 0
         pin_num_len = 0
         for pin in pins:
-            pin_num = str(pin.num)
-            # spacer pins have pin numbers starting with a special prefix char.
-            if pin_num.startswith(PIN_SPACER_PREFIX):
-                pin_spacer = 1
-                pin_num = pin_num[1:] # Remove the spacer prefix.
+            pin_num, pin_spacer = get_pin_num_and_spacer(pin)
             pin_num_len = max(pin_num_len, len(pin_num))
         y -= pin_spacer * PIN_SPACING # Add space between pins if there was a spacer.
         if pin_num_len == 0:
@@ -407,17 +496,12 @@ def draw_symbol(lib_file, part_num, part_ref_prefix, pin_data, sort_type, revers
             annotate_pins(list(side_pins.items()))
 
         # Determine the actual bounding box for each side.
+        bbox = {}
         for side, side_pins in list(unit.items()):
             bbox[side] = pins_bbox(list(side_pins.items()))
 
-        # Equalize the bounding boxes for the left/right and top/bottom sides.
-        for side1, side2 in [('left','right'),('top','bottom')]:
-            if side1 in list(unit.keys()) and side2 in list(unit.keys()):
-                bbox[side1][0][X] = min(bbox[side1][0][X],bbox[side2][0][X])
-                bbox[side1][0][Y] = max(bbox[side1][0][Y],bbox[side2][0][Y])
-                bbox[side1][1][X] = max(bbox[side1][1][X],bbox[side2][1][X])
-                bbox[side1][1][Y] = min(bbox[side1][1][Y],bbox[side2][1][Y])
-                bbox[side2] = bbox[side1]
+        # Adjust the sizes of the bboxes to make the unit look more symmetrical.
+        balance_bboxes(bbox)
 
         # Determine some important points for each side of pins.
         for side in unit:
@@ -461,6 +545,13 @@ def draw_symbol(lib_file, part_num, part_ref_prefix, pin_data, sort_type, revers
         #        | BOTTOM |               
         #        +--------+               
         #
+
+        # Create zero-sized bounding boxes for any sides of the unit without pins.
+        # This makes it simpler to do the width/height calculation that follows.
+        for side in all_sides:
+            if side not in bbox:
+                bbox[side] = [(XO,YO), (XO,YO)]
+
         # This is the width and height of the box in the middle of the pins on each side.
         box_width = max(abs(bbox['top'][0][Y] - bbox['top'][1][Y]),
                         abs(bbox['bottom'][0][Y] - bbox['bottom'][1][Y]))
@@ -498,7 +589,7 @@ def draw_symbol(lib_file, part_num, part_ref_prefix, pin_data, sort_type, revers
             # Sort the pins names for the desired order: row-wise, numeric, alphabetical.
             sorted_side_pins = sorted(list(side_pins.items()), key=pin_key_func, reverse=reverse)
             # Draw the transformed pins for this side of the symbol.
-            draw_pins(lib_file, unit_num, sorted_side_pins, transform[side],
+            draw_pins(lib_file, unit_num, sorted_side_pins, bbox[side], transform[side],
                       fuzzy_match)
 
             # Create the box around the unit's pins.
