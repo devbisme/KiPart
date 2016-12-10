@@ -42,7 +42,7 @@ KiPart is mainly intended to be  used as a script::
       -w, --overwrite       Allow overwriting of an existing part library.
       -d [LEVEL], --debug [LEVEL]
                             Print debugging info. (Larger LEVEL means more info.)
-                        
+
 A generic part file is expected when the `-r generic` option is specified.
 It contains the following items:
 
@@ -50,7 +50,7 @@ It contains the following items:
    can also be placed on the same row in a cell following the name. (If omitted, the
    reference prefix defaults to `U`.)
 #. The next non-blank row contains the column headers. The required headers are 'Pin' and 'Name'.
-   Optional columns are 'Unit', 'Side', 'Type', and 'Style'.
+   Optional columns are 'Unit', 'Side', 'Type', 'Style', and 'Hidden'.
    These can be placed in any order and in any column.
 #. On each succeeding row, enter the pin number, name, unit identifier (if the schematic symbol will have multiple units),
    pin type and style. Each of these items should be entered in the column with the appropriate header.
@@ -89,8 +89,10 @@ It contains the following items:
         * output_low, outp_low, out_lw, out_b
         * falling_edge_clock, falling_clk
         * non_logic, nl, analog
+   * The hidden column specifies whether the pin is visible in Eeschema. This can be one of 'y', 'yes', 't', 'true',
+     or '1' to make it invisible, anything else makes it visible.
 #. A blank row ends the list of pins for the part.
-#. Multiple parts (each consisting of name, column header and pin rows) 
+#. Multiple parts (each consisting of name, column header and pin rows)
    separated by blank lines are allowed in a single CSV file.
    Each part will become a separate symbol in the KiCad library.
 
@@ -163,7 +165,7 @@ where the pins are arranged by their names:
 
 .. image:: example3.png
 
-The command `kipart -b example.csv -o example4.lib` will bundle power and no-connect pins with 
+The command `kipart -b example.csv -o example4.lib` will bundle power and no-connect pins with
 identical names (like `GND`, `VCC`, and `NC`) into single pins like so:
 
 .. image:: example4.png
@@ -185,7 +187,7 @@ by adding a `Unit` column like this::
     98,     PWR,    power_in,       GND
     99,     PWR,    power_in,       VCC
     59,     PWR,    power_in,       GND
-    
+
 Then the command `kipart -b example.csv -o example5.lib` results in a part symbol having two separate units:
 
 .. image:: example5_1.png
@@ -209,10 +211,29 @@ all the outputs on the right side, the `VCC` pins on the top and the `GND` pins 
     98,     1,      power_in,       GND,    bottom
     99,     1,      power_in,       VCC,    top
     59,     1,      power_in,       GND,    bottom
-    
+
 Running the command `kipart -b example.csv -o example6.lib` generates a part symbol with pins on all four sides:
 
 .. image:: example6.png
+
+If the input file has a `Hidden` column, then some, none, or all pins can be made invisible::
+
+    a_part_with_secrets
+
+    Pin,    Name,   Type,   Side,   Style,      Hidden
+    1,      N.C.,   in,     left,   clk_low,    Y
+    2,      GND,    pwr,    left,   ,           yeS
+    3,      SS_INH, in,     left,   ,           True
+    4,      OSC,    in,     left,   ,
+    5,      A1,     out,    right,  ,           False
+
+In the Part Library Editor, hidden pins are grayed out:
+
+.. image:: hidden_editor.png
+
+But in Eeschema, they won't be visible at all:
+
+.. image:: hidden_eeschema.png
 
 
 kilib2csv

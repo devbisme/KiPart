@@ -1,19 +1,19 @@
 # -*- coding: utf-8 -*-
 
 # MIT license
-# 
+#
 # Copyright (C) 2015 by XESS Corp.
-# 
+#
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
 # in the Software without restriction, including without limitation the rights
 # to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
 # copies of the Software, and to permit persons to whom the Software is
 # furnished to do so, subject to the following conditions:
-# 
+#
 # The above copyright notice and this permission notice shall be included in
 # all copies or substantial portions of the Software.
-# 
+#
 # THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
 # IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
 # FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
@@ -75,7 +75,7 @@ PART_NUM_Y_OFFSET = 150
 # Mapping from understandable pin orientation name to the orientation
 # indicator used in the KiCad part library. This mapping looks backward,
 # but if pins are placed on the left side of the symbol, you actually
-# want to use the pin symbol where the line points to the right. 
+# want to use the pin symbol where the line points to the right.
 # The same goes for the other sides.
 PIN_ORIENTATIONS = {
     '': 'R',
@@ -269,13 +269,13 @@ def balance_bboxes(bboxes):
             bb[0][Y] = max(bb[0][Y], bbox[0][Y])
             bb[1][Y] = min(bb[1][Y], bbox[1][Y])
         return bb
-        
+
     # Determine the number of sides of the symbol with pins.
     num_sides = len(bboxes)
 
     if num_sides == 4:
         # If the symbol has pins on all four sides, then check to see if there
-        # are approximately the same number of pins on all four sides. If so, 
+        # are approximately the same number of pins on all four sides. If so,
         # then equalize the bounding box for each side. Otherwise, equalize
         # the left & right bounding boxes and the top & bottom bounding boxes.
         lr_bbox = find_bbox_bbox(bboxes['left'], bboxes['right'])
@@ -326,7 +326,7 @@ def draw_pins(lib_file, unit_num, unit_pins, bbox, transform, fuzzy_match):
     '''Draw a column of pins rotated/translated by the transform matrix.'''
 
     # Find the actual height of the column of pins and subtract it from the
-    # bounding box (which should be at least as large). Half the difference 
+    # bounding box (which should be at least as large). Half the difference
     # will be the offset needed to center the pins on the side of the symbol.
     Y = 1 # Index for Y coordinate.
     pins_bb = pins_bbox(unit_pins)
@@ -358,6 +358,9 @@ def draw_pins(lib_file, unit_num, unit_pins, bbox, transform, fuzzy_match):
         pin_style = find_closest_match(pins[0].style, PIN_STYLES, fuzzy_match)
         pin_side = find_closest_match(pins[0].side, PIN_ORIENTATIONS,
                                       fuzzy_match)
+
+        if pins[0].hidden.lower().strip() in ['y', 'yes', 't', 'true', '1']:
+            pin_style = 'N' + pin_style
 
         # Create all the pins with a particular name. If there are more than one,
         # they are laid on top of each other and only the first is visible.
@@ -526,12 +529,12 @@ def draw_symbol(lib_file, part_num, part_ref_prefix, pin_data, sort_type, revers
         # AB = bottom-side anchor point.
         # AR = right-side anchor point.
         # AT = top-side anchor-point.
-        #        +-------------+          
-        #        |             |          
-        #        |     TOP     |          
-        #        |             |          
-        # +------AL------------AT         
-        # |      |                        
+        #        +-------------+
+        #        |             |
+        #        |     TOP     |
+        #        |             |
+        # +------AL------------AT
+        # |      |
         # |      |             +---------+
         # |      |             |         |
         # |  L   |             |         |
@@ -542,8 +545,8 @@ def draw_symbol(lib_file, part_num, part_ref_prefix, pin_data, sort_type, revers
         # |      |             |    T    |
         # |      |             |         |
         # +------AB-------+    AR--------+
-        #        | BOTTOM |               
-        #        +--------+               
+        #        | BOTTOM |
+        #        +--------+
         #
 
         # Create zero-sized bounding boxes for any sides of the unit without pins.
@@ -606,17 +609,17 @@ def draw_symbol(lib_file, part_num, part_ref_prefix, pin_data, sort_type, revers
 
     # Close the part definition.
     lib_file.write(END_DEF)
-    
+
 
 def is_pwr(pin, fuzzy_match):
     '''Return true if this is a power input pin.'''
     return find_closest_match(name=pin.type, name_dict=PIN_TYPES, fuzzy_match=fuzzy_match) == 'W'
-    
+
 
 def is_nc(pin, fuzzy_match):
     '''Return true if this is a no-connect pin.'''
     return find_closest_match(name=pin.type, name_dict=PIN_TYPES, fuzzy_match=fuzzy_match) == 'N'
-    
+
 
 def do_bundling(pin_data, bundle, fuzzy_match):
     '''Handle bundling for power and NC pins. Unbundle everything else.'''
@@ -658,7 +661,7 @@ def kipart(reader_type, part_data_file, lib_filename,
 
         # Get the part number and pin data from the CSV file.
         for part_num, part_ref_prefix, pin_data in part_reader(part_data_file):
-        
+
             do_bundling(pin_data, bundle, fuzzy_match)
 
             # Write the library header if this is a new library.

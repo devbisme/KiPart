@@ -1,4 +1,4 @@
-tests := example1 example2 example3 example4 example5 example6 lt1512 helwig test1
+tests := example1 example2 example3 example4 example5 example6 lt1512 helwig test1 hidden_test
 examples := example1 example2 example3 example4 example5 example6
 
 all: randomtest
@@ -40,13 +40,16 @@ test1.lib: test1.csv
 
 helwig.lib: helwig.csv
 	kipart $^ -o $@ -w
-	
+
+hidden_test.lib: hidden_test.csv
+	kipart $^ -o $@ -w
+
 %.tst : %.clean %.lib
 	@-diff -qsw "$*.lib" "$* - Copy.lib"
 	@sort $*.lib > "$*_sorted.lib"
 	@sort "$* - Copy.lib" > "$*_sorted_copy.lib"
 	@-diff -qsw "$*_sorted.lib" "$*_sorted_copy.lib"
 	@echo "*********************************************************************"
-	
+
 %.clean :
 	@rm -f $*.lib "$*_sorted.lib" "$*_sorted_copy.lib"

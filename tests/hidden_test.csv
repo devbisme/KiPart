@@ -1,0 +1,7 @@
+a_part_with_secrets,U,,,,,
+Pin,Name,Type,Side,Unit,Style,Hidden
+1,N.C.,in,left,1,clk_low,Y
+2,GND,pwr,left,1,,yeS
+3,SS_INH,in,left,1,,True
+4,OSC,in,left,1,,
+5,A1,out,right,1,,False

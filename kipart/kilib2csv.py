@@ -1,17 +1,17 @@
 # MIT license
-# 
+#
 # Copyright (C) 2016 by XESS Corporation.
-# 
+#
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
 # in the Software without restriction, including without limitation the rights
 # to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
 # copies of the Software, and to permit persons to whom the Software is
 # furnished to do so, subject to the following conditions:
-# 
+#
 # The above copyright notice and this permission notice shall be included in
 # all copies or substantial portions of the Software.
-# 
+#
 # THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
 # IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
 # FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
@@ -168,8 +168,8 @@ def _gen_csv(parsed_lib):
 
     csv = ''
     for part in parsed_lib.parts:
-        csv += '{part.name},{part.ref_id},,,,\n'.format(**locals())
-        csv += 'Pin,Name,Type,Side,Unit,Style\n'
+        csv += '{part.name},{part.ref_id},,,,,\n'.format(**locals())
+        csv += 'Pin,Name,Type,Side,Unit,Style,Hidden\n'
 
         def zero_pad_nums(s):
             # Pad all numbers in the string with leading 0's.
@@ -193,8 +193,15 @@ def _gen_csv(parsed_lib):
             p.num = re.sub(',', ';', p.num)
             p.name = re.sub(',', ';', p.name)
             p.unit = re.sub(',', ';', p.unit)
-            csv += ','.join([p.num, p.name, type_tbl[p.type], orientation_tbl[p.orientation], p.unit, style_tbl[p.style]]) + '\n'
-        csv += ',,,,,\n'
+
+            is_hidden = ''
+
+            if p.style.find('N') != -1:
+                p.style = p.style.replace('N', '')
+                is_hidden = 'Y'
+
+            csv += ','.join([p.num, p.name, type_tbl[p.type], orientation_tbl[p.orientation], p.unit, style_tbl[p.style], is_hidden]) + '\n'
+        csv += ',,,,,,\n'
     csv += '\n'
     return csv
 
@@ -241,7 +248,7 @@ def main():
     with open(args.output, file_mode) as out_file:
         for lib in args.input_files:
             parsed_lib = _parse_lib(lib)
-            out_file.write(_gen_csv(parsed_lib)) 
+            out_file.write(_gen_csv(parsed_lib))
 
 # main entrypoint.
 if __name__ == '__main__':

@@ -1,17 +1,17 @@
 # MIT license
-# 
+#
 # Copyright (C) 2015 by XESS Corp.
-# 
+#
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
 # in the Software without restriction, including without limitation the rights
 # to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
 # copies of the Software, and to permit persons to whom the Software is
 # furnished to do so, subject to the following conditions:
-# 
+#
 # The above copyright notice and this permission notice shall be included in
 # all copies or substantial portions of the Software.
-# 
+#
 # THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
 # IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
 # FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
@@ -33,11 +33,12 @@ COLUMN_NAMES = {
     'style': 'style',
     'side': 'side',
     'unit': 'unit',
-    'bank': 'unit'
+    'bank': 'unit',
+    'hidden': 'hidden'
 }
 
 
-# This is just a vanilla object class for device pins. 
+# This is just a vanilla object class for device pins.
 # We'll add attributes to it as needed.
 class Pin(object):
     pass
@@ -50,6 +51,7 @@ DEFAULT_PIN.type = 'io'
 DEFAULT_PIN.style = 'line'
 DEFAULT_PIN.unit = 1
 DEFAULT_PIN.side = 'left'
+DEFAULT_PIN.hidden = 'no'
 
 
 def num_row_elements(row):
@@ -108,8 +110,8 @@ def find_closest_match(name, name_dict, fuzzy_match, threshold=0.0):
 def clean_headers(headers):
     '''Return a list of the closest valid column headers for the headers found in the file.'''
     return [find_closest_match(h, COLUMN_NAMES, True) for h in headers]
-    
-    
+
+
 def issue(msg, level='warning'):
     if level=='warning':
         print('Warning: {}'.format(msg))
@@ -118,8 +120,8 @@ def issue(msg, level='warning'):
         raise Exception('Unrecoverable error')
     else:
         print(msg)
-    
-    
+
+
 def fix_pin_data(pin_data, part_num):
     '''Fix common errors in pin data.'''
     fixed_pin_data = pin_data.strip()  # Remove leading/trailing spaces.
@@ -127,4 +129,4 @@ def fix_pin_data(pin_data, part_num):
         fixed_pin_data = re.sub('\s', '_', fixed_pin_data)
         issue("Replaced whitespace with '_' in pin '{pin_data}' of part {part_num}.".format(**locals()))
     return fixed_pin_data
-        
+
