@@ -65,8 +65,8 @@ def gen_random_part_csv():
 
     part_name = random_name()
     ref_prefix = random_name(2)
-    part_csv = '{part_name},{ref_prefix},,,,'.format(**locals()) 
-    part_csv = '\n'.join([part_csv, 'Pin,Name,Type,Side,Unit,Style'])
+    part_csv = '{part_name},{ref_prefix},,,,,'.format(**locals()) 
+    part_csv = '\n'.join([part_csv, 'Pin,Name,Type,Side,Unit,Style,Hidden'])
 
     num_units = randint(1,10)
     pins = {}
@@ -78,12 +78,13 @@ def gen_random_part_csv():
             pin_side = choice(['left','right','top','bottom'])
             pin_type = choice(['in','out','bidir','tri','passive','pwr','pwr_out','open_collector','open_emitter','unspecified','NC'])
             pin_style = choice(['','inv','clk', 'inv_clk', 'input_low', 'clk_low', 'output_low', 'falling_clk', 'non_logic'])
-            pin_csv = '{pin_num},{pin_name},{pin_type},{pin_side},{unit_name},{pin_style}'.format(**locals())
+            pin_hidden = choice(['Y',''])
+            pin_csv = '{pin_num},{pin_name},{pin_type},{pin_side},{unit_name},{pin_style},{pin_hidden}'.format(**locals())
             pins[(unit_name,pin_num)] = pin_csv
     for p in sorted(pins.keys(),key=pin_key):
         part_csv = '\n'.join([part_csv,pins[p]])
 
-    part_csv = '\n'.join([part_csv,',,,,,'])
+    part_csv = '\n'.join([part_csv,',,,,,,'])
     return part_csv
 
 def gen_random_lib_csv(num_lines=1000):

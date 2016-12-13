@@ -5,7 +5,7 @@ all: randomtest
 #all: randomtest $(tests:=.tst)
 clean: $(tests:=.clean)
 examples: $(examples:=.lib)
-tests: $(tests:=.lib)
+tests: $(tests:=.tst)
 
 randomtest:
 	python random_csv.py > randomtest.csv
