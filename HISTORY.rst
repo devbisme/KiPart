@@ -3,6 +3,12 @@
 History
 -------
 
+0.1.24 (2016-12-22)
+______________________
+
+* Fixed Xilinx reader function to parse leading comments in their FPGA pin files.
+
+
 0.1.23 (2016-12-13)
 ______________________
 

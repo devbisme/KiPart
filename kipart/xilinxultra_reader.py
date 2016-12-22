@@ -42,15 +42,27 @@ def xilinxultra_reader(csv_file):
     # of the unit.
     pin_data = defaultdict(lambda: defaultdict(lambda: defaultdict(list)))
 
-    # Read title line of the CSV file and extract the part number.
-    title = csv_file.readline()
+    # Scan the initial portion of the file for the part number.
+    part_num = None
     try:
-        _, part_num, date, time, _ = re.split('\s+', title)
-    except:
-        return
+        while True:
+            line = csv_file.readline()
+            if re.match('^,*$', line):
+                # Stop searching for part number as soon as a blank line is seen.
+                break
+            elif line.startswith('"#') or line.startswith('#'):
+                # Look for the part number within a comment.
+                device = re.search(r'#\s+Device\s*:\s*(\w+)', line)
+                if device:
+                    part_num = device.group(1)
+            else:
+                # Look for the part number on a line of the file.
+                _, part_num, date, time, _ = re.split('\s+', line)
+    except Exception:
+        return  # No part was found.
 
-    # Dump the blank line between the title and the part's pin data.
-    _ = csv_file.readline()
+    if part_num is None:
+        return  # No part number was found, so abort.
 
     # Create a reader object for the rows of the CSV file and read it row-by-row.
     csv_reader = csv.DictReader(csv_file, skipinitialspace=True)
@@ -83,6 +95,8 @@ def xilinxultra_reader(csv_file):
             (r'DXN', 'passive'),
             (r'GNDADC', 'input'),
             (r'GND', 'power_in'),
+            (r'RSVDGND', 'input'),
+            (r'PUDC_B', 'input'),
             (r'INIT_B', 'bidirectional'),
             (r'IO_', 'bidirectional'),
             (r'M0[_]?', 'input'),
