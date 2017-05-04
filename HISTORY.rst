@@ -3,6 +3,12 @@
 History
 -------
 
+0.1.25 (2017-05-03)
+______________________
+
+* Fixed problem caused by pin side designators not being lower-case (e.g., "Left").
+
+
 0.1.24 (2016-12-22)
 ______________________
 
