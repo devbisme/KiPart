@@ -3,6 +3,12 @@
 History
 -------
 
+0.1.26 (2017-05-21)
+______________________
+
+* Fixed issue #18 (crash when symbol side for pin was left blank).
+
+
 0.1.25 (2017-05-03)
 ______________________
 

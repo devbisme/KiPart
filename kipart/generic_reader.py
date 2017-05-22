@@ -94,6 +94,10 @@ def generic_reader(csv_file):
                         index=index,
                         part_num=part_num), level='error')
 
+            # If the symbol side for the pin was left blank, place it on the default side.
+            if not pin.side:
+                pin.side = DEFAULT_PIN.side
+
             # Add the pin from this row of the CVS file to the pin dictionary.
             # Place all the like-named pins into a list under their common name.
             # We'll unbundle them later, if necessary.
