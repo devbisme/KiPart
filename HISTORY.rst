@@ -3,6 +3,12 @@
 History
 -------
 
+0.1.27 (2017-05-24)
+______________________
+
+* Fixed issue #11 (blank lines in CSV file were skipped and multiple parts ran together).
+
+
 0.1.26 (2017-05-21)
 ______________________
 

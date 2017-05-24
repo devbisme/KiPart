@@ -70,12 +70,20 @@ def generic_reader(csv_file):
         # Get the column header row for the part's pin data.
         headers = clean_headers(get_nonblank_row(csv_reader))
 
-        # Now create a DictReader for grabbing the pin data in each row.
-        dict_reader = csv.DictReader(csv_file, headers, skipinitialspace=True)
-        for index, row in enumerate(dict_reader):
+        # Scan through the file line-by-line.
+        for index, row in enumerate(csv_file):
 
             # A blank line signals the end of the pin data.
-            if num_row_elements(list(row.values())) == 0:
+            # (A csv.DictReader would completely skip a blank line.)
+            if len(row.strip()) == 0:
+                break
+
+            # Now use a DictReader to assign the fields in the row to the header labels.
+            dictreader = csv.DictReader([row], headers, skipinitialspace=True)
+            row_dict = next(dictreader)
+
+            # A line with no data also signals the end of the pin data.
+            if num_row_elements(list(row_dict.values())) == 0:
                 break
 
             # Get the pin attributes from the cells of the row of data.
@@ -83,7 +91,7 @@ def generic_reader(csv_file):
             pin.index = index
             for c, a in list(COLUMN_NAMES.items()):
                 try:
-                    setattr(pin, a, fix_pin_data(row[c], part_num))
+                    setattr(pin, a, fix_pin_data(row_dict[c], part_num))
                 except KeyError:
                     # If a column doesn't exist, KeyError is raised and 
                     # the default pin value will remain instead.
