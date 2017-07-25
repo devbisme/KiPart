@@ -44,29 +44,49 @@ def machxo2_reader(csv_file):
 
     # Get part number from file name
     part_num = os.path.splitext(os.path.basename(csv_file.name))[0]
-    if part_num.endswith('Pinout'):
-        part_num = part_num[:-6]
-    part_num = part_num.replace("-", "_")
+    part_num = part_num.upper().split('PINOUT')[0].replace("-", "_")
 
-    # Dump the two first lines.
-    _ = csv_file.readline()
-    _ = csv_file.readline()
+    # Dump the first lines, until we find a line that is neither empty nor comment
+    global_package_name=''
+    while True:
+        pos=csv_file.tell()
+        line = csv_file.readline()
+        if line[0:9]=='#PACKAGE=':
+		global_package_name=line[10:].split(',')[0]
+        if line[0]!='#' and not re.match(r'^,*$', line):
+            break
+    csv_file.seek(pos)
 
     # Create a csv dict reader, from the column title row
     csv_reader = csv.DictReader(csv_file)
+    csv_reader.fieldnames = [f.strip().upper() for f in csv_reader.fieldnames]
+    
+    print csv_reader.fieldnames
 
-    # List the package names
-    package = csv_reader.fieldnames[8:] 
+    # List the package names (any unknown field is considered a package name)
+    known_fields = ['INDEX', 'TYPE', 'PAD', 'PIN/BALL FUNCTION', 'BANK', 'DUAL FUNCTION', 'DIFFERENTIAL', 'HIGH SPEED', 'DQS', 'I/O GROUPING', 'PIN NUMBER']
+    package = [x for x in csv_reader.fieldnames if x and x not in known_fields ]
+
+    # If no package found, and a package name was found in the comments, use it
+    if not package and global_package_name:
+        csv_reader.fieldnames = [global_package_name if f=='PIN NUMBER' else f for f in csv_reader.fieldnames]
+        package.append(global_package_name)
+
+    if not package:
+	print 'Warning : no package found, exiting'
+        return
+
+    print package 
 
     #Process the pins line-by-line
     for index,row in enumerate(csv_reader):
         pin = copy.copy(DEFAULT_PIN)
         pin.index = index
-        pin.name = row['Pin/Ball Function']
-        if row['Bank'] == '-':
+        pin.name = row['PIN/BALL FUNCTION']
+        if not row['BANK'] or row['BANK'] == '-' or row['BANK'] == ' ':
             pin.unit = 1
         else:
-            pin.unit = int(row['Bank'])+2
+            pin.unit = int(row['BANK'])+2
 
         # The type of the pin isn't given in the text file, so we'll have to infer it
         # from the name of the pin. Pin names starting with the following prefixes 
@@ -84,7 +104,7 @@ def machxo2_reader(csv_file):
         else:
             pin.type = DEFAULT_PIN_TYPE
 
-	# Same for pin side, in order to have VCC at the top and GND at the bottom
+        # Same for pin side, in order to have VCC at the top and GND at the bottom
         PIN_SIDE_PREFIXES = [
             (r'VCC', 'top'),
             (r'GND', 'bottom'),
@@ -94,10 +114,11 @@ def machxo2_reader(csv_file):
                 pin.side = s
 
         for p in package:
-            if row[p] != '-':
+            if row[p] and row[p] != '-' and row[p] != ' ':
                 pin.num = row[p]
-                pin_data[p][pin.unit][pin.side][pin.name].append(pin)
+                pin_data[p][pin.unit][pin.side][pin.name].append(copy.copy(pin))
 
         
     for p in package:
         yield part_num+'_'+p, 'U', pin_data[p]  # Return the dictionary of pins for the package p
+
