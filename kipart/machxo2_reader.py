@@ -42,26 +42,30 @@ def machxo2_reader(csv_file):
     # of the unit.
     pin_data = defaultdict(lambda: defaultdict(lambda: defaultdict(lambda: defaultdict(list))))
 
-    # Get part number from file name
-    part_num = os.path.splitext(os.path.basename(csv_file.name))[0]
-    part_num = part_num.upper().split('PINOUT')[0].replace("-", "_")
-
     # Dump the first lines, until we find a line that is neither empty nor comment
+    global_device_name=''
     global_package_name=''
     while True:
         pos=csv_file.tell()
         line = csv_file.readline()
+        if line[0:8]=='#DEVICE=':
+		global_device_name=line[9:].split(',')[0].strip()
         if line[0:9]=='#PACKAGE=':
-		global_package_name=line[10:].split(',')[0]
+		global_package_name=line[10:].split(',')[0].strip()
         if line[0]!='#' and not re.match(r'^,*$', line):
             break
     csv_file.seek(pos)
 
+    # If no device name found in comments, get part number from file name
+    if global_device_name:
+        part_num = global_device_name
+    else:
+        part_num = os.path.splitext(os.path.basename(csv_file.name))[0]
+    part_num = part_num.upper().split('PINOUT')[0].replace("-", "_")
+
     # Create a csv dict reader, from the column title row
-    csv_reader = csv.DictReader(csv_file)
+    csv_reader = csv.DictReader(csv_file, skipinitialspace=True)
     csv_reader.fieldnames = [f.strip().upper() for f in csv_reader.fieldnames]
-    
-    print csv_reader.fieldnames
 
     # List the package names (any unknown field is considered a package name)
     known_fields = ['INDEX', 'TYPE', 'PAD', 'PIN/BALL FUNCTION', 'BANK', 'DUAL FUNCTION', 'DIFFERENTIAL', 'HIGH SPEED', 'DQS', 'I/O GROUPING', 'PIN NUMBER']
@@ -75,8 +79,6 @@ def machxo2_reader(csv_file):
     if not package:
 	print 'Warning : no package found, exiting'
         return
-
-    print package 
 
     #Process the pins line-by-line
     for index,row in enumerate(csv_reader):
