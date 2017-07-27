@@ -42,17 +42,18 @@ def machxo2_reader(csv_file):
     # of the unit.
     pin_data = defaultdict(lambda: defaultdict(lambda: defaultdict(lambda: defaultdict(list))))
 
-    # Dump the first lines, until we find a line that is neither empty nor comment
+    # Parse the first lines, until we find the column title row
     global_device_name=''
     global_package_name=''
     while True:
         pos=csv_file.tell()
         line = csv_file.readline()
         if line[0:8]=='#DEVICE=':
-		global_device_name=line[9:].split(',')[0].strip()
+		global_device_name=line[9:].split(',')[0].strip().upper().replace('-', '_').replace(' ','_')
         if line[0:9]=='#PACKAGE=':
-		global_package_name=line[10:].split(',')[0].strip()
-        if line[0]!='#' and not re.match(r'^,*$', line):
+		global_package_name=line[10:].split(',')[0].strip().upper().replace('-', '_').replace(' ','_')
+        test_field = line.split(',')[0].strip().upper()
+        if test_field == 'INDEX' or test_field == 'PAD':
             break
     csv_file.seek(pos)
 
@@ -61,20 +62,28 @@ def machxo2_reader(csv_file):
         part_num = global_device_name
     else:
         part_num = os.path.splitext(os.path.basename(csv_file.name))[0]
-    part_num = part_num.upper().split('PINOUT')[0].replace("-", "_")
+    part_num = part_num.upper().split('PINOUT')[0].replace('-', '_').replace(' ','_')
 
     # Create a csv dict reader, from the column title row
     csv_reader = csv.DictReader(csv_file, skipinitialspace=True)
+
+    # Some field name normalization : there is some variation in capitalization, 
+    # 'Pin/Ball function' is sometimes 'Pin/Ball', and there may be references to comments after the field name (eg 'type(1)')
+    csv_reader.fieldnames = [f.split('(')[0] for f in csv_reader.fieldnames]
     csv_reader.fieldnames = [f.strip().upper() for f in csv_reader.fieldnames]
+    csv_reader.fieldnames = ['PIN/BALL FUNCTION' if f == 'PIN/BALL' else f for f in csv_reader.fieldnames]
 
-    # List the package names (any unknown field is considered a package name)
-    known_fields = ['INDEX', 'TYPE', 'PAD', 'PIN/BALL FUNCTION', 'BANK', 'DUAL FUNCTION', 'DIFFERENTIAL', 'HIGH SPEED', 'DQS', 'I/O GROUPING', 'PIN NUMBER']
-    package = [x for x in csv_reader.fieldnames if x and x not in known_fields ]
-
-    # If no package found, and a package name was found in the comments, use it
-    if not package and global_package_name:
+    # If we have found a package name in comments, and a 'Pin Number' field is available,
+    # we use this package name, and replace the 'Pin Number' name by its name
+    # else we consider this is a multi-package csv file, and any column with an unknown field name is considered a package name
+    # In the multi-package case, package names are normalized, and DQS variants are ignored
+    if global_package_name and 'PIN NUMBER' in csv_reader.fieldnames:
         csv_reader.fieldnames = [global_package_name if f=='PIN NUMBER' else f for f in csv_reader.fieldnames]
-        package.append(global_package_name)
+        package = [global_package_name]
+    else:
+        known_fields = ['INDEX', 'TYPE', 'PAD', 'PIN/BALL FUNCTION', 'BANK', 'DUAL FUNCTION', 'DIFFERENTIAL', 'HIGH SPEED', 'DQS', 'I/O GROUPING', 'PIN NUMBER']
+	csv_reader.fieldnames = [x if x in known_fields else x.upper().replace('-', '_').replace(' ','_') for x in csv_reader.fieldnames]
+        package = [x for x in csv_reader.fieldnames if x and x not in known_fields and not x.endswith('_DQS')]
 
     if not package:
 	print 'Warning : no package found, exiting'
