@@ -48,7 +48,7 @@ def main():
     parser.add_argument('-r', '--reader',
         nargs='?',
         type=str.lower,
-        choices=['generic', 'xilinxultra', 'xilinx7', 'xilinx6s', 'xilinx6v', 'psoc5lp', 'stm32cube'],
+        choices=['generic', 'xilinxultra', 'xilinx7', 'xilinx6s', 'xilinx6v', 'psoc5lp', 'stm32cube', 'lattice'],
         default='generic',
         help='Name of function for reading the CSV file.')
     parser.add_argument(
