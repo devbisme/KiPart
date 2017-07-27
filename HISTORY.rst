@@ -3,6 +3,12 @@
 History
 -------
 
+0.1.28 (2017-07-27)
+______________________
+
+* Added reader for Lattice FPGA devices (except iCE40). (Thanks, Adrien Descamps!)
+
+
 0.1.27 (2017-05-24)
 ______________________
 
