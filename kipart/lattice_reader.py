@@ -29,8 +29,8 @@ from .common import *
 from .kipart import *
 
 
-def machxo2_reader(csv_file):
-    '''Extract the pin data from a Lattice MachXO2 CSV file and return a dictionary of pin data.'''
+def lattice_reader(csv_file):
+    '''Extract the pin data from a Lattice CSV file and return a dictionary of pin data.'''
 
     # Create a dictionary that uses the package name as key. Each entry in this dictionary
     # uses the unit numbers as keys. Each entry in this dictionary contains another 
