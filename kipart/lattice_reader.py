@@ -30,7 +30,9 @@ from .kipart import *
 
 
 def lattice_reader(csv_file):
-    '''Extract the pin data from a Lattice CSV file and return a dictionary of pin data.'''
+    '''Extract the pin data from a Lattice CSV file and return a dictionary of pin data.
+    Both csv files available on Lattice website and csv files exported from Diamond are supported.
+    ICE40 family is NOT supported, since they use a completely different format.'''
 
     # Create a dictionary that uses the package name as key. Each entry in this dictionary
     # uses the unit numbers as keys. Each entry in this dictionary contains another 
