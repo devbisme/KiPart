@@ -29,7 +29,7 @@ import io
 import zipfile
 from .__init__ import __version__
 from .kipart import *
-from .common import DEFAULT_PIN
+from .common import DEFAULT_PIN, issue
 
 def main():
     parser = ap.ArgumentParser(
@@ -104,7 +104,8 @@ def main():
     args = parser.parse_args()
 
     if args.output == None:
-        args.output = os.path.splitext(sys.argv[0])[0] + '.lib'
+        issue('No output file specified. Using kipart.lib as the default.')
+        args.output = 'kipart.lib'
     else:
         args.output = os.path.splitext(args.output)[0] + '.lib'
 

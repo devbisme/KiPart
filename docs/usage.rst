@@ -8,9 +8,10 @@ KiPart
 KiPart is mainly intended to be  used as a script::
 
     usage: kipart [-h] [-v]
-                  [-r [{generic,xilinxultra,xilinx7,xilinx6s,xilinx6v,psoc5lp,stm32cube}]]
-                  [-s [{row,num,name}]] [-o [file.lib]] [-f] [-b] [-a]
-                  [-w] [-d [LEVEL]]
+                  [-r [{generic,xilinxultra,xilinx7,xilinx6s,xilinx6v,psoc5lp,stm32cube,lattice}]]
+                  [-s [{row,num,name}]] [--reverse]
+                  [--side [{left,right,top,bottom}]] [-o [file.lib]] [-f] [-b]
+                  [-a] [-w] [-d [LEVEL]]
                   file1.[csv|zip] file2.[csv|zip] ... [file1.[csv|zip]
                   file2.[csv|zip] ... ...]
 
@@ -24,7 +25,7 @@ KiPart is mainly intended to be  used as a script::
     optional arguments:
       -h, --help            show this help message and exit
       -v, --version         show program's version number and exit
-      -r [{generic,xilinxultra,xilinx7,xilinx6s,xilinx6v,psoc5lp,stm32cube}], --reader [{generic,xilinxultra,xilinx7,xilinx6s,xilinx6v,psoc5lp,stm32cube}]
+      -r [{generic,xilinxultra,xilinx7,xilinx6s,xilinx6v,psoc5lp,stm32cube,lattice}], --reader [{generic,xilinxultra,xilinx7,xilinx6s,xilinx6v,psoc5lp,stm32cube,lattice}]
                             Name of function for reading the CSV file.
       -s [{row,num,name}], --sort [{row,num,name}]
                             Sort the part pins by their entry order in the CSV
@@ -43,12 +44,12 @@ KiPart is mainly intended to be  used as a script::
       -d [LEVEL], --debug [LEVEL]
                             Print debugging info. (Larger LEVEL means more info.)
 
-A generic part file is expected when the `-r generic` option is specified.
+A generic part file is expected when the ``-r generic`` option is specified.
 It contains the following items:
 
 #. The part name or number stands alone on row. The reference prefix for the part
    can also be placed on the same row in a cell following the name. (If omitted, the
-   reference prefix defaults to `U`.)
+   reference prefix defaults to ``U``.)
 #. The next non-blank row contains the column headers. The required headers are 'Pin' and 'Name'.
    Optional columns are 'Unit', 'Side', 'Type', 'Style', and 'Hidden'.
    These can be placed in any order and in any column.
@@ -58,7 +59,7 @@ It contains the following items:
    * Pin numbers can be either numeric (e.g., '69') if the part is a DIP or QFP, or they can be
      alphanumeric (e.g., 'C10') if a BGA or CSP is used. Placing a `*` at the start of a pin number
      creates a non-existent "gap" pin that can be used to divide the pins into groups. This only works
-     when the `-s row` sorting option is selected.
+     when the ``-s row`` sorting option is selected.
    * Pin names can be any combination of letters, numbers and special characters (except a comma).
    * The unit identifier can be blank or any combination of letters, numbers and special characters (except a comma).
      A separate unit will be generated in the schematic symbol for each distinct unit identifier.
@@ -96,36 +97,40 @@ It contains the following items:
    separated by blank lines are allowed in a single CSV file.
    Each part will become a separate symbol in the KiCad library.
 
-When the option `-r xilinx7` is used, the individual CSV pin files or entire .zip archives
-`for the Xilinx 7-Series FPGAs <http://www.xilinx.com/support/packagefiles/>`_ can be processed.
+When the option ``-r xilinx7`` is used, the individual CSV pin files or entire .zip archives
+for the `Xilinx 7-Series FPGAs <http://www.xilinx.com/support/packagefiles/>`_ can be processed.
 
-When the option `-r psoc5lp` is used, the CSV pin file contains the pinout text
+When the option ``-r psoc5lp`` is used, the CSV pin file contains the pinout text
 extracted from a Cypress PSoC5LP datasheet.
 
-When the option '-r stm32cube' is used, input CSV file should be the
+When the option '-r stm32cube' is used, the input CSV file should be the
 pin layout file exported from the STM32CubeMx tool. To create this
 file; create a project with STM32CubeMx then from window menu select
 "Pinout -> Generate CSV pinout text file". If you select pin features
 or define labels for pins these will be reflected in the generated
 library symbol.
 
-The `-s` option specifies the arrangement of the pins in the schematic symbol:
+When the option ``-r lattice`` is used, the input CSV file should come from the
+Lattice website or from their Diamond tool. (The iCE40 FPGAs are not supported
+since they use a different format.)
 
-* `-s row` places the pins in the order they were entered into the CSV file.
-* `-s num` places the pins such that their pin numbers are in increasing order.
-* `-s name` places the pins in increasing order of their names.
+The ``-s`` option specifies the arrangement of the pins in the schematic symbol:
 
-The `--reverse` option reverses the sort order.
+* ``-s row`` places the pins in the order they were entered into the CSV file.
+* ``-s num`` places the pins such that their pin numbers are in increasing order.
+* ``-s name`` places the pins in increasing order of their names.
 
-Using the `--side` option you can set the default side for the
+The ``--reverse`` option reverses the sort order for the pins.
+
+Using the ``--side`` option you can set the default side for the
 pins. The option from the CSV file will override the command line
-option. Default choice is `left`.
+option. Default choice is ``left``.
 
-Specifying the `-f` option enables *fuzzy matching* on the pin types, styles and sides used in the
+Specifying the ``-f`` option enables *fuzzy matching* on the pin types, styles and sides used in the
 CSV file.
-So, for example, `ck` would match `clk` or `rgt` would match `right`.
+So, for example, ``ck`` would match ``clk`` or ``rgt`` would match ``right``.
 
-Specifying the `-b` option will place multiple pins with the identical names at the same location
+Specifying the ``-b`` option will place multiple pins with the identical names at the same location
 such that they can all attach to the same net with a single connection.
 This is helpful for handling the multiple VCC and GND pins found on many high pin-count devices.
 
@@ -150,28 +155,28 @@ Assume the following data for a single-unit part is placed into the `example.csv
     99,     power_in,       VCC
     59,     power_in,       GND
 
-Then the command `kipart example.csv -o example1.lib` will create a schematic symbol
+Then the command ``kipart example.csv -o example1.lib`` will create a schematic symbol
 where the pins are arranged in the order of the rows in the CSV file they are on:
 
 .. image:: example1.png
 
-The command `kipart -s num example.csv -o example2.lib` will create a schematic symbol
+The command ``kipart -s num example.csv -o example2.lib`` will create a schematic symbol
 where the pins are arranged by their pin numbers:
 
 .. image:: example2.png
 
-The command `kipart -s name example.csv -o example3.lib` will create a schematic symbol
+The command ``kipart -s name example.csv -o example3.lib`` will create a schematic symbol
 where the pins are arranged by their names:
 
 .. image:: example3.png
 
-The command `kipart -b example.csv -o example4.lib` will bundle power and no-connect pins with
-identical names (like `GND`, `VCC`, and `NC`) into single pins like so:
+The command ``kipart -b example.csv -o example4.lib`` will bundle power and no-connect pins with
+identical names (like ``GND``, ``VCC``, and ``NC``) into single pins like so:
 
 .. image:: example4.png
 
 Or you could divide the part into two units: one for I/O pins and the other for power pins
-by adding a `Unit` column like this::
+by adding a ``Unit`` column like this::
 
     example_part
 
@@ -188,14 +193,14 @@ by adding a `Unit` column like this::
     99,     PWR,    power_in,       VCC
     59,     PWR,    power_in,       GND
 
-Then the command `kipart -b example.csv -o example5.lib` results in a part symbol having two separate units:
+Then the command ``kipart -b example.csv -o example5.lib`` results in a part symbol having two separate units:
 
 .. image:: example5_1.png
 
 .. image:: example5_2.png
 
 As an alternative, you could go back to a single unit with all the inputs on the left side,
-all the outputs on the right side, the `VCC` pins on the top and the `GND` pins on the bottom::
+all the outputs on the right side, the ``VCC`` pins on the top and the ``GND`` pins on the bottom::
 
     example_part
 
@@ -212,11 +217,11 @@ all the outputs on the right side, the `VCC` pins on the top and the `GND` pins 
     99,     1,      power_in,       VCC,    top
     59,     1,      power_in,       GND,    bottom
 
-Running the command `kipart -b example.csv -o example6.lib` generates a part symbol with pins on all four sides:
+Running the command ``kipart -b example.csv -o example6.lib`` generates a part symbol with pins on all four sides:
 
 .. image:: example6.png
 
-If the input file has a `Hidden` column, then some, none, or all pins can be made invisible::
+If the input file has a ``Hidden`` column, then some, none, or all pins can be made invisible::
 
     a_part_with_secrets
 
@@ -241,9 +246,11 @@ kilib2csv
 
 Sometimes you have existing libraries that you want to manage with a spreadsheet
 instead of the KiCad symbol editor.
-The kilib2csv utility can take one or more library files and convert them
+The kilib2csv utility takes one or more library files and converts them
 into a CSV file.
-The CSV file can be manipulated with a spreadsheet and used as input to KiPart.
+Then the CSV file can be manipulated with a spreadsheet and used as input to KiPart.
+**(Note that any stylized part symbol graphics will be lost in the conversion.
+KiPart only supports boring, box-like part symbols.)**
 
 ::
 

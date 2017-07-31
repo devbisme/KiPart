@@ -3,6 +3,14 @@
 History
 -------
 
+0.1.29 (2017-07-31)
+______________________
+
+* Fixed erroneous library generation when part number is omitted from first line of CSV file.
+* Changed default output library to ``kipart.lib`` if no output library is specified.
+* Changed default output CSV file of kilib2csv to ``kipart.csv`` if no output CSV file is specified.
+
+
 0.1.28 (2017-07-27)
 ______________________
 

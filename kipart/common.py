@@ -87,6 +87,11 @@ def get_part_info(csv_reader):
         part_ref_prefix = part_info[1]
     except (IndexError, TypeError):
         pass
+
+    # Check to see if the part number is missing and the part definition
+    # starts off with the column headers instead.
+    if part_num and part_num.lower() in list(COLUMN_NAMES.keys()):
+        issue('Row with part number is missing in CSV file.', 'error')
     return part_num, part_ref_prefix
 
 

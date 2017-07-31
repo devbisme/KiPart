@@ -233,10 +233,11 @@ def main():
 
     args = parser.parse_args()
 
-    if args.output:
-        args.output = os.path.splitext(args.output)[0] + '.csv'
+    if args.output == None:
+        issue('No output file specified. Using kipart.csv as the default.')
+        args.output = 'kipart.csv'
     else:
-        args.output = os.path.splitext(sys.argv[0])[0] + '.csv'
+        args.output = os.path.splitext(args.output)[0] + '.csv'
 
     if os.path.isfile(args.output):
         if not (args.overwrite or args.append):
