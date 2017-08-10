@@ -611,6 +611,10 @@ def draw_symbol(lib_file, part_num, part_ref_prefix, pin_data, sort_type, revers
     lib_file.write(END_DEF)
 
 
+def is_pas(pin, fuzzy_match):
+    '''Return true if this is a passive pin.'''
+    return find_closest_match(name=pin.type, name_dict=PIN_TYPES, fuzzy_match=fuzzy_match) == 'P'
+
 def is_pwr(pin, fuzzy_match):
     '''Return true if this is a power input pin.'''
     return find_closest_match(name=pin.type, name_dict=PIN_TYPES, fuzzy_match=fuzzy_match) == 'W'
@@ -622,13 +626,15 @@ def is_nc(pin, fuzzy_match):
 
 
 def do_bundling(pin_data, bundle, fuzzy_match):
-    '''Handle bundling for power and NC pins. Unbundle everything else.'''
+    '''Handle bundling for passive, power and NC pins. Unbundle everything else.'''
     for unit in list(pin_data.values()):
         for side in list(unit.values()):
             for name, pins in list(side.items()):
                 if len(pins) > 1:
                     for index, p in enumerate(pins):
-                        if is_pwr(p, fuzzy_match) and bundle:
+                        if is_pas(p, fuzzy_match) and bundle:
+                            side[p.name + '_pas'].append(p)
+                        elif is_pwr(p, fuzzy_match) and bundle:
                             side[p.name + '_pwr'].append(p)
                         elif is_nc(p, fuzzy_match) and bundle:
                             side[p.name + '_nc'].append(p)
