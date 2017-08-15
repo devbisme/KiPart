@@ -51,9 +51,9 @@ def lattice_reader(csv_file):
         pos=csv_file.tell()
         line = csv_file.readline()
         if line[0:8]=='#DEVICE=':
-		global_device_name=line[9:].split(',')[0].strip().upper().replace('-', '_').replace(' ','_')
+        global_device_name=line[9:].split(',')[0].strip().upper().replace('-', '_').replace(' ','_')
         if line[0:9]=='#PACKAGE=':
-		global_package_name=line[10:].split(',')[0].strip().upper().replace('-', '_').replace(' ','_')
+        global_package_name=line[10:].split(',')[0].strip().upper().replace('-', '_').replace(' ','_')
         test_field = line.split(',')[0].strip().upper()
         if test_field == 'INDEX' or test_field == 'PAD':
             break
@@ -84,11 +84,11 @@ def lattice_reader(csv_file):
         package = [global_package_name]
     else:
         known_fields = ['INDEX', 'TYPE', 'PAD', 'PIN/BALL FUNCTION', 'BANK', 'DUAL FUNCTION', 'DIFFERENTIAL', 'HIGH SPEED', 'DQS', 'I/O GROUPING', 'PIN NUMBER']
-	csv_reader.fieldnames = [x if x in known_fields else x.upper().replace('-', '_').replace(' ','_') for x in csv_reader.fieldnames]
+    csv_reader.fieldnames = [x if x in known_fields else x.upper().replace('-', '_').replace(' ','_') for x in csv_reader.fieldnames]
         package = [x for x in csv_reader.fieldnames if x and x not in known_fields and not x.endswith('_DQS')]
 
     if not package:
-	print 'Warning : no package found, exiting'
+    print 'Warning : no package found, exiting'
         return
 
     #Process the pins line-by-line
