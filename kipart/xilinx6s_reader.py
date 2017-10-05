@@ -111,4 +111,4 @@ def xilinx6s_reader(txt_file):
         # We'll unbundle them later, if necessary.
         pin_data[pin.unit][pin.side][pin.name].append(pin)
 
-    yield part_num, 'U', pin_data  # Return the dictionary of pins extracted from the TXT file.
+    yield part_num, 'U', '', part_num, pin_data  # Return the dictionary of pins extracted from the TXT file.

@@ -69,30 +69,24 @@ def get_nonblank_row(csv_reader):
     for row in csv_reader:
         if num_row_elements(row) > 0:
             return row
-    return None
+    return []
 
 
 def get_part_info(csv_reader):
-    '''Get the part number and reference prefix from a row of the CSV file.'''
-    part_num = None
-    part_ref_prefix = 'U'
-    part_info = get_nonblank_row(csv_reader)
-    try:
-        try:
-            while True:
-                part_info.remove('')
-        except (ValueError, AttributeError):
-            pass
-        part_num = part_info[0]
-        part_ref_prefix = part_info[1]
-    except (IndexError, TypeError):
-        pass
+    '''Get the part number, ref prefix, footprint, MPN from a row of the CSV file.'''
 
-    # Check to see if the part number is missing and the part definition
-    # starts off with the column headers instead.
+    # Read the first, nonblank row and pad it with None's to make sure it's long enough.
+    part_num, part_ref_prefix, part_footprint, part_manf_num, *_ = get_nonblank_row(csv_reader) + [None]*4
+
+    # Put in the default part reference identifier if it isn't present.
+    if part_ref_prefix in (None, '', ' '):
+        part_ref_prefix = 'U'
+
+    # Check to see if the row with the part identifier is missing.
     if part_num and part_num.lower() in list(COLUMN_NAMES.keys()):
         issue('Row with part number is missing in CSV file.', 'error')
-    return part_num, part_ref_prefix
+
+    return part_num, part_ref_prefix, part_footprint, part_manf_num
 
 
 def find_closest_match(name, name_dict, fuzzy_match, threshold=0.0):

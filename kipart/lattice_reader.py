@@ -133,5 +133,5 @@ def lattice_reader(csv_file):
 
         
     for p in package:
-        yield part_num+'_'+p, 'U', pin_data[p]  # Return the dictionary of pins for the package p
+        yield part_num+'_'+p, 'U', '', part_num, pin_data[p]  # Return the dictionary of pins for the package p
 

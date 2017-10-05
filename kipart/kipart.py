@@ -72,6 +72,14 @@ REF_Y_OFFSET = 250
 PART_NUM_SIZE = 60  # Font size.
 PART_NUM_Y_OFFSET = 150
 
+# Part footprint
+PART_FOOTPRINT_SIZE = 60  # Font size.
+PART_FOOTPRINT_Y_OFFSET = 50
+
+# Part manufacturer number.
+PART_MPN_SIZE = 60  # Font size.
+PART_MPN_Y_OFFSET = -50
+
 # Mapping from understandable pin orientation name to the orientation
 # indicator used in the KiCad part library. This mapping looks backward,
 # but if pins are placed on the left side of the symbol, you actually
@@ -109,6 +117,7 @@ PIN_TYPES = {
     'bi': 'B',
     'inout': 'B',
     'io': 'B',
+    'iop': 'B',
     'tristate': 'T',
     'tri': 'T',
     'passive': 'P',
@@ -119,21 +128,29 @@ PIN_TYPES = {
     'analog': 'U',
     'power_in': 'W',
     'pwr_in': 'W',
+    'pwrin': 'W',
     'power': 'W',
     'pwr': 'W',
     'ground': 'W',
     'gnd': 'W',
     'power_out': 'w',
     'pwr_out': 'w',
+    'pwrout': 'w',
     'pwr_o': 'w',
     'open_collector': 'C',
+    'opencollector': 'C',
     'open_coll': 'C',
+    'opencoll': 'C',
     'oc': 'C',
     'open_emitter': 'E',
+    'openemitter': 'E',
     'open_emit': 'E',
+    'openemit': 'E',
     'oe': 'E',
     'no_connect': 'N',
+    'noconnect': 'N',
     'no_conn': 'N',
+    'noconn': 'N',
     'nc': 'N',
 }
 PIN_TYPES = {scrubber.sub('', k).lower(): v for k, v in list(PIN_TYPES.items())}
@@ -456,32 +473,36 @@ def draw_symbol(part_num, part_ref_prefix, part_footprint, part_manf_num, pin_da
             break
 
     # Create the field that stores the part reference.
-    part_defn += REF_FIELD.format(ref_prefix=part_ref_prefix,
+    if part_ref_prefix:
+        part_defn += REF_FIELD.format(ref_prefix=part_ref_prefix,
                                     x=XO + horiz_offset,
                                     y=YO + REF_Y_OFFSET,
                                     horiz_just=horiz_just,
                                     ref_size=REF_SIZE)
 
     # Create the field that stores the part number.
-    part_defn += PART_FIELD.format(part_num=part_num,
+    if part_num:
+        part_defn += PART_FIELD.format(part_num=part_num,
                                      x=XO + horiz_offset,
                                      y=YO + PART_NUM_Y_OFFSET,
                                      horiz_just=horiz_just,
                                      ref_size=PART_NUM_SIZE)
 
     # Create the field that stores the part footprint.
-    part_defn += FOOTPRINT_FIELD.format(footprint=part_footprint,
+    if part_footprint:
+        part_defn += FOOTPRINT_FIELD.format(footprint=part_footprint,
                                      x=XO + horiz_offset,
-                                     y=YO + PART_NUM_Y_OFFSET,
+                                     y=YO + PART_FOOTPRINT_Y_OFFSET,
                                      horiz_just=horiz_just,
-                                     ref_size=PART_NUM_SIZE)
+                                     ref_size=PART_FOOTPRINT_SIZE)
 
     # Create the field that stores the manufacturer part number.
-    part_defn += MPN_FIELD.format(manf_num=part_manf_num,
+    if part_manf_num:
+        part_defn += MPN_FIELD.format(manf_num=part_manf_num,
                                      x=XO + horiz_offset,
-                                     y=YO + PART_NUM_Y_OFFSET,
+                                     y=YO + PART_MPN_Y_OFFSET,
                                      horiz_just=horiz_just,
-                                     ref_size=PART_NUM_SIZE)
+                                     ref_size=PART_MPN_SIZE)
 
     # Start the section of the part definition that holds the part's units.
     part_defn += START_DRAW
@@ -674,7 +695,7 @@ def kipart(reader_type, part_data_file, parts_lib,
     part_reader = getattr(READER_MODULE, part_reader_module)
 
     # Get the part number and pin data from the CSV file.
-    for part_num, part_ref_prefix, pin_data in part_reader(part_data_file):
+    for part_num, part_ref_prefix, part_footprint, part_manf_num, pin_data in part_reader(part_data_file):
 
         do_bundling(pin_data, bundle, fuzzy_match)
 
@@ -683,8 +704,8 @@ def kipart(reader_type, part_data_file, parts_lib,
                     draw_symbol(
                         part_num=part_num,
                         part_ref_prefix = part_ref_prefix,
-                        part_footprint = '',  # Not using footprint right now.
-                        part_manf_num = '',   # Not using manf. num. right now.
+                        part_footprint = part_footprint,
+                        part_manf_num = part_manf_num,
                         pin_data=pin_data,
                         sort_type=sort_type,
                         reverse=reverse,

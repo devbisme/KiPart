@@ -83,7 +83,7 @@ def psoc5lp_reader(csv_file):
 
         # Extract part number from the first non-blank line. Break out of the infinite
         # while loop and stop processing this file if no part number is found.
-        part_num, part_ref_prefix = get_part_info(csv_reader)
+        part_num, part_ref_prefix, part_footprint, part_manf_num = get_part_info(csv_reader)
         if part_num is None:
             break
 
@@ -143,4 +143,4 @@ def psoc5lp_reader(csv_file):
             # We'll unbundle them later, if necessary.
             pin_data[pin.unit][pin.side][pin.name].append(pin)
 
-        yield part_num, 'U', pin_data  # Return the dictionary of pins extracted from the CVS file.
+        yield part_num, 'U', '', part_num, pin_data  # Return the dictionary of pins extracted from the CVS file.
