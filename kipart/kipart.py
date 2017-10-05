@@ -180,6 +180,9 @@ START_DEF = 'DEF {name} {ref} 0 {pin_name_offset} {show_pin_number} {show_pin_na
 END_DEF = 'ENDDEF\n'
 REF_FIELD = 'F0 "{ref_prefix}" {x} {y} {ref_size} H V {horiz_just} CNN\n'
 PART_FIELD = 'F1 "{part_num}" {x} {y} {ref_size} H V {horiz_just} CNN\n'
+FOOTPRINT_FIELD = 'F2 "{footprint}" {x} {y} {ref_size} H I {horiz_just} CNN\n'
+MPN_FIELD = 'F 4 "{manf_num}" {x} {y} {ref_size} H I {horiz_just} CNN "manf#"\n'
+
 START_DRAW = 'DRAW\n'
 END_DRAW = 'ENDDRAW\n'
 BOX = 'S {x0} {y0} {x1} {y1} {unit_num} 1 {line_width} {fill}\n'
@@ -322,8 +325,11 @@ def balance_bboxes(bboxes):
             bboxes['bottom'][1][Y] = bal_bbox[1][Y]
 
 
-def draw_pins(lib_file, unit_num, unit_pins, bbox, transform, fuzzy_match):
+def draw_pins(unit_num, unit_pins, bbox, transform, fuzzy_match):
     '''Draw a column of pins rotated/translated by the transform matrix.'''
+
+    # String to add pin definitions to.
+    pin_defn = ''
 
     # Find the actual height of the column of pins and subtract it from the
     # bounding box (which should be at least as large). Half the difference
@@ -374,7 +380,7 @@ def draw_pins(lib_file, unit_num, unit_pins, bbox, transform, fuzzy_match):
                 pin_num = pin_num[1:]
 
             # Create a pin using the pin data.
-            lib_file.write(PIN.format(name=pin.name,
+            pin_defn += PIN.format(name=pin.name,
                                       num=pin_num,
                                       x=int(draw_x),
                                       y=int(draw_y),
@@ -384,7 +390,7 @@ def draw_pins(lib_file, unit_num, unit_pins, bbox, transform, fuzzy_match):
                                       name_sz=PIN_NAME_SIZE,
                                       unit_num=unit_num,
                                       pin_type=pin_type,
-                                      pin_style=pin_style))
+                                      pin_style=pin_style)
 
             # Turn off visibility after the first pin.
             num_size = 0
@@ -392,6 +398,7 @@ def draw_pins(lib_file, unit_num, unit_pins, bbox, transform, fuzzy_match):
         # Move to the next pin placement location on this unit.
         y -= PIN_SPACING
 
+    return pin_defn  # Return part symbol definition with pins added.
 
 def zero_pad_nums(s):
     # Pad all numbers in the string with leading 0's.
@@ -426,17 +433,16 @@ def row_key(pin):
     return pin[1][0].index
 
 
-def draw_symbol(lib_file, part_num, part_ref_prefix, pin_data, sort_type, reverse, fuzzy_match):
+def draw_symbol(part_num, part_ref_prefix, part_footprint, part_manf_num, pin_data, sort_type, reverse, fuzzy_match):
     '''Add a symbol for a part to the library.'''
 
     # Start the part definition with the header.
-    lib_file.write(
-        START_DEF.format(name=part_num,
-                         ref=part_ref_prefix,
-                         pin_name_offset=PIN_NAME_OFFSET,
-                         show_pin_number=SHOW_PIN_NUMBER and 'Y' or 'N',
-                         show_pin_name=SHOW_PIN_NAME and 'Y' or 'N',
-                         num_units=len(pin_data)))
+    part_defn = START_DEF.format(name=part_num,
+                    ref=part_ref_prefix,
+                    pin_name_offset=PIN_NAME_OFFSET,
+                    show_pin_number=SHOW_PIN_NUMBER and 'Y' or 'N',
+                    show_pin_name=SHOW_PIN_NAME and 'Y' or 'N',
+                    num_units=len(pin_data))
 
     # Determine if there are pins across the top of the symbol.
     # If so, right-justify the reference and part number so they don't
@@ -450,21 +456,35 @@ def draw_symbol(lib_file, part_num, part_ref_prefix, pin_data, sort_type, revers
             break
 
     # Create the field that stores the part reference.
-    lib_file.write(REF_FIELD.format(ref_prefix=part_ref_prefix,
+    part_defn += REF_FIELD.format(ref_prefix=part_ref_prefix,
                                     x=XO + horiz_offset,
                                     y=YO + REF_Y_OFFSET,
                                     horiz_just=horiz_just,
-                                    ref_size=REF_SIZE))
+                                    ref_size=REF_SIZE)
 
     # Create the field that stores the part number.
-    lib_file.write(PART_FIELD.format(part_num=part_num,
+    part_defn += PART_FIELD.format(part_num=part_num,
                                      x=XO + horiz_offset,
                                      y=YO + PART_NUM_Y_OFFSET,
                                      horiz_just=horiz_just,
-                                     ref_size=PART_NUM_SIZE))
+                                     ref_size=PART_NUM_SIZE)
+
+    # Create the field that stores the part footprint.
+    part_defn += FOOTPRINT_FIELD.format(footprint=part_footprint,
+                                     x=XO + horiz_offset,
+                                     y=YO + PART_NUM_Y_OFFSET,
+                                     horiz_just=horiz_just,
+                                     ref_size=PART_NUM_SIZE)
+
+    # Create the field that stores the manufacturer part number.
+    part_defn += MPN_FIELD.format(manf_num=part_manf_num,
+                                     x=XO + horiz_offset,
+                                     y=YO + PART_NUM_Y_OFFSET,
+                                     horiz_just=horiz_just,
+                                     ref_size=PART_NUM_SIZE)
 
     # Start the section of the part definition that holds the part's units.
-    lib_file.write(START_DRAW)
+    part_defn += START_DRAW
 
     # Get a reference to the sort-key generation function for pins.
     pin_key_func = getattr(THIS_MODULE, '{}_key'.format(sort_type))
@@ -592,23 +612,26 @@ def draw_symbol(lib_file, part_num, part_ref_prefix, pin_data, sort_type, revers
             # Sort the pins names for the desired order: row-wise, numeric, alphabetical.
             sorted_side_pins = sorted(list(side_pins.items()), key=pin_key_func, reverse=reverse)
             # Draw the transformed pins for this side of the symbol.
-            draw_pins(lib_file, unit_num, sorted_side_pins, bbox[side], transform[side],
-                      fuzzy_match)
+            part_defn += draw_pins(unit_num, sorted_side_pins, 
+                                   bbox[side], transform[side], fuzzy_match)
 
             # Create the box around the unit's pins.
-        lib_file.write(BOX.format(x0=int(box_pt['left'][X]),
+        part_defn += BOX.format(x0=int(box_pt['left'][X]),
                                   y0=int(box_pt['top'][Y]),
                                   x1=int(box_pt['right'][X]),
                                   y1=int(box_pt['bottom'][Y]),
                                   unit_num=unit_num,
                                   line_width=BOX_LINE_WIDTH,
-                                  fill=FILLS[FILL]))
+                                  fill=FILLS[FILL])
 
     # Close the section that holds the part's units.
-    lib_file.write(END_DRAW)
+    part_defn += END_DRAW
 
     # Close the part definition.
-    lib_file.write(END_DEF)
+    part_defn += END_DEF
+
+    # Return complete part symbol definition.
+    return part_defn
 
 
 def is_pwr(pin, fuzzy_match):
@@ -637,8 +660,7 @@ def do_bundling(pin_data, bundle, fuzzy_match):
                     del side[name]
 
 
-def kipart(reader_type, part_data_file, lib_filename,
-           append_to_lib=False,
+def kipart(reader_type, part_data_file, parts_lib,
            sort_type='name',
            reverse=False,
            fuzzy_match=False,
@@ -651,33 +673,19 @@ def kipart(reader_type, part_data_file, lib_filename,
     READER_MODULE = sys.modules['kipart.' + part_reader_module]
     part_reader = getattr(READER_MODULE, part_reader_module)
 
-    # Either write the part definition to a new KiCad library or append it to an existing library.
-    if append_to_lib:
-        lib_filemode = 'a'
-    else:
-        lib_filemode = 'w'
+    # Get the part number and pin data from the CSV file.
+    for part_num, part_ref_prefix, pin_data in part_reader(part_data_file):
 
-    with open(lib_filename, lib_filemode) as lib_file:
+        do_bundling(pin_data, bundle, fuzzy_match)
 
-        # Get the part number and pin data from the CSV file.
-        for part_num, part_ref_prefix, pin_data in part_reader(part_data_file):
-
-            do_bundling(pin_data, bundle, fuzzy_match)
-
-            # Write the library header if this is a new library.
-            if not append_to_lib:
-                lib_file.write(LIB_HEADER)
-                append_to_lib = True  # Any further iterations will append to the library.
-
-            # Draw the schematic symbol into the library.
-            draw_symbol(lib_file=lib_file,
+        # Draw the schematic symbol into the library.
+        parts_lib[part_num] = \
+                    draw_symbol(
                         part_num=part_num,
                         part_ref_prefix = part_ref_prefix,
+                        part_footprint = '',  # Not using footprint right now.
+                        part_manf_num = '',   # Not using manf. num. right now.
                         pin_data=pin_data,
                         sort_type=sort_type,
                         reverse=reverse,
                         fuzzy_match=fuzzy_match)
-
-    # This enables library-appending if it was already on upon entry to the routine
-    # or if the routine just added a symbol to the library.
-    return append_to_lib

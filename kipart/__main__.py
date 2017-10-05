@@ -109,18 +109,33 @@ def main():
     else:
         args.output = os.path.splitext(args.output)[0] + '.lib'
 
+    import re
+    parts_lib = {}
     if os.path.isfile(args.output):
         if not args.overwrite and not args.append:
             print('Output file {} already exists! Use the --overwrite option to replace it or the --append option to append to it.'.format(
                 args.output))
             sys.exit(1)
+        if args.append:
+            with open(args.output, 'r') as lib:
+                part_def = ''
+                for line in lib:
+                    start = re.match('DEF (?P<part_name>\S+)', line)
+                    end = re.match('ENDDEF$', line)
+                    if start:
+                        part_def = line
+                        part_name = start.group('part_name')
+                    elif end:
+                        part_def += line
+                        parts_lib[part_name] = part_def
+                    else:
+                        part_def += line
 
     def call_kipart(part_data_file):
         '''Helper routine for calling kipart.'''
         return kipart(reader_type=args.reader,
                    part_data_file=part_data_file,
-                   lib_filename=args.output,
-                   append_to_lib=append_to_lib,
+                   parts_lib=parts_lib,
                    sort_type=args.sort,
                    reverse=args.reverse,
                    fuzzy_match=args.fuzzy_match,
@@ -129,7 +144,6 @@ def main():
 
     DEFAULT_PIN.side = args.side
 
-    append_to_lib = args.append
     for input_file in args.input_files:
         file_ext = os.path.splitext(input_file)[-1]
         if file_ext == '.zip':
@@ -139,12 +153,18 @@ def main():
                 if os.path.splitext(zipped_file.filename)[-1] in ['.csv', '.txt']:
                     with zip_file.open(zipped_file, 'r') as part_data_file:
                         part_data_file = io.TextIOWrapper(part_data_file)
-                        append_to_lib = call_kipart(part_data_file)
+                        call_kipart(part_data_file)
         elif file_ext in ['.csv', '.txt']:
             with open(input_file, 'r') as part_data_file:
-                append_to_lib = call_kipart(part_data_file)
+                call_kipart(part_data_file)
         else:
             continue
+
+    LIB_HEADER = 'EESchema-LIBRARY Version 2.3\n'
+    with open(args.output, 'w') as lib_file:
+        lib_file.write(LIB_HEADER)
+        for part_num, part_defn in parts_lib.items():
+            lib_file.write(part_defn)
 
 # main entrypoint.
 if __name__ == '__main__':
