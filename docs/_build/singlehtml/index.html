@@ -5,13 +5,13 @@
 <html xmlns="http://www.w3.org/1999/xhtml">
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
-    <title>KiPart 0.1.29 documentation</title>
+    <title>KiPart 0.1.30 documentation</title>
     <link rel="stylesheet" href="_static/classic.css" type="text/css" />
     <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
     <script type="text/javascript">
       var DOCUMENTATION_OPTIONS = {
         URL_ROOT:    './',
-        VERSION:     '0.1.29',
+        VERSION:     '0.1.30',
         COLLAPSE_INDEX: false,
         FILE_SUFFIX: '.html',
         HAS_SOURCE:  true,
@@ -28,7 +28,7 @@
     <div class="related" role="navigation" aria-label="related navigation">
       <h3>Navigation</h3>
       <ul>
-        <li class="nav-item nav-item-0"><a href="index.html#document-index">KiPart 0.1.29 documentation</a> &#187;</li> 
+        <li class="nav-item nav-item-0"><a href="index.html#document-index">KiPart 0.1.30 documentation</a> &#187;</li> 
       </ul>
     </div>  
 
@@ -127,15 +127,24 @@ window and typing the command:</p>
 </div>
 <p>A generic part file is expected when the <code class="docutils literal"><span class="pre">-r</span> <span class="pre">generic</span></code> option is specified.
 It contains the following items:</p>
-<ol class="arabic simple">
-<li>The part name or number stands alone on row. The reference prefix for the part
-can also be placed on the same row in a cell following the name. (If omitted, the
-reference prefix defaults to <code class="docutils literal"><span class="pre">U</span></code>.)</li>
-<li>The next non-blank row contains the column headers. The required headers are ‘Pin’ and ‘Name’.
+<ol class="arabic">
+<li><p class="first">The part name or number stands alone on row.
+The following three cells on the row can contain:</p>
+<blockquote>
+<div><ol class="arabic simple">
+<li>A reference prefix such as <code class="docutils literal"><span class="pre">R</span></code> (defaults to <code class="docutils literal"><span class="pre">U</span></code> if left blank),</li>
+<li>A footprint such as <code class="docutils literal"><span class="pre">Diodes_SMD:D_0603</span></code> (defaults to blank),</li>
+<li>A manufacturer’s part number such as <code class="docutils literal"><span class="pre">MT48LC16M16A2F4-6A:GTR</span></code> (defaults to blank).</li>
+</ol>
+</div></blockquote>
+</li>
+<li><p class="first">The next non-blank row contains the column headers. The required headers are ‘Pin’ and ‘Name’.
 Optional columns are ‘Unit’, ‘Side’, ‘Type’, ‘Style’, and ‘Hidden’.
-These can be placed in any order and in any column.</li>
-<li>On each succeeding row, enter the pin number, name, unit identifier (if the schematic symbol will have multiple units),
-pin type and style. Each of these items should be entered in the column with the appropriate header.<ul>
+These can be placed in any order and in any column.</p>
+</li>
+<li><p class="first">On each succeeding row, enter the pin number, name, unit identifier (if the schematic symbol will have multiple units),
+pin type and style. Each of these items should be entered in the column with the appropriate header.</p>
+<ul class="simple">
 <li>Pin numbers can be either numeric (e.g., ‘69’) if the part is a DIP or QFP, or they can be
 alphanumeric (e.g., ‘C10’) if a BGA or CSP is used. Placing a <cite>*</cite> at the start of a pin number
 creates a non-existent “gap” pin that can be used to divide the pins into groups. This only works
@@ -192,10 +201,12 @@ A separate unit will be generated in the schematic symbol for each distinct unit
 or ‘1’ to make it invisible, anything else makes it visible.</li>
 </ul>
 </li>
-<li>A blank row ends the list of pins for the part.</li>
-<li>Multiple parts (each consisting of name, column header and pin rows)
+<li><p class="first">A blank row ends the list of pins for the part.</p>
+</li>
+<li><p class="first">Multiple parts (each consisting of name, column header and pin rows)
 separated by blank lines are allowed in a single CSV file.
-Each part will become a separate symbol in the KiCad library.</li>
+Each part will become a separate symbol in the KiCad library.</p>
+</li>
 </ol>
 <p>When the option <code class="docutils literal"><span class="pre">-r</span> <span class="pre">xilinx7</span></code> is used, the individual CSV pin files or entire .zip archives
 for the <a class="reference external" href="http://www.xilinx.com/support/packagefiles/">Xilinx 7-Series FPGAs</a> can be processed.</p>
@@ -761,7 +772,7 @@ in the library file.</li>
     <div class="related" role="navigation" aria-label="related navigation">
       <h3>Navigation</h3>
       <ul>
-        <li class="nav-item nav-item-0"><a href="index.html#document-index">KiPart 0.1.29 documentation</a> &#187;</li> 
+        <li class="nav-item nav-item-0"><a href="index.html#document-index">KiPart 0.1.30 documentation</a> &#187;</li> 
       </ul>
     </div>
     <div class="footer" role="contentinfo">

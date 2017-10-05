@@ -48,9 +48,11 @@ KiPart is mainly intended to be  used as a script::
 A generic part file is expected when the ``-r generic`` option is specified.
 It contains the following items:
 
-#. The part name or number stands alone on row. The reference prefix for the part
-   can also be placed on the same row in a cell following the name. (If omitted, the
-   reference prefix defaults to ``U``.)
+#. The part name or number stands alone on row.
+   The following three cells on the row can contain:
+       #. A reference prefix such as ``R`` (defaults to ``U`` if left blank),
+       #. A footprint such as ``Diodes_SMD:D_0603`` (defaults to blank),
+       #. A manufacturer's part number such as ``MT48LC16M16A2F4-6A:GTR`` (defaults to blank).
 #. The next non-blank row contains the column headers. The required headers are 'Pin' and 'Name'.
    Optional columns are 'Unit', 'Side', 'Type', 'Style', and 'Hidden'.
    These can be placed in any order and in any column.
@@ -93,6 +95,7 @@ It contains the following items:
         * non_logic, nl, analog
    * The hidden column specifies whether the pin is visible in Eeschema. This can be one of 'y', 'yes', 't', 'true',
      or '1' to make it invisible, anything else makes it visible.
+
 #. A blank row ends the list of pins for the part.
 #. Multiple parts (each consisting of name, column header and pin rows)
    separated by blank lines are allowed in a single CSV file.
