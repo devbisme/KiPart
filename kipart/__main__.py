@@ -36,7 +36,8 @@ def main():
         description=
         'Generate single & multi-unit schematic symbols for KiCad from a CSV file.')
 
-    parser.add_argument('-v', '--version',
+    parser.add_argument(
+        '-v', '--version',
         action='version',
         version='KiPart ' + __version__)
     parser.add_argument(
@@ -45,7 +46,8 @@ def main():
         type=str,
         metavar='file1.[csv|zip] file2.[csv|zip] ...',
         help='Files for parts in CSV format or as CSV files in .zip archives.')
-    parser.add_argument('-r', '--reader',
+    parser.add_argument(
+        '-r', '--reader',
         nargs='?',
         type=str.lower,
         choices=['generic', 'xilinxultra', 'xilinx7', 'xilinx6s', 'xilinx6v', 'psoc5lp', 'stm32cube', 'lattice'],
@@ -72,7 +74,8 @@ def main():
         default='left',
         help='Which side to place the pins by default.'
     )
-    parser.add_argument('-o', '--output',
+    parser.add_argument(
+        '-o', '--output',
         nargs='?',
         type=str,
         metavar='file.lib',
@@ -87,10 +90,12 @@ def main():
         action='store_true',
         help=
         'Bundle multiple, identically-named power, ground and no-connect pins each into a single schematic pin.')
-    parser.add_argument('-a', '--append',
+    parser.add_argument(
+        '-a', '--append', '--add',
         action='store_true',
-        help='Append to an existing part library.')
-    parser.add_argument('-w', '--overwrite',
+        help='Add parts to an existing part library. Overwrite existing parts only if used in conjunction with -w.')
+    parser.add_argument(
+        '-w', '--overwrite',
         action='store_true',
         help='Allow overwriting of an existing part library.')
     parser.add_argument(
@@ -136,6 +141,7 @@ def main():
         return kipart(reader_type=args.reader,
                    part_data_file=part_data_file,
                    parts_lib=parts_lib,
+                   allow_overwrite=args.overwrite,
                    sort_type=args.sort,
                    reverse=args.reverse,
                    fuzzy_match=args.fuzzy_match,

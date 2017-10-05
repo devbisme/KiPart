@@ -682,6 +682,7 @@ def do_bundling(pin_data, bundle, fuzzy_match):
 
 
 def kipart(reader_type, part_data_file, parts_lib,
+           allow_overwrite=False,
            sort_type='name',
            reverse=False,
            fuzzy_match=False,
@@ -696,6 +697,14 @@ def kipart(reader_type, part_data_file, parts_lib,
 
     # Get the part number and pin data from the CSV file.
     for part_num, part_ref_prefix, part_footprint, part_manf_num, pin_data in part_reader(part_data_file):
+
+        # Handle retaining/overwriting parts that are already in the library.
+        if parts_lib.get(part_num):
+            if allow_overwrite:
+                print('Overwriting part {}!'.format(part_num))
+            else:
+                print('Retaining previous definition of part {}.'.format(part_num))
+                continue
 
         do_bundling(pin_data, bundle, fuzzy_match)
 
