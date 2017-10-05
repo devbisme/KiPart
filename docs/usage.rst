@@ -39,7 +39,8 @@ KiPart is mainly intended to be  used as a script::
                             pin type, style and orientation.
       -b, --bundle          Bundle multiple, identically-named power, ground and
                             no-connect pins each into a single schematic pin.
-      -a, --append          Append to an existing part library.
+      -a, --append, --add   Add parts to an existing part library. Overwrite
+                            existing parts only if used in conjunction with -w.
       -w, --overwrite       Allow overwriting of an existing part library.
       -d [LEVEL], --debug [LEVEL]
                             Print debugging info. (Larger LEVEL means more info.)
@@ -71,24 +72,24 @@ It contains the following items:
    * The type column specifies the electrical type of the pin. The allowable values are:
         * input, inp, in, clk
         * output, outp, out
-        * bidirectional, bidir, bi, inout, io
+        * bidirectional, bidir, bi, inout, io, iop
         * tristate, tri
         * passive, pass
         * unspecified, un, analog
-        * power_in, pwr_in, power, pwr, ground, gnd
-        * power_out, pwr_out, pwr_o
-        * open_collector, open_coll, oc
-        * open_emitter, open_emit, oe
-        * no_connect, no_conn, nc
+        * power_in, pwr_in, pwrin, power, pwr, ground, gnd
+        * power_out, pwr_out, pwrout, pwr_o
+        * open_collector, opencollector, open_coll, opencoll, oc
+        * open_emitter, openemitter, open_emit, openemit, oe
+        * no_connect, noconnect, no_conn, noconn, nc
    * The style column specifies the graphic representation of the pin. The allowable pin styles are:
         * line, <blank>
-        * inverted, inv
+        * inverted, inv, ~, #
         * clock, clk, rising_clk
-        * inverted_clock, inv_clk
-        * input_low, inp_low, in_lw, in_b
-        * clock_low, clk_low, clk_lw_clk_b
-        * output_low, outp_low, out_lw, out_b
-        * falling_edge_clock, falling_clk
+        * inverted_clock, inv_clk, clk_b, clk_n, ~clk, #clk
+        * input_low, inp_low, in_lw, in_b, in_n, ~in, #in
+        * clock_low, clk_low, clk_lw, clk_b, clk_n, ~clk, #clk
+        * output_low, outp_low, out_lw, out_b, out_n, ~out, #out
+        * falling_edge_clock, falling_clk, fall_clk
         * non_logic, nl, analog
    * The hidden column specifies whether the pin is visible in Eeschema. This can be one of 'y', 'yes', 't', 'true',
      or '1' to make it invisible, anything else makes it visible.
@@ -133,6 +134,14 @@ So, for example, ``ck`` would match ``clk`` or ``rgt`` would match ``right``.
 Specifying the ``-b`` option will place multiple pins with the identical names at the same location
 such that they can all attach to the same net with a single connection.
 This is helpful for handling the multiple VCC and GND pins found on many high pin-count devices.
+
+The ``-w`` option is used to overwrite an existing library with any new parts
+from the CSV file. The old contents of the library are lost.
+
+The ``-a`` option is used to add parts to an existing library.
+If a part with the same name already exists, the new part will only overwrite it
+if the ``-w`` flag is also used.
+Any existing parts in the library that are not overwritten are retained.
 
 
 Examples

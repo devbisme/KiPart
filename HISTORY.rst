@@ -3,6 +3,15 @@
 History
 -------
 
+0.1.30 (2017-10-05)
+______________________
+
+* Specifying ``-a`` option allows new parts to be written to an existing library but prevents overwriting existing parts.
+  Using ``-w`` in conjunction with ``-a`` allows added parts to overwrite existing parts.
+* Part name, reference prefix, footprint, and manf. part num. are now allowed on beginning row of part info in a CSV file.
+* Expanded the lists of mnemonics for pin types and styles.
+
+
 0.1.29 (2017-07-31)
 ______________________
 
