@@ -76,7 +76,7 @@ def get_part_info(csv_reader):
     '''Get the part number, ref prefix, footprint, MPN from a row of the CSV file.'''
 
     # Read the first, nonblank row and pad it with None's to make sure it's long enough.
-    part_num, part_ref_prefix, part_footprint, part_manf_num, *_ = get_nonblank_row(csv_reader) + [None]*4
+    part_num, part_ref_prefix, part_footprint, part_manf_num = list(get_nonblank_row(csv_reader) + [None]*4)[:4]
 
     # Put in the default part reference identifier if it isn't present.
     if part_ref_prefix in (None, '', ' '):
