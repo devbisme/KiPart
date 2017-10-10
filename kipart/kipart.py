@@ -94,7 +94,7 @@ PIN_ORIENTATIONS = {
     'top': 'D',
     'up': 'D',
 }
-scrubber = re.compile('[\W.]+')
+scrubber = re.compile('[^\w~#]+')
 PIN_ORIENTATIONS = {
     scrubber.sub('', k).lower(): v
     for k, v in list(PIN_ORIENTATIONS.items())
@@ -183,10 +183,6 @@ PIN_STYLES = {
     'clock_low': 'CL',
     'clk_low': 'CL',
     'clk_lw': 'CL',
-    'clk_b': 'CL',
-    'clk_n': 'CL',
-    '~clk': 'CL',
-    '#clk': 'CL',
     'output_low': 'V',
     'outp_low': 'V',
     'out_lw': 'V',

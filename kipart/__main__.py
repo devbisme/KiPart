@@ -27,6 +27,7 @@ import os
 import sys
 import io
 import zipfile
+from collections import OrderedDict
 from .__init__ import __version__
 from .kipart import *
 from .common import DEFAULT_PIN, issue
@@ -52,7 +53,7 @@ def main():
         type=str.lower,
         choices=['generic', 'xilinxultra', 'xilinx7', 'xilinx6s', 'xilinx6v', 'psoc5lp', 'stm32cube', 'lattice'],
         default='generic',
-        help='Name of function for reading the CSV file.')
+        help='Name of function for reading the CSV files.')
     parser.add_argument(
         '-s', '--sort',
         nargs='?',
@@ -79,7 +80,7 @@ def main():
         nargs='?',
         type=str,
         metavar='file.lib',
-        help='Generated KiCad library for part.')
+        help='Generated KiCad symbol library for parts.')
     parser.add_argument(
         '-f', '--fuzzy_match',
         action='store_true',
@@ -115,7 +116,7 @@ def main():
         args.output = os.path.splitext(args.output)[0] + '.lib'
 
     import re
-    parts_lib = {}
+    parts_lib = OrderedDict()
     if os.path.isfile(args.output):
         if not args.overwrite and not args.append:
             print('Output file {} already exists! Use the --overwrite option to replace it or the --append option to append to it.'.format(
