@@ -26,7 +26,7 @@ KiPart is mainly intended to be  used as a script::
       -h, --help            show this help message and exit
       -v, --version         show program's version number and exit
       -r [{generic,xilinxultra,xilinx7,xilinx6s,xilinx6v,psoc5lp,stm32cube,lattice}], --reader [{generic,xilinxultra,xilinx7,xilinx6s,xilinx6v,psoc5lp,stm32cube,lattice}]
-                            Name of function for reading the CSV file.
+                            Name of function for reading the CSV files.
       -s [{row,num,name}], --sort [{row,num,name}]
                             Sort the part pins by their entry order in the CSV
                             file, their pin number, or their pin name.
@@ -34,7 +34,7 @@ KiPart is mainly intended to be  used as a script::
       --side [{left,right,top,bottom}]
                             Which side to place the pins by default.
       -o [file.lib], --output [file.lib]
-                            Generated KiCad library for part.
+                            Generated KiCad symbol library for parts.
       -f, --fuzzy_match     Use approximate string matching when looking-up the
                             pin type, style and orientation.
       -b, --bundle          Bundle multiple, identically-named power, ground and
@@ -60,9 +60,9 @@ It contains the following items:
    pin type and style. Each of these items should be entered in the column with the appropriate header.
 
    * Pin numbers can be either numeric (e.g., '69') if the part is a DIP or QFP, or they can be
-     alphanumeric (e.g., 'C10') if a BGA or CSP is used. Placing a `*` at the start of a pin number
-     creates a non-existent "gap" pin that can be used to divide the pins into groups. This only works
-     when the ``-s row`` sorting option is selected.
+     alphanumeric (e.g., 'C10') if a BGA or CSP is used. Using a `*` instead of a pin number
+     creates a non-existent "gap" pin that can be used to visually separate the pins into groups. (This only works
+     when the ``-s row`` sorting option is selected.)
    * Pin names can be any combination of letters, numbers and special characters (except a comma).
    * The unit identifier can be blank or any combination of letters, numbers and special characters (except a comma).
      A separate unit will be generated in the schematic symbol for each distinct unit identifier.
@@ -121,14 +121,16 @@ since they use a different format.)
 The ``-s`` option specifies the arrangement of the pins in the schematic symbol:
 
 * ``-s row`` places the pins in the order they were entered into the CSV file.
-* ``-s num`` places the pins such that their pin numbers are in increasing order.
 * ``-s name`` places the pins in increasing order of their names.
+* ``-s num`` places the pins in increasing order of their pin numbers
+  and arranged in a counter-clockwise fashion around the symbol starting from
+  the upper-left corner.
 
 The ``--reverse`` option reverses the sort order for the pins.
 
 Using the ``--side`` option you can set the default side for the
 pins. The option from the CSV file will override the command line
-option. Default choice is ``left``.
+option. The default choice is ``left``.
 
 Specifying the ``-f`` option enables *fuzzy matching* on the pin types, styles and sides used in the
 CSV file.

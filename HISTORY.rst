@@ -3,6 +3,12 @@
 History
 -------
 
+0.1.32 (2017-12-08)
+______________________
+
+Pins sorted by name or row are now pplaced top-to-bottom on left/right sides and left-to-right on top/bottom sides.
+
+
 0.1.31 (2017-10-10)
 ______________________
 
