@@ -642,8 +642,15 @@ def draw_symbol(part_num, part_ref_prefix, part_footprint, part_manf_num, pin_da
 
         # Draw the transformed pins for each side of the symbol.
         for side, side_pins in list(unit.items()):
-            # Sort the pins names for the desired order: row-wise, numeric, alphabetical.
-            sorted_side_pins = sorted(list(side_pins.items()), key=pin_key_func, reverse=reverse)
+            # If the pins are ordered by their row in the spreadsheet or by their name,
+            # then reverse their order on the right and top sides so they go from top-to-bottom
+            # on the right side and left-to-right on the top side instead of the opposite
+            # as happens with counter-clockwise pin-number ordering.
+            side_reverse = reverse
+            if sort_type in ['name', 'row'] and side in ['right', 'top']:
+                side_reverse = not reverse
+            # Sort the pins for the desired order: row-wise, numeric (pin #), alphabetical (pin name).
+            sorted_side_pins = sorted(list(side_pins.items()), key=pin_key_func, reverse=side_reverse)
             # Draw the transformed pins for this side of the symbol.
             part_defn += draw_pins(unit_num, sorted_side_pins, 
                                    bbox[side], transform[side], fuzzy_match)
