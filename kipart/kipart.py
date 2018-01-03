@@ -210,7 +210,7 @@ END_DEF = 'ENDDEF\n'
 REF_FIELD = 'F0 "{ref_prefix}" {x} {y} {ref_size} H V {horiz_just} CNN\n'
 PART_FIELD = 'F1 "{part_num}" {x} {y} {ref_size} H V {horiz_just} CNN\n'
 FOOTPRINT_FIELD = 'F2 "{footprint}" {x} {y} {ref_size} H I {horiz_just} CNN\n'
-MPN_FIELD = 'F 4 "{manf_num}" {x} {y} {ref_size} H I {horiz_just} CNN "manf#"\n'
+MPN_FIELD = 'F4 "{manf_num}" {x} {y} {ref_size} H I {horiz_just} CNN "manf#"\n'
 
 START_DRAW = 'DRAW\n'
 END_DRAW = 'ENDDRAW\n'
