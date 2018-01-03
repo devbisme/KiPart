@@ -693,8 +693,6 @@ def do_bundling(pin_data, bundle, fuzzy_match):
                     for index, p in enumerate(pins):
                         if is_pwr(p, fuzzy_match) and bundle:
                             side[p.name + '_pwr'].append(p)
-                        elif is_nc(p, fuzzy_match) and bundle:
-                            side[p.name + '_nc'].append(p)
                         else:
                             side[p.name + '_' + str(index)].append(p)
                     del side[name]
