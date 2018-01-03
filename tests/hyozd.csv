@@ -1,5 +1,5 @@
-CONN_03x02,,
-,,
+CONN_03x02
+
 Pin,Unit,Name
 1,1,P1
 2,1,P2
@@ -7,9 +7,9 @@ Pin,Unit,Name
 4,2,P4
 5,2,P5
 6,2,P6
-,,
-CONN_03x03,,
-,,
+
+CONN_03x03
+
 Pin,Unit,Name
 1,1,P1
 2,1,P2
