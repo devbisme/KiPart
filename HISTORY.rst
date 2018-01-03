@@ -3,10 +3,17 @@
 History
 -------
 
+0.1.33 (2018-01-03)
+______________________
+
+* Fixed error in field syntax for part manufacturer number.
+* No-connect pins can no longer be bundled because it is marked as an ERC error by EESCHEMA.
+
+
 0.1.32 (2017-12-08)
 ______________________
 
-Pins sorted by name or row are now pplaced top-to-bottom on left/right sides and left-to-right on top/bottom sides.
+* Pins sorted by name or row are now pplaced top-to-bottom on left/right sides and left-to-right on top/bottom sides.
 
 
 0.1.31 (2017-10-10)
