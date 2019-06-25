@@ -17,6 +17,7 @@ def usages():
     print("python3 machxo3tokipart.py [options]")
     print("-h, help                 This usage message")
     print("-c, csv=FILENAME         give the filename of lattice csv")
+    print("-o, outputname=FILENAME  Output filename to write")
     print("-p, package=CABGA256     Package to use")
     print("-l, list                 list packages available")
     print("-n, partname=name        part name (filename in not present)")
@@ -108,7 +109,6 @@ if __name__ == "__main__":
     print("Convert a lattice csv pinout for Kipart\n")
     if sys.version_info[0] < 3:
         raise Exception("Must be using Python 3")
-    print(MachXO3toKipart.__doc__)
     try:
         opts, args = getopt.getopt(sys.argv[1:], "hp:lc:o:p:n:",
                                    ["help","package=", "partname="
