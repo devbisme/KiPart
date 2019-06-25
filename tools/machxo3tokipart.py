@@ -55,7 +55,6 @@ class MachXO3toKipart(object):
                         self._packages_dict[package.strip()]=i
                         i+=1
                     break
-            print(self._packages_dict)
             # Parse header with package list
             if listpackage:
                 return
@@ -91,11 +90,9 @@ class MachXO3toKipart(object):
                 foutput.write("{}\n".format(self._partname))
             foutput.write("\n")
             foutput.write("Pin, Unit, Name\n")
-            print(self._pinoutdict[10])
             for rawpin in self._pinoutdict.keys():
                 pin = self._pinoutdict[rawpin]
                 pindex = self._packages_dict[self._package]
-                print(pin)
                 if pin[pindex]!= '-':
                     foutput.write("{}, BANK{}, {}{}{}\n"
                                  .format(pin[pindex],
