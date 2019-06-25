@@ -65,15 +65,24 @@ class MachXO3toKipart(object):
             # Parse pinout
             self._pinoutdict = {}
             power_index = 10000
+            pindex = self._packages_dict[self._package]
             for line in fcsv:
                 sline = line.split(',')
                 index = int(sline[0])
-                if index != 0:
-                    self._pinoutdict[index]=sline
-                else:
-                    self._pinoutdict[power_index]=sline
-                    power_index += 1
+                if sline[pindex] != '-':
+                    if index != 0:
+                        self._pinoutdict[index]=sline
+                    else:
+                        self._pinoutdict[power_index]=sline
+                        power_index += 1
+            self.count_bank()
 
+    def count_bank(self):
+        bank = {}
+        for rawpin in self._pinoutdict.keys():
+            pin = self._pinoutdict[rawpin]
+            bank[pin[2]] = bank.get(pin[2], 0) + 1
+        self._bankcount = bank
 
     def listpackage_output(self):
         print("Packages available are :")
@@ -89,17 +98,24 @@ class MachXO3toKipart(object):
             else:
                 foutput.write("{}\n".format(self._partname))
             foutput.write("\n")
-            foutput.write("Pin, Unit, Name\n")
+            foutput.write("Pin, Unit, Name, Side\n")
+            bank = {}
             for rawpin in self._pinoutdict.keys():
                 pin = self._pinoutdict[rawpin]
+                bank[pin[2]] = bank.get(pin[2], 0) + 1
                 pindex = self._packages_dict[self._package]
                 if pin[pindex]!= '-':
-                    foutput.write("{}, BANK{}, {}{}{}\n"
+                    if bank[pin[2]] <= self._bankcount[pin[2]]/2:
+                        side = "left"
+                    else:
+                        side = "right"
+                    foutput.write("{}, BANK{}, {}{}{}, {}\n"
                                  .format(pin[pindex],
                                      pin[2],
                                      pin[1] if pin[1] != '-' else '',
                                      "_" + pin[2] if pin[2] != '-' else '',
-                                     "_" + pin[3] if pin[3] != '-' else ''))
+                                     "_" + pin[3] if pin[3] != '-' else '',
+                                     side))
 
 
 if __name__ == "__main__":
