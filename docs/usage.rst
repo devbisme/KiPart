@@ -37,8 +37,8 @@ KiPart is mainly intended to be  used as a script::
                             Generated KiCad symbol library for parts.
       -f, --fuzzy_match     Use approximate string matching when looking-up the
                             pin type, style and orientation.
-      -b, --bundle          Bundle multiple, identically-named power, ground and
-                            no-connect pins each into a single schematic pin.
+      -b, --bundle          Bundle multiple, identically-named power and ground
+                            pins each into a single schematic pin.
       -a, --append, --add   Add parts to an existing part library. Overwrite
                             existing parts only if used in conjunction with -w.
       -w, --overwrite       Allow overwriting of an existing part library.
@@ -49,10 +49,12 @@ A generic part file is expected when the ``-r generic`` option is specified.
 It contains the following items:
 
 #. The part name or number stands alone on row.
-   The following three cells on the row can contain:
+   The following five cells on the same row can contain:
        #. A reference prefix such as ``R`` (defaults to ``U`` if left blank),
        #. A footprint such as ``Diodes_SMD:D_0603`` (defaults to blank),
        #. A manufacturer's part number such as ``MT48LC16M16A2F4-6A:GTR`` (defaults to blank).
+       #. A link to the part's datasheet.
+       #. A description of the part.
 #. The next non-blank row contains the column headers. The required headers are 'Pin' and 'Name'.
    Optional columns are 'Unit', 'Side', 'Type', 'Style', and 'Hidden'.
    These can be placed in any order and in any column.
@@ -184,8 +186,8 @@ where the pins are arranged by their names:
 
 .. image:: example3.png
 
-The command ``kipart -b example.csv -o example4.lib`` will bundle power and no-connect pins with
-identical names (like ``GND``, ``VCC``, and ``NC``) into single pins like so:
+The command ``kipart -b example.csv -o example4.lib`` will bundle power pins with
+identical names (like ``GND`` and ``VCC``) into single pins like so:
 
 .. image:: example4.png
 

@@ -1,8 +1,8 @@
 tests := example1 example2 example3 example4 example5 example6 lt1512 helwig test1 hidden_test
 examples := example1 example2 example3 example4 example5 example6
 
-all: randomtest
-#all: randomtest $(tests:=.tst)
+#all: randomtest
+all: randomtest $(tests:=.tst)
 clean: $(tests:=.clean)
 examples: $(examples:=.lib)
 tests: $(tests:=.tst)
@@ -11,7 +11,7 @@ randomtest:
 	python random_csv.py > randomtest.csv
 	kipart randomtest.csv -o randomtest.lib -w
 	kilib2csv randomtest.lib -o randomtest2.csv -w
-	@diff -s randomtest.csv randomtest2.csv
+	@/bin/diff -s randomtest.csv randomtest2.csv
 	@echo "*********************************************************************"
 
 example1.lib: example1.csv
@@ -45,10 +45,10 @@ hidden_test.lib: hidden_test.csv
 	kipart $^ -o $@ -w
 
 %.tst : %.clean %.lib
-	@-diff -qsw "$*.lib" "$* - Copy.lib"
+	@-/bin/diff -qsw "$*.lib" "$* - Copy.lib"
 	@sort $*.lib > "$*_sorted.lib"
 	@sort "$* - Copy.lib" > "$*_sorted_copy.lib"
-	@-diff -qsw "$*_sorted.lib" "$*_sorted_copy.lib"
+	@-/bin/diff -qsw "$*_sorted.lib" "$*_sorted_copy.lib"
 	@echo "*********************************************************************"
 
 %.clean :

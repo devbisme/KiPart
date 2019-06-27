@@ -1,17 +1,17 @@
 # MIT license
-# 
+#
 # Copyright (C) 2015 by XESS Corp.
-# 
+#
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
 # in the Software without restriction, including without limitation the rights
 # to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
 # copies of the Software, and to permit persons to whom the Software is
 # furnished to do so, subject to the following conditions:
-# 
+#
 # The above copyright notice and this permission notice shall be included in
 # all copies or substantial portions of the Software.
-# 
+#
 # THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
 # IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
 # FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
@@ -21,15 +21,17 @@
 # THE SOFTWARE.
 
 from __future__ import absolute_import
-import csv
+
 import copy
+import csv
 from collections import defaultdict
+
 from .common import *
 from .kipart import *
 
 
 def generic_reader(csv_file):
-    '''Extract pin data from a CSV file and return a dictionary of pin data.
+    """Extract pin data from a CSV file and return a dictionary of pin data.
        The CSV file contains one or more groups of rows formatted as follows:
            A row with a single field containing the part number.
            Zero or more blank rows.
@@ -46,7 +48,7 @@ def generic_reader(csv_file):
                The 'Name' column contains the pin name.
            A blank row terminates the pin data for the part and begins
            a new group of rows for another part.
-    '''
+    """
 
     while True:
         # Create a dictionary that uses the unit numbers as keys. Each entry in this dictionary
@@ -63,7 +65,9 @@ def generic_reader(csv_file):
 
         # Extract part number from the first non-blank line. Break out of the infinite
         # while loop and stop processing this file if no part number is found.
-        part_num, part_ref_prefix, part_footprint, part_manf_num = get_part_info(csv_reader)
+        part_num, part_ref_prefix, part_footprint, part_manf_num, part_datasheet, part_desc = get_part_info(
+            csv_reader
+        )
         if part_num is None:
             break
 
@@ -87,20 +91,22 @@ def generic_reader(csv_file):
                 break
 
             # Get the pin attributes from the cells of the row of data.
-            pin = copy.copy(DEFAULT_PIN) # Start off with default values for the pin.
+            pin = copy.copy(DEFAULT_PIN)  # Start off with default values for the pin.
             pin.index = index
             for c, a in list(COLUMN_NAMES.items()):
                 try:
                     setattr(pin, a, fix_pin_data(row_dict[c], part_num))
                 except KeyError:
-                    # If a column doesn't exist, KeyError is raised and 
+                    # If a column doesn't exist, KeyError is raised and
                     # the default pin value will remain instead.
                     pass
             if pin.num is None:
                 issue(
-                    'ERROR: No pin number on row {index} of {part_num}'.format(
-                        index=index,
-                        part_num=part_num), level='error')
+                    "ERROR: No pin number on row {index} of {part_num}".format(
+                        index=index, part_num=part_num
+                    ),
+                    level="error",
+                )
 
             # If the symbol side for the pin was left blank, place it on the default side.
             if not pin.side:
@@ -111,4 +117,4 @@ def generic_reader(csv_file):
             # We'll unbundle them later, if necessary.
             pin_data[pin.unit][pin.side.lower()][pin.name].append(pin)
 
-        yield part_num, part_ref_prefix, part_footprint, part_manf_num, pin_data  # Return the dictionary of pins extracted from the CVS file.
+        yield part_num, part_ref_prefix, part_footprint, part_manf_num, part_datasheet, part_desc, pin_data  # Return the dictionary of pins extracted from the CVS file.

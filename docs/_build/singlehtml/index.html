@@ -1,34 +1,26 @@
 
-<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
-  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<!DOCTYPE html>
 
 <html xmlns="http://www.w3.org/1999/xhtml">
   <head>
-    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
-    <title>KiPart 0.1.33 documentation</title>
+    <meta charset="utf-8" />
+    <title>KiPart 0.1.34 documentation</title>
     <link rel="stylesheet" href="_static/classic.css" type="text/css" />
     <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
-    <script type="text/javascript">
-      var DOCUMENTATION_OPTIONS = {
-        URL_ROOT:    './',
-        VERSION:     '0.1.33',
-        COLLAPSE_INDEX: false,
-        FILE_SUFFIX: '.html',
-        HAS_SOURCE:  true,
-        SOURCELINK_SUFFIX: '.txt'
-      };
-    </script>
+    
+    <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
     <script type="text/javascript" src="_static/jquery.js"></script>
     <script type="text/javascript" src="_static/underscore.js"></script>
     <script type="text/javascript" src="_static/doctools.js"></script>
+    <script type="text/javascript" src="_static/language_data.js"></script>
+    
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" /> 
-  </head>
-  <body>
+  </head><body>
     <div class="related" role="navigation" aria-label="related navigation">
       <h3>Navigation</h3>
       <ul>
-        <li class="nav-item nav-item-0"><a href="index.html#document-index">KiPart 0.1.33 documentation</a> &#187;</li> 
+        <li class="nav-item nav-item-0"><a href="index.html#document-index">KiPart 0.1.34 documentation</a> &#187;</li> 
       </ul>
     </div>  
 
@@ -46,20 +38,20 @@
 <a class="reference external image-reference" href="https://pypi.python.org/pypi/kipart"><img alt="https://img.shields.io/pypi/v/kipart.svg" src="https://img.shields.io/pypi/v/kipart.svg" /></a>
 <p>Generate multi-unit schematic symbols for KiCad from a CSV file.</p>
 <ul class="simple">
-<li>Free software: MIT license</li>
-<li>Documentation: <a class="reference external" href="https://xesscorp.github.io/KiPart">https://xesscorp.github.io/KiPart</a>.</li>
+<li><p>Free software: MIT license</p></li>
+<li><p>Documentation: <a class="reference external" href="https://xesscorp.github.io/KiPart">https://xesscorp.github.io/KiPart</a>.</p></li>
 </ul>
 <div class="section" id="features">
 <h3>Features<a class="headerlink" href="#features" title="Permalink to this headline">¶</a></h3>
 <ul class="simple">
-<li>Generates schematic part libraries for KiCad from CSV files.</li>
-<li>Converts lists of pins in a CSV file into a multi-unit schematic part symbol.</li>
-<li>Converts multiple CSV files stored in .zip archives.</li>
-<li>Each row of the CSV file lists the number, name, type, style, unit and side of a pin.</li>
-<li>Pins on a unit with the same name (e.g., GND) are placed at the same location
-so they can all be tied to the same net with a single connection.</li>
-<li>Also includes <code class="docutils literal"><span class="pre">kilib2csv</span></code> for converting schematic part libraries into
-CSV files suitable for input to KiPart.</li>
+<li><p>Generates schematic part libraries for KiCad from CSV files.</p></li>
+<li><p>Converts lists of pins in a CSV file into a multi-unit schematic part symbol.</p></li>
+<li><p>Converts multiple CSV files stored in .zip archives.</p></li>
+<li><p>Each row of the CSV file lists the number, name, type, style, unit and side of a pin.</p></li>
+<li><p>Pins on a unit with the same name (e.g., GND) are placed at the same location
+so they can all be tied to the same net with a single connection.</p></li>
+<li><p>Also includes <code class="docutils literal notranslate"><span class="pre">kilib2csv</span></code> for converting schematic part libraries into
+CSV files suitable for input to KiPart.</p></li>
 </ul>
 </div>
 </div>
@@ -73,11 +65,11 @@ If you’re on Windows, you can download a Python installer from
 <a class="reference external" href="http://winpython.github.io/#releases">WinPython</a> .</p>
 <p>Once you have Python, you can install this package by opening a terminal
 window and typing the command:</p>
-<div class="highlight-default"><div class="highlight"><pre><span></span>$ easy_install kipart
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>$ easy_install kipart
 </pre></div>
 </div>
 <p>Or:</p>
-<div class="highlight-default"><div class="highlight"><pre><span></span>$ pip install kipart
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>$ pip install kipart
 </pre></div>
 </div>
 </div>
@@ -86,7 +78,7 @@ window and typing the command:</p>
 <div class="section" id="kipart">
 <h3>KiPart<a class="headerlink" href="#kipart" title="Permalink to this headline">¶</a></h3>
 <p>KiPart is mainly intended to be  used as a script:</p>
-<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">usage</span><span class="p">:</span> <span class="n">kipart</span> <span class="p">[</span><span class="o">-</span><span class="n">h</span><span class="p">]</span> <span class="p">[</span><span class="o">-</span><span class="n">v</span><span class="p">]</span>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">usage</span><span class="p">:</span> <span class="n">kipart</span> <span class="p">[</span><span class="o">-</span><span class="n">h</span><span class="p">]</span> <span class="p">[</span><span class="o">-</span><span class="n">v</span><span class="p">]</span>
               <span class="p">[</span><span class="o">-</span><span class="n">r</span> <span class="p">[{</span><span class="n">generic</span><span class="p">,</span><span class="n">xilinxultra</span><span class="p">,</span><span class="n">xilinx7</span><span class="p">,</span><span class="n">xilinx6s</span><span class="p">,</span><span class="n">xilinx6v</span><span class="p">,</span><span class="n">psoc5lp</span><span class="p">,</span><span class="n">stm32cube</span><span class="p">,</span><span class="n">lattice</span><span class="p">}]]</span>
               <span class="p">[</span><span class="o">-</span><span class="n">s</span> <span class="p">[{</span><span class="n">row</span><span class="p">,</span><span class="n">num</span><span class="p">,</span><span class="n">name</span><span class="p">}]]</span> <span class="p">[</span><span class="o">--</span><span class="n">reverse</span><span class="p">]</span>
               <span class="p">[</span><span class="o">--</span><span class="n">side</span> <span class="p">[{</span><span class="n">left</span><span class="p">,</span><span class="n">right</span><span class="p">,</span><span class="n">top</span><span class="p">,</span><span class="n">bottom</span><span class="p">}]]</span> <span class="p">[</span><span class="o">-</span><span class="n">o</span> <span class="p">[</span><span class="n">file</span><span class="o">.</span><span class="n">lib</span><span class="p">]]</span> <span class="p">[</span><span class="o">-</span><span class="n">f</span><span class="p">]</span> <span class="p">[</span><span class="o">-</span><span class="n">b</span><span class="p">]</span>
@@ -116,8 +108,8 @@ window and typing the command:</p>
                         <span class="n">Generated</span> <span class="n">KiCad</span> <span class="n">symbol</span> <span class="n">library</span> <span class="k">for</span> <span class="n">parts</span><span class="o">.</span>
   <span class="o">-</span><span class="n">f</span><span class="p">,</span> <span class="o">--</span><span class="n">fuzzy_match</span>     <span class="n">Use</span> <span class="n">approximate</span> <span class="n">string</span> <span class="n">matching</span> <span class="n">when</span> <span class="n">looking</span><span class="o">-</span><span class="n">up</span> <span class="n">the</span>
                         <span class="n">pin</span> <span class="nb">type</span><span class="p">,</span> <span class="n">style</span> <span class="ow">and</span> <span class="n">orientation</span><span class="o">.</span>
-  <span class="o">-</span><span class="n">b</span><span class="p">,</span> <span class="o">--</span><span class="n">bundle</span>          <span class="n">Bundle</span> <span class="n">multiple</span><span class="p">,</span> <span class="n">identically</span><span class="o">-</span><span class="n">named</span> <span class="n">power</span><span class="p">,</span> <span class="n">ground</span> <span class="ow">and</span>
-                        <span class="n">no</span><span class="o">-</span><span class="n">connect</span> <span class="n">pins</span> <span class="n">each</span> <span class="n">into</span> <span class="n">a</span> <span class="n">single</span> <span class="n">schematic</span> <span class="n">pin</span><span class="o">.</span>
+  <span class="o">-</span><span class="n">b</span><span class="p">,</span> <span class="o">--</span><span class="n">bundle</span>          <span class="n">Bundle</span> <span class="n">multiple</span><span class="p">,</span> <span class="n">identically</span><span class="o">-</span><span class="n">named</span> <span class="n">power</span> <span class="ow">and</span> <span class="n">ground</span>
+                        <span class="n">pins</span> <span class="n">each</span> <span class="n">into</span> <span class="n">a</span> <span class="n">single</span> <span class="n">schematic</span> <span class="n">pin</span><span class="o">.</span>
   <span class="o">-</span><span class="n">a</span><span class="p">,</span> <span class="o">--</span><span class="n">append</span><span class="p">,</span> <span class="o">--</span><span class="n">add</span>   <span class="n">Add</span> <span class="n">parts</span> <span class="n">to</span> <span class="n">an</span> <span class="n">existing</span> <span class="n">part</span> <span class="n">library</span><span class="o">.</span> <span class="n">Overwrite</span>
                         <span class="n">existing</span> <span class="n">parts</span> <span class="n">only</span> <span class="k">if</span> <span class="n">used</span> <span class="ow">in</span> <span class="n">conjunction</span> <span class="k">with</span> <span class="o">-</span><span class="n">w</span><span class="o">.</span>
   <span class="o">-</span><span class="n">w</span><span class="p">,</span> <span class="o">--</span><span class="n">overwrite</span>       <span class="n">Allow</span> <span class="n">overwriting</span> <span class="n">of</span> <span class="n">an</span> <span class="n">existing</span> <span class="n">part</span> <span class="n">library</span><span class="o">.</span>
@@ -125,92 +117,88 @@ window and typing the command:</p>
                         <span class="n">Print</span> <span class="n">debugging</span> <span class="n">info</span><span class="o">.</span> <span class="p">(</span><span class="n">Larger</span> <span class="n">LEVEL</span> <span class="n">means</span> <span class="n">more</span> <span class="n">info</span><span class="o">.</span><span class="p">)</span>
 </pre></div>
 </div>
-<p>A generic part file is expected when the <code class="docutils literal"><span class="pre">-r</span> <span class="pre">generic</span></code> option is specified.
+<p>A generic part file is expected when the <code class="docutils literal notranslate"><span class="pre">-r</span> <span class="pre">generic</span></code> option is specified.
 It contains the following items:</p>
 <ol class="arabic">
-<li><p class="first">The part name or number stands alone on row.
-The following three cells on the row can contain:</p>
+<li><p>The part name or number stands alone on row.
+The following five cells on the same row can contain:</p>
 <blockquote>
 <div><ol class="arabic simple">
-<li>A reference prefix such as <code class="docutils literal"><span class="pre">R</span></code> (defaults to <code class="docutils literal"><span class="pre">U</span></code> if left blank),</li>
-<li>A footprint such as <code class="docutils literal"><span class="pre">Diodes_SMD:D_0603</span></code> (defaults to blank),</li>
-<li>A manufacturer’s part number such as <code class="docutils literal"><span class="pre">MT48LC16M16A2F4-6A:GTR</span></code> (defaults to blank).</li>
+<li><p>A reference prefix such as <code class="docutils literal notranslate"><span class="pre">R</span></code> (defaults to <code class="docutils literal notranslate"><span class="pre">U</span></code> if left blank),</p></li>
+<li><p>A footprint such as <code class="docutils literal notranslate"><span class="pre">Diodes_SMD:D_0603</span></code> (defaults to blank),</p></li>
+<li><p>A manufacturer’s part number such as <code class="docutils literal notranslate"><span class="pre">MT48LC16M16A2F4-6A:GTR</span></code> (defaults to blank).</p></li>
+<li><p>A link to the part’s datasheet.</p></li>
+<li><p>A description of the part.</p></li>
 </ol>
 </div></blockquote>
 </li>
-<li><p class="first">The next non-blank row contains the column headers. The required headers are ‘Pin’ and ‘Name’.
+<li><p>The next non-blank row contains the column headers. The required headers are ‘Pin’ and ‘Name’.
 Optional columns are ‘Unit’, ‘Side’, ‘Type’, ‘Style’, and ‘Hidden’.
-These can be placed in any order and in any column.</p>
-</li>
-<li><p class="first">On each succeeding row, enter the pin number, name, unit identifier (if the schematic symbol will have multiple units),
+These can be placed in any order and in any column.</p></li>
+<li><p>On each succeeding row, enter the pin number, name, unit identifier (if the schematic symbol will have multiple units),
 pin type and style. Each of these items should be entered in the column with the appropriate header.</p>
 <ul class="simple">
-<li>Pin numbers can be either numeric (e.g., ‘69’) if the part is a DIP or QFP, or they can be
+<li><p>Pin numbers can be either numeric (e.g., ‘69’) if the part is a DIP or QFP, or they can be
 alphanumeric (e.g., ‘C10’) if a BGA or CSP is used. Using a <cite>*</cite> instead of a pin number
 creates a non-existent “gap” pin that can be used to visually separate the pins into groups. (This only works
-when the <code class="docutils literal"><span class="pre">-s</span> <span class="pre">row</span></code> sorting option is selected.)</li>
-<li>Pin names can be any combination of letters, numbers and special characters (except a comma).</li>
-<li>The unit identifier can be blank or any combination of letters, numbers and special characters (except a comma).
-A separate unit will be generated in the schematic symbol for each distinct unit identifier.</li>
-<li><dl class="first docutils">
-<dt>The side column specifies the side of the symbol the pin will be placed on. The allowable values are:</dt>
-<dd><ul class="first last">
-<li>left</li>
-<li>right</li>
-<li>top</li>
-<li>bottom</li>
+when the <code class="docutils literal notranslate"><span class="pre">-s</span> <span class="pre">row</span></code> sorting option is selected.)</p></li>
+<li><p>Pin names can be any combination of letters, numbers and special characters (except a comma).</p></li>
+<li><p>The unit identifier can be blank or any combination of letters, numbers and special characters (except a comma).
+A separate unit will be generated in the schematic symbol for each distinct unit identifier.</p></li>
+<li><dl class="simple">
+<dt>The side column specifies the side of the symbol the pin will be placed on. The allowable values are:</dt><dd><ul>
+<li><p>left</p></li>
+<li><p>right</p></li>
+<li><p>top</p></li>
+<li><p>bottom</p></li>
 </ul>
 </dd>
 </dl>
 </li>
-<li><dl class="first docutils">
-<dt>The type column specifies the electrical type of the pin. The allowable values are:</dt>
-<dd><ul class="first last">
-<li>input, inp, in, clk</li>
-<li>output, outp, out</li>
-<li>bidirectional, bidir, bi, inout, io, iop</li>
-<li>tristate, tri</li>
-<li>passive, pass</li>
-<li>unspecified, un, analog</li>
-<li>power_in, pwr_in, pwrin, power, pwr, ground, gnd</li>
-<li>power_out, pwr_out, pwrout, pwr_o</li>
-<li>open_collector, opencollector, open_coll, opencoll, oc</li>
-<li>open_emitter, openemitter, open_emit, openemit, oe</li>
-<li>no_connect, noconnect, no_conn, noconn, nc</li>
+<li><dl class="simple">
+<dt>The type column specifies the electrical type of the pin. The allowable values are:</dt><dd><ul>
+<li><p>input, inp, in, clk</p></li>
+<li><p>output, outp, out</p></li>
+<li><p>bidirectional, bidir, bi, inout, io, iop</p></li>
+<li><p>tristate, tri</p></li>
+<li><p>passive, pass</p></li>
+<li><p>unspecified, un, analog</p></li>
+<li><p>power_in, pwr_in, pwrin, power, pwr, ground, gnd</p></li>
+<li><p>power_out, pwr_out, pwrout, pwr_o</p></li>
+<li><p>open_collector, opencollector, open_coll, opencoll, oc</p></li>
+<li><p>open_emitter, openemitter, open_emit, openemit, oe</p></li>
+<li><p>no_connect, noconnect, no_conn, noconn, nc</p></li>
 </ul>
 </dd>
 </dl>
 </li>
-<li><dl class="first docutils">
-<dt>The style column specifies the graphic representation of the pin. The allowable pin styles are:</dt>
-<dd><ul class="first last">
-<li>line, &lt;blank&gt;</li>
-<li>inverted, inv, ~, #</li>
-<li>clock, clk, rising_clk</li>
-<li>inverted_clock, inv_clk, clk_b, clk_n, ~clk, #clk</li>
-<li>input_low, inp_low, in_lw, in_b, in_n, ~in, #in</li>
-<li>clock_low, clk_low, clk_lw, clk_b, clk_n, ~clk, #clk</li>
-<li>output_low, outp_low, out_lw, out_b, out_n, ~out, #out</li>
-<li>falling_edge_clock, falling_clk, fall_clk</li>
-<li>non_logic, nl, analog</li>
+<li><dl class="simple">
+<dt>The style column specifies the graphic representation of the pin. The allowable pin styles are:</dt><dd><ul>
+<li><p>line, &lt;blank&gt;</p></li>
+<li><p>inverted, inv, ~, #</p></li>
+<li><p>clock, clk, rising_clk</p></li>
+<li><p>inverted_clock, inv_clk, clk_b, clk_n, ~clk, #clk</p></li>
+<li><p>input_low, inp_low, in_lw, in_b, in_n, ~in, #in</p></li>
+<li><p>clock_low, clk_low, clk_lw, clk_b, clk_n, ~clk, #clk</p></li>
+<li><p>output_low, outp_low, out_lw, out_b, out_n, ~out, #out</p></li>
+<li><p>falling_edge_clock, falling_clk, fall_clk</p></li>
+<li><p>non_logic, nl, analog</p></li>
 </ul>
 </dd>
 </dl>
 </li>
-<li>The hidden column specifies whether the pin is visible in Eeschema. This can be one of ‘y’, ‘yes’, ‘t’, ‘true’,
-or ‘1’ to make it invisible, anything else makes it visible.</li>
+<li><p>The hidden column specifies whether the pin is visible in Eeschema. This can be one of ‘y’, ‘yes’, ‘t’, ‘true’,
+or ‘1’ to make it invisible, anything else makes it visible.</p></li>
 </ul>
 </li>
-<li><p class="first">A blank row ends the list of pins for the part.</p>
-</li>
-<li><p class="first">Multiple parts (each consisting of name, column header and pin rows)
+<li><p>A blank row ends the list of pins for the part.</p></li>
+<li><p>Multiple parts (each consisting of name, column header and pin rows)
 separated by blank lines are allowed in a single CSV file.
-Each part will become a separate symbol in the KiCad library.</p>
-</li>
+Each part will become a separate symbol in the KiCad library.</p></li>
 </ol>
-<p>When the option <code class="docutils literal"><span class="pre">-r</span> <span class="pre">xilinx7</span></code> is used, the individual CSV pin files or entire .zip archives
+<p>When the option <code class="docutils literal notranslate"><span class="pre">-r</span> <span class="pre">xilinx7</span></code> is used, the individual CSV pin files or entire .zip archives
 for the <a class="reference external" href="http://www.xilinx.com/support/packagefiles/">Xilinx 7-Series FPGAs</a> can be processed.</p>
-<p>When the option <code class="docutils literal"><span class="pre">-r</span> <span class="pre">psoc5lp</span></code> is used, the CSV pin file contains the pinout text
+<p>When the option <code class="docutils literal notranslate"><span class="pre">-r</span> <span class="pre">psoc5lp</span></code> is used, the CSV pin file contains the pinout text
 extracted from a Cypress PSoC5LP datasheet.</p>
 <p>When the option ‘-r stm32cube’ is used, the input CSV file should be the
 pin layout file exported from the STM32CubeMx tool. To create this
@@ -218,38 +206,38 @@ file; create a project with STM32CubeMx then from window menu select
 “Pinout -&gt; Generate CSV pinout text file”. If you select pin features
 or define labels for pins these will be reflected in the generated
 library symbol.</p>
-<p>When the option <code class="docutils literal"><span class="pre">-r</span> <span class="pre">lattice</span></code> is used, the input CSV file should come from the
+<p>When the option <code class="docutils literal notranslate"><span class="pre">-r</span> <span class="pre">lattice</span></code> is used, the input CSV file should come from the
 Lattice website or from their Diamond tool. (The iCE40 FPGAs are not supported
 since they use a different format.)</p>
-<p>The <code class="docutils literal"><span class="pre">-s</span></code> option specifies the arrangement of the pins in the schematic symbol:</p>
+<p>The <code class="docutils literal notranslate"><span class="pre">-s</span></code> option specifies the arrangement of the pins in the schematic symbol:</p>
 <ul class="simple">
-<li><code class="docutils literal"><span class="pre">-s</span> <span class="pre">row</span></code> places the pins in the order they were entered into the CSV file.</li>
-<li><code class="docutils literal"><span class="pre">-s</span> <span class="pre">name</span></code> places the pins in increasing order of their names.</li>
-<li><code class="docutils literal"><span class="pre">-s</span> <span class="pre">num</span></code> places the pins in increasing order of their pin numbers
+<li><p><code class="docutils literal notranslate"><span class="pre">-s</span> <span class="pre">row</span></code> places the pins in the order they were entered into the CSV file.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">-s</span> <span class="pre">name</span></code> places the pins in increasing order of their names.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">-s</span> <span class="pre">num</span></code> places the pins in increasing order of their pin numbers
 and arranged in a counter-clockwise fashion around the symbol starting from
-the upper-left corner.</li>
+the upper-left corner.</p></li>
 </ul>
-<p>The <code class="docutils literal"><span class="pre">--reverse</span></code> option reverses the sort order for the pins.</p>
-<p>Using the <code class="docutils literal"><span class="pre">--side</span></code> option you can set the default side for the
+<p>The <code class="docutils literal notranslate"><span class="pre">--reverse</span></code> option reverses the sort order for the pins.</p>
+<p>Using the <code class="docutils literal notranslate"><span class="pre">--side</span></code> option you can set the default side for the
 pins. The option from the CSV file will override the command line
-option. The default choice is <code class="docutils literal"><span class="pre">left</span></code>.</p>
-<p>Specifying the <code class="docutils literal"><span class="pre">-f</span></code> option enables <em>fuzzy matching</em> on the pin types, styles and sides used in the
+option. The default choice is <code class="docutils literal notranslate"><span class="pre">left</span></code>.</p>
+<p>Specifying the <code class="docutils literal notranslate"><span class="pre">-f</span></code> option enables <em>fuzzy matching</em> on the pin types, styles and sides used in the
 CSV file.
-So, for example, <code class="docutils literal"><span class="pre">ck</span></code> would match <code class="docutils literal"><span class="pre">clk</span></code> or <code class="docutils literal"><span class="pre">rgt</span></code> would match <code class="docutils literal"><span class="pre">right</span></code>.</p>
-<p>Specifying the <code class="docutils literal"><span class="pre">-b</span></code> option will place multiple pins with the identical names at the same location
+So, for example, <code class="docutils literal notranslate"><span class="pre">ck</span></code> would match <code class="docutils literal notranslate"><span class="pre">clk</span></code> or <code class="docutils literal notranslate"><span class="pre">rgt</span></code> would match <code class="docutils literal notranslate"><span class="pre">right</span></code>.</p>
+<p>Specifying the <code class="docutils literal notranslate"><span class="pre">-b</span></code> option will place multiple pins with the identical names at the same location
 such that they can all attach to the same net with a single connection.
 This is helpful for handling the multiple VCC and GND pins found on many high pin-count devices.</p>
-<p>The <code class="docutils literal"><span class="pre">-w</span></code> option is used to overwrite an existing library with any new parts
+<p>The <code class="docutils literal notranslate"><span class="pre">-w</span></code> option is used to overwrite an existing library with any new parts
 from the CSV file. The old contents of the library are lost.</p>
-<p>The <code class="docutils literal"><span class="pre">-a</span></code> option is used to add parts to an existing library.
+<p>The <code class="docutils literal notranslate"><span class="pre">-a</span></code> option is used to add parts to an existing library.
 If a part with the same name already exists, the new part will only overwrite it
-if the <code class="docutils literal"><span class="pre">-w</span></code> flag is also used.
+if the <code class="docutils literal notranslate"><span class="pre">-w</span></code> flag is also used.
 Any existing parts in the library that are not overwritten are retained.</p>
 </div>
 <div class="section" id="examples">
 <h3>Examples<a class="headerlink" href="#examples" title="Permalink to this headline">¶</a></h3>
 <p>Assume the following data for a single-unit part is placed into the <cite>example.csv</cite> file:</p>
-<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">example_part</span>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">example_part</span>
 
 <span class="n">Pin</span><span class="p">,</span>    <span class="n">Type</span><span class="p">,</span>           <span class="n">Name</span>
 <span class="mi">23</span><span class="p">,</span>     <span class="nb">input</span><span class="p">,</span>          <span class="n">A5</span>
@@ -265,21 +253,21 @@ Any existing parts in the library that are not overwritten are retained.</p>
 <span class="mi">59</span><span class="p">,</span>     <span class="n">power_in</span><span class="p">,</span>       <span class="n">GND</span>
 </pre></div>
 </div>
-<p>Then the command <code class="docutils literal"><span class="pre">kipart</span> <span class="pre">example.csv</span> <span class="pre">-o</span> <span class="pre">example1.lib</span></code> will create a schematic symbol
+<p>Then the command <code class="docutils literal notranslate"><span class="pre">kipart</span> <span class="pre">example.csv</span> <span class="pre">-o</span> <span class="pre">example1.lib</span></code> will create a schematic symbol
 where the pins are arranged in the order of the rows in the CSV file they are on:</p>
 <img alt="_images/example1.png" src="_images/example1.png" />
-<p>The command <code class="docutils literal"><span class="pre">kipart</span> <span class="pre">-s</span> <span class="pre">num</span> <span class="pre">example.csv</span> <span class="pre">-o</span> <span class="pre">example2.lib</span></code> will create a schematic symbol
+<p>The command <code class="docutils literal notranslate"><span class="pre">kipart</span> <span class="pre">-s</span> <span class="pre">num</span> <span class="pre">example.csv</span> <span class="pre">-o</span> <span class="pre">example2.lib</span></code> will create a schematic symbol
 where the pins are arranged by their pin numbers:</p>
 <img alt="_images/example2.png" src="_images/example2.png" />
-<p>The command <code class="docutils literal"><span class="pre">kipart</span> <span class="pre">-s</span> <span class="pre">name</span> <span class="pre">example.csv</span> <span class="pre">-o</span> <span class="pre">example3.lib</span></code> will create a schematic symbol
+<p>The command <code class="docutils literal notranslate"><span class="pre">kipart</span> <span class="pre">-s</span> <span class="pre">name</span> <span class="pre">example.csv</span> <span class="pre">-o</span> <span class="pre">example3.lib</span></code> will create a schematic symbol
 where the pins are arranged by their names:</p>
 <img alt="_images/example3.png" src="_images/example3.png" />
-<p>The command <code class="docutils literal"><span class="pre">kipart</span> <span class="pre">-b</span> <span class="pre">example.csv</span> <span class="pre">-o</span> <span class="pre">example4.lib</span></code> will bundle power and no-connect pins with
-identical names (like <code class="docutils literal"><span class="pre">GND</span></code>, <code class="docutils literal"><span class="pre">VCC</span></code>, and <code class="docutils literal"><span class="pre">NC</span></code>) into single pins like so:</p>
+<p>The command <code class="docutils literal notranslate"><span class="pre">kipart</span> <span class="pre">-b</span> <span class="pre">example.csv</span> <span class="pre">-o</span> <span class="pre">example4.lib</span></code> will bundle power pins with
+identical names (like <code class="docutils literal notranslate"><span class="pre">GND</span></code> and <code class="docutils literal notranslate"><span class="pre">VCC</span></code>) into single pins like so:</p>
 <img alt="_images/example4.png" src="_images/example4.png" />
 <p>Or you could divide the part into two units: one for I/O pins and the other for power pins
-by adding a <code class="docutils literal"><span class="pre">Unit</span></code> column like this:</p>
-<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">example_part</span>
+by adding a <code class="docutils literal notranslate"><span class="pre">Unit</span></code> column like this:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">example_part</span>
 
 <span class="n">Pin</span><span class="p">,</span>    <span class="n">Unit</span><span class="p">,</span>   <span class="n">Type</span><span class="p">,</span>           <span class="n">Name</span>
 <span class="mi">23</span><span class="p">,</span>     <span class="n">IO</span><span class="p">,</span>     <span class="nb">input</span><span class="p">,</span>          <span class="n">A5</span>
@@ -295,12 +283,12 @@ by adding a <code class="docutils literal"><span class="pre">Unit</span></code> 
 <span class="mi">59</span><span class="p">,</span>     <span class="n">PWR</span><span class="p">,</span>    <span class="n">power_in</span><span class="p">,</span>       <span class="n">GND</span>
 </pre></div>
 </div>
-<p>Then the command <code class="docutils literal"><span class="pre">kipart</span> <span class="pre">-b</span> <span class="pre">example.csv</span> <span class="pre">-o</span> <span class="pre">example5.lib</span></code> results in a part symbol having two separate units:</p>
+<p>Then the command <code class="docutils literal notranslate"><span class="pre">kipart</span> <span class="pre">-b</span> <span class="pre">example.csv</span> <span class="pre">-o</span> <span class="pre">example5.lib</span></code> results in a part symbol having two separate units:</p>
 <img alt="_images/example5_1.png" src="_images/example5_1.png" />
 <img alt="_images/example5_2.png" src="_images/example5_2.png" />
 <p>As an alternative, you could go back to a single unit with all the inputs on the left side,
-all the outputs on the right side, the <code class="docutils literal"><span class="pre">VCC</span></code> pins on the top and the <code class="docutils literal"><span class="pre">GND</span></code> pins on the bottom:</p>
-<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">example_part</span>
+all the outputs on the right side, the <code class="docutils literal notranslate"><span class="pre">VCC</span></code> pins on the top and the <code class="docutils literal notranslate"><span class="pre">GND</span></code> pins on the bottom:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">example_part</span>
 
 <span class="n">Pin</span><span class="p">,</span>    <span class="n">Unit</span><span class="p">,</span>   <span class="n">Type</span><span class="p">,</span>           <span class="n">Name</span><span class="p">,</span>   <span class="n">Side</span>
 <span class="mi">23</span><span class="p">,</span>     <span class="mi">1</span><span class="p">,</span>      <span class="nb">input</span><span class="p">,</span>          <span class="n">A5</span><span class="p">,</span>     <span class="n">left</span>
@@ -316,10 +304,10 @@ all the outputs on the right side, the <code class="docutils literal"><span clas
 <span class="mi">59</span><span class="p">,</span>     <span class="mi">1</span><span class="p">,</span>      <span class="n">power_in</span><span class="p">,</span>       <span class="n">GND</span><span class="p">,</span>    <span class="n">bottom</span>
 </pre></div>
 </div>
-<p>Running the command <code class="docutils literal"><span class="pre">kipart</span> <span class="pre">-b</span> <span class="pre">example.csv</span> <span class="pre">-o</span> <span class="pre">example6.lib</span></code> generates a part symbol with pins on all four sides:</p>
+<p>Running the command <code class="docutils literal notranslate"><span class="pre">kipart</span> <span class="pre">-b</span> <span class="pre">example.csv</span> <span class="pre">-o</span> <span class="pre">example6.lib</span></code> generates a part symbol with pins on all four sides:</p>
 <img alt="_images/example6.png" src="_images/example6.png" />
-<p>If the input file has a <code class="docutils literal"><span class="pre">Hidden</span></code> column, then some, none, or all pins can be made invisible:</p>
-<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">a_part_with_secrets</span>
+<p>If the input file has a <code class="docutils literal notranslate"><span class="pre">Hidden</span></code> column, then some, none, or all pins can be made invisible:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">a_part_with_secrets</span>
 
 <span class="n">Pin</span><span class="p">,</span>    <span class="n">Name</span><span class="p">,</span>   <span class="n">Type</span><span class="p">,</span>   <span class="n">Side</span><span class="p">,</span>   <span class="n">Style</span><span class="p">,</span>      <span class="n">Hidden</span>
 <span class="mi">1</span><span class="p">,</span>      <span class="n">N</span><span class="o">.</span><span class="n">C</span><span class="o">.</span><span class="p">,</span>   <span class="ow">in</span><span class="p">,</span>     <span class="n">left</span><span class="p">,</span>   <span class="n">clk_low</span><span class="p">,</span>    <span class="n">Y</span>
@@ -343,7 +331,7 @@ into a CSV file.
 Then the CSV file can be manipulated with a spreadsheet and used as input to KiPart.
 <strong>(Note that any stylized part symbol graphics will be lost in the conversion.
 KiPart only supports boring, box-like part symbols.)</strong></p>
-<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">usage</span><span class="p">:</span> <span class="n">kilib2csv</span><span class="o">-</span><span class="n">script</span><span class="o">.</span><span class="n">py</span> <span class="p">[</span><span class="o">-</span><span class="n">h</span><span class="p">]</span> <span class="p">[</span><span class="o">-</span><span class="n">v</span><span class="p">]</span> <span class="p">[</span><span class="o">-</span><span class="n">o</span> <span class="p">[</span><span class="n">file</span><span class="o">.</span><span class="n">csv</span><span class="p">]]</span> <span class="p">[</span><span class="o">-</span><span class="n">a</span><span class="p">]</span> <span class="p">[</span><span class="o">-</span><span class="n">w</span><span class="p">]</span>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">usage</span><span class="p">:</span> <span class="n">kilib2csv</span><span class="o">-</span><span class="n">script</span><span class="o">.</span><span class="n">py</span> <span class="p">[</span><span class="o">-</span><span class="n">h</span><span class="p">]</span> <span class="p">[</span><span class="o">-</span><span class="n">v</span><span class="p">]</span> <span class="p">[</span><span class="o">-</span><span class="n">o</span> <span class="p">[</span><span class="n">file</span><span class="o">.</span><span class="n">csv</span><span class="p">]]</span> <span class="p">[</span><span class="o">-</span><span class="n">a</span><span class="p">]</span> <span class="p">[</span><span class="o">-</span><span class="n">w</span><span class="p">]</span>
                            <span class="n">file</span><span class="o">.</span><span class="n">lib</span> <span class="p">[</span><span class="n">file</span><span class="o">.</span><span class="n">lib</span> <span class="o">...</span><span class="p">]</span>
 
 <span class="n">Convert</span> <span class="n">a</span> <span class="n">KiCad</span> <span class="n">schematic</span> <span class="n">symbol</span> <span class="n">library</span> <span class="n">file</span> <span class="n">into</span> <span class="n">a</span> <span class="n">CSV</span> <span class="n">file</span> <span class="k">for</span> <span class="n">KiPart</span><span class="o">.</span>
@@ -361,11 +349,11 @@ KiPart only supports boring, box-like part symbols.)</strong></p>
 </pre></div>
 </div>
 <p>The utility is easy to use:</p>
-<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">kilib2csv</span> <span class="n">my_lib1</span><span class="o">.</span><span class="n">lib</span> <span class="n">my_lib2</span><span class="o">.</span><span class="n">lib</span> <span class="o">-</span><span class="n">o</span> <span class="n">my_library</span><span class="o">.</span><span class="n">csv</span>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">kilib2csv</span> <span class="n">my_lib1</span><span class="o">.</span><span class="n">lib</span> <span class="n">my_lib2</span><span class="o">.</span><span class="n">lib</span> <span class="o">-</span><span class="n">o</span> <span class="n">my_library</span><span class="o">.</span><span class="n">csv</span>
 </pre></div>
 </div>
 <p>Then you can generate a consistent library from the CSV file:</p>
-<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">kipart</span> <span class="n">my_library</span><span class="o">.</span><span class="n">csv</span> <span class="o">-</span><span class="n">o</span> <span class="n">my_library_new</span><span class="o">.</span><span class="n">lib</span>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">kipart</span> <span class="n">my_library</span><span class="o">.</span><span class="n">csv</span> <span class="o">-</span><span class="n">o</span> <span class="n">my_library_new</span><span class="o">.</span><span class="n">lib</span>
 </pre></div>
 </div>
 </div>
@@ -382,9 +370,9 @@ little bit helps, and credit will always be given.</p>
 <p>Report bugs at <a class="reference external" href="https://github.com/xesscorp/kipart/issues">https://github.com/xesscorp/kipart/issues</a>.</p>
 <p>If you are reporting a bug, please include:</p>
 <ul class="simple">
-<li>Your operating system name and version.</li>
-<li>Any details about your local setup that might be helpful in troubleshooting.</li>
-<li>Detailed steps to reproduce the bug.</li>
+<li><p>Your operating system name and version.</p></li>
+<li><p>Any details about your local setup that might be helpful in troubleshooting.</p></li>
+<li><p>Detailed steps to reproduce the bug.</p></li>
 </ul>
 </div>
 <div class="section" id="fix-bugs">
@@ -408,10 +396,10 @@ articles, and such.</p>
 <p>The best way to send feedback is to file an issue at <a class="reference external" href="https://github.com/xesscorp/kipart/issues">https://github.com/xesscorp/kipart/issues</a>.</p>
 <p>If you are proposing a feature:</p>
 <ul class="simple">
-<li>Explain in detail how it would work.</li>
-<li>Keep the scope as narrow as possible, to make it easier to implement.</li>
-<li>Remember that this is a volunteer-driven project, and that contributions
-are welcome :)</li>
+<li><p>Explain in detail how it would work.</p></li>
+<li><p>Keep the scope as narrow as possible, to make it easier to implement.</p></li>
+<li><p>Remember that this is a volunteer-driven project, and that contributions
+are welcome :)</p></li>
 </ul>
 </div>
 </div>
@@ -419,44 +407,42 @@ are welcome :)</li>
 <h3>Get Started!<a class="headerlink" href="#get-started" title="Permalink to this headline">¶</a></h3>
 <p>Ready to contribute? Here’s how to set up <cite>kipart</cite> for local development.</p>
 <ol class="arabic">
-<li><p class="first">Fork the <cite>kipart</cite> repo on GitHub.</p>
-</li>
-<li><p class="first">Clone your fork locally:</p>
-<div class="highlight-default"><div class="highlight"><pre><span></span>$ git clone git@github.com:your_name_here/kipart.git
+<li><p>Fork the <cite>kipart</cite> repo on GitHub.</p></li>
+<li><p>Clone your fork locally:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>$ git clone git@github.com:your_name_here/kipart.git
 </pre></div>
 </div>
 </li>
-<li><p class="first">Install your local copy into a virtualenv. Assuming you have virtualenvwrapper installed, this is how you set up your fork for local development:</p>
-<div class="highlight-default"><div class="highlight"><pre><span></span>$ mkvirtualenv kipart
+<li><p>Install your local copy into a virtualenv. Assuming you have virtualenvwrapper installed, this is how you set up your fork for local development:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>$ mkvirtualenv kipart
 $ cd kipart/
 $ python setup.py develop
 </pre></div>
 </div>
 </li>
-<li><p class="first">Create a branch for local development:</p>
-<div class="highlight-default"><div class="highlight"><pre><span></span>$ git checkout -b name-of-your-bugfix-or-feature
+<li><p>Create a branch for local development:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>$ git checkout -b name-of-your-bugfix-or-feature
 </pre></div>
 </div>
 <p>Now you can make your changes locally.</p>
 </li>
-<li><p class="first">Commit your changes and push your branch to GitHub:</p>
-<div class="highlight-default"><div class="highlight"><pre><span></span>$ git add .
+<li><p>Commit your changes and push your branch to GitHub:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>$ git add .
 $ git commit -m &quot;Your detailed description of your changes.&quot;
 $ git push origin name-of-your-bugfix-or-feature
 </pre></div>
 </div>
 </li>
-<li><p class="first">Submit a pull request through the GitHub website.</p>
-</li>
+<li><p>Submit a pull request through the GitHub website.</p></li>
 </ol>
 </div>
 <div class="section" id="pull-request-guidelines">
 <h3>Pull Request Guidelines<a class="headerlink" href="#pull-request-guidelines" title="Permalink to this headline">¶</a></h3>
 <p>Before you submit a pull request, check that it meets these guidelines:</p>
 <ol class="arabic simple">
-<li>If the pull request adds functionality, the docs should be updated. Put
+<li><p>If the pull request adds functionality, the docs should be updated. Put
 your new functionality into a function with a docstring, and add the
-feature to the list in README.rst.</li>
+feature to the list in README.rst.</p></li>
 </ol>
 </div>
 </div>
@@ -465,250 +451,257 @@ feature to the list in README.rst.</li>
 <div class="section" id="development-lead">
 <h3>Development Lead<a class="headerlink" href="#development-lead" title="Permalink to this headline">¶</a></h3>
 <ul class="simple">
-<li>XESS Corp. &lt;<a class="reference external" href="mailto:info&#37;&#52;&#48;xess&#46;com">info<span>&#64;</span>xess<span>&#46;</span>com</a>&gt;</li>
+<li><p>XESS Corp. &lt;<a class="reference external" href="mailto:info&#37;&#52;&#48;xess&#46;com">info<span>&#64;</span>xess<span>&#46;</span>com</a>&gt;</p></li>
 </ul>
 </div>
 <div class="section" id="contributors">
 <h3>Contributors<a class="headerlink" href="#contributors" title="Permalink to this headline">¶</a></h3>
 <ul class="simple">
-<li>Hasan Yavuz OZDERYA (<a class="reference external" href="https://github.com/hyOzd">https://github.com/hyOzd</a>)</li>
-<li>John Donovan (<a class="reference external" href="https://github.com/GeoSpark">https://github.com/GeoSpark</a>)</li>
-<li>Adrien Descamps (<a class="reference external" href="https://github.com/descampsa">https://github.com/descampsa</a>)</li>
+<li><p>Hasan Yavuz OZDERYA (<a class="reference external" href="https://github.com/hyOzd">https://github.com/hyOzd</a>)</p></li>
+<li><p>John Donovan (<a class="reference external" href="https://github.com/GeoSpark">https://github.com/GeoSpark</a>)</p></li>
+<li><p>Adrien Descamps (<a class="reference external" href="https://github.com/descampsa">https://github.com/descampsa</a>)</p></li>
 </ul>
 </div>
 </div>
 <span id="document-history"></span><div class="section" id="history">
 <h2>History<a class="headerlink" href="#history" title="Permalink to this headline">¶</a></h2>
 <div class="section" id="id1">
-<h3>0.1.33 (2018-01-03)<a class="headerlink" href="#id1" title="Permalink to this headline">¶</a></h3>
+<h3>0.1.34 (2019-06-27)<a class="headerlink" href="#id1" title="Permalink to this headline">¶</a></h3>
 <ul class="simple">
-<li>Fixed error in field syntax for part manufacturer number.</li>
-<li>No-connect pins can no longer be bundled because it is marked as an ERC error by EESCHEMA.</li>
+<li><p>All symbols now include F2 (package) and F3 (datasheet) fields.</p></li>
+<li><p>Datasheet link and part description can be entered on the first line of a part description in the CSV file.</p></li>
 </ul>
 </div>
 <div class="section" id="id2">
-<h3>0.1.32 (2017-12-08)<a class="headerlink" href="#id2" title="Permalink to this headline">¶</a></h3>
+<h3>0.1.33 (2018-01-03)<a class="headerlink" href="#id2" title="Permalink to this headline">¶</a></h3>
 <ul class="simple">
-<li>Pins sorted by name or row are now pplaced top-to-bottom on left/right sides and left-to-right on top/bottom sides.</li>
+<li><p>Fixed error in field syntax for part manufacturer number.</p></li>
+<li><p>No-connect pins can no longer be bundled because it is marked as an ERC error by EESCHEMA.</p></li>
 </ul>
 </div>
 <div class="section" id="id3">
-<h3>0.1.31 (2017-10-10)<a class="headerlink" href="#id3" title="Permalink to this headline">¶</a></h3>
+<h3>0.1.32 (2017-12-08)<a class="headerlink" href="#id3" title="Permalink to this headline">¶</a></h3>
 <ul class="simple">
-<li>Removed <a href="#id4"><span class="problematic" id="id5">*</span></a>_ in statement that caused an error in Python2.</li>
-<li>Removed duplicated entries in pin-style table.</li>
-<li>~ and # are now allowed in pin-style keys.</li>
-<li>Parts dictionary changed to OrderedDict so it retains the order parts were entered in. Important for passing random part generation tests.</li>
+<li><p>Pins sorted by name or row are now pplaced top-to-bottom on left/right sides and left-to-right on top/bottom sides.</p></li>
 </ul>
 </div>
-<div class="section" id="id6">
-<h3>0.1.30 (2017-10-05)<a class="headerlink" href="#id6" title="Permalink to this headline">¶</a></h3>
+<div class="section" id="id4">
+<h3>0.1.31 (2017-10-10)<a class="headerlink" href="#id4" title="Permalink to this headline">¶</a></h3>
 <ul class="simple">
-<li>Specifying <code class="docutils literal"><span class="pre">-a</span></code> option allows new parts to be written to an existing library but prevents overwriting existing parts.
-Using <code class="docutils literal"><span class="pre">-w</span></code> in conjunction with <code class="docutils literal"><span class="pre">-a</span></code> allows added parts to overwrite existing parts.</li>
-<li>Part name, reference prefix, footprint, and manf. part num. are now allowed on beginning row of part info in a CSV file.</li>
-<li>Expanded the lists of mnemonics for pin types and styles.</li>
+<li><p>Removed <a href="#id5"><span class="problematic" id="id6">*</span></a>_ in statement that caused an error in Python2.</p></li>
+<li><p>Removed duplicated entries in pin-style table.</p></li>
+<li><p>~ and # are now allowed in pin-style keys.</p></li>
+<li><p>Parts dictionary changed to OrderedDict so it retains the order parts were entered in. Important for passing random part generation tests.</p></li>
 </ul>
 </div>
 <div class="section" id="id7">
-<h3>0.1.29 (2017-07-31)<a class="headerlink" href="#id7" title="Permalink to this headline">¶</a></h3>
+<h3>0.1.30 (2017-10-05)<a class="headerlink" href="#id7" title="Permalink to this headline">¶</a></h3>
 <ul class="simple">
-<li>Fixed erroneous library generation when part number is omitted from first line of CSV file.</li>
-<li>Changed default output library to <code class="docutils literal"><span class="pre">kipart.lib</span></code> if no output library is specified.</li>
-<li>Changed default output CSV file of kilib2csv to <code class="docutils literal"><span class="pre">kipart.csv</span></code> if no output CSV file is specified.</li>
+<li><p>Specifying <code class="docutils literal notranslate"><span class="pre">-a</span></code> option allows new parts to be written to an existing library but prevents overwriting existing parts.
+Using <code class="docutils literal notranslate"><span class="pre">-w</span></code> in conjunction with <code class="docutils literal notranslate"><span class="pre">-a</span></code> allows added parts to overwrite existing parts.</p></li>
+<li><p>Part name, reference prefix, footprint, and manf. part num. are now allowed on beginning row of part info in a CSV file.</p></li>
+<li><p>Expanded the lists of mnemonics for pin types and styles.</p></li>
 </ul>
 </div>
 <div class="section" id="id8">
-<h3>0.1.28 (2017-07-27)<a class="headerlink" href="#id8" title="Permalink to this headline">¶</a></h3>
+<h3>0.1.29 (2017-07-31)<a class="headerlink" href="#id8" title="Permalink to this headline">¶</a></h3>
 <ul class="simple">
-<li>Added reader for Lattice FPGA devices (except iCE40). (Thanks, Adrien Descamps!)</li>
+<li><p>Fixed erroneous library generation when part number is omitted from first line of CSV file.</p></li>
+<li><p>Changed default output library to <code class="docutils literal notranslate"><span class="pre">kipart.lib</span></code> if no output library is specified.</p></li>
+<li><p>Changed default output CSV file of kilib2csv to <code class="docutils literal notranslate"><span class="pre">kipart.csv</span></code> if no output CSV file is specified.</p></li>
 </ul>
 </div>
 <div class="section" id="id9">
-<h3>0.1.27 (2017-05-24)<a class="headerlink" href="#id9" title="Permalink to this headline">¶</a></h3>
+<h3>0.1.28 (2017-07-27)<a class="headerlink" href="#id9" title="Permalink to this headline">¶</a></h3>
 <ul class="simple">
-<li>Fixed issue #11 (blank lines in CSV file were skipped and multiple parts ran together).</li>
+<li><p>Added reader for Lattice FPGA devices (except iCE40). (Thanks, Adrien Descamps!)</p></li>
 </ul>
 </div>
 <div class="section" id="id10">
-<h3>0.1.26 (2017-05-21)<a class="headerlink" href="#id10" title="Permalink to this headline">¶</a></h3>
+<h3>0.1.27 (2017-05-24)<a class="headerlink" href="#id10" title="Permalink to this headline">¶</a></h3>
 <ul class="simple">
-<li>Fixed issue #18 (crash when symbol side for pin was left blank).</li>
+<li><p>Fixed issue #11 (blank lines in CSV file were skipped and multiple parts ran together).</p></li>
 </ul>
 </div>
 <div class="section" id="id11">
-<h3>0.1.25 (2017-05-03)<a class="headerlink" href="#id11" title="Permalink to this headline">¶</a></h3>
+<h3>0.1.26 (2017-05-21)<a class="headerlink" href="#id11" title="Permalink to this headline">¶</a></h3>
 <ul class="simple">
-<li>Fixed problem caused by pin side designators not being lower-case (e.g., “Left”).</li>
+<li><p>Fixed issue #18 (crash when symbol side for pin was left blank).</p></li>
 </ul>
 </div>
 <div class="section" id="id12">
-<h3>0.1.24 (2016-12-22)<a class="headerlink" href="#id12" title="Permalink to this headline">¶</a></h3>
+<h3>0.1.25 (2017-05-03)<a class="headerlink" href="#id12" title="Permalink to this headline">¶</a></h3>
 <ul class="simple">
-<li>Fixed Xilinx reader function to parse leading comments in their FPGA pin files.</li>
+<li><p>Fixed problem caused by pin side designators not being lower-case (e.g., “Left”).</p></li>
 </ul>
 </div>
 <div class="section" id="id13">
-<h3>0.1.23 (2016-12-13)<a class="headerlink" href="#id13" title="Permalink to this headline">¶</a></h3>
+<h3>0.1.24 (2016-12-22)<a class="headerlink" href="#id13" title="Permalink to this headline">¶</a></h3>
 <ul class="simple">
-<li>Added ability to create hidden pins.</li>
+<li><p>Fixed Xilinx reader function to parse leading comments in their FPGA pin files.</p></li>
 </ul>
 </div>
 <div class="section" id="id14">
-<h3>0.1.22 (2016-11-29)<a class="headerlink" href="#id14" title="Permalink to this headline">¶</a></h3>
+<h3>0.1.23 (2016-12-13)<a class="headerlink" href="#id14" title="Permalink to this headline">¶</a></h3>
 <ul class="simple">
-<li>Fixed readers for Xilinx, STM32, PSoC devices.</li>
-<li>Pins on multiple sides of a symbol are now distributed in a more attractive manner.</li>
+<li><p>Added ability to create hidden pins.</p></li>
 </ul>
 </div>
 <div class="section" id="id15">
-<h3>0.1.21 (2016-09-20)<a class="headerlink" href="#id15" title="Permalink to this headline">¶</a></h3>
+<h3>0.1.22 (2016-11-29)<a class="headerlink" href="#id15" title="Permalink to this headline">¶</a></h3>
 <ul class="simple">
-<li>Extra stuff on starting line of library no longer kill kilib2csv.</li>
+<li><p>Fixed readers for Xilinx, STM32, PSoC devices.</p></li>
+<li><p>Pins on multiple sides of a symbol are now distributed in a more attractive manner.</p></li>
 </ul>
 </div>
 <div class="section" id="id16">
-<h3>0.1.20 (2016-09-16)<a class="headerlink" href="#id16" title="Permalink to this headline">¶</a></h3>
+<h3>0.1.21 (2016-09-20)<a class="headerlink" href="#id16" title="Permalink to this headline">¶</a></h3>
 <ul class="simple">
-<li>Fixed bug where kilib2csv was choking on footprint lists in part definitions.</li>
+<li><p>Extra stuff on starting line of library no longer kill kilib2csv.</p></li>
 </ul>
 </div>
 <div class="section" id="id17">
-<h3>0.1.19 (2016-09-16)<a class="headerlink" href="#id17" title="Permalink to this headline">¶</a></h3>
+<h3>0.1.20 (2016-09-16)<a class="headerlink" href="#id17" title="Permalink to this headline">¶</a></h3>
 <ul class="simple">
-<li>Added utility to test kilib2csv and kipart on randomly-generated CSV part files.</li>
+<li><p>Fixed bug where kilib2csv was choking on footprint lists in part definitions.</p></li>
 </ul>
 </div>
 <div class="section" id="id18">
-<h3>0.1.18 (2016-09-14)<a class="headerlink" href="#id18" title="Permalink to this headline">¶</a></h3>
+<h3>0.1.19 (2016-09-16)<a class="headerlink" href="#id18" title="Permalink to this headline">¶</a></h3>
 <ul class="simple">
-<li>kilib2csv utility added to convert KiCad schematic symbol libraries into CSV files suitable for input to KiPart.</li>
+<li><p>Added utility to test kilib2csv and kipart on randomly-generated CSV part files.</p></li>
 </ul>
 </div>
 <div class="section" id="id19">
-<h3>0.1.17 (2016-06-15)<a class="headerlink" href="#id19" title="Permalink to this headline">¶</a></h3>
+<h3>0.1.18 (2016-09-14)<a class="headerlink" href="#id19" title="Permalink to this headline">¶</a></h3>
 <ul class="simple">
-<li>Use same type of sorting for unit names as for pin names so (for example) unit ‘ADC_12’ comes before unit ‘ADC_2’.</li>
+<li><p>kilib2csv utility added to convert KiCad schematic symbol libraries into CSV files suitable for input to KiPart.</p></li>
 </ul>
 </div>
 <div class="section" id="id20">
-<h3>0.1.16 (2016-06-12)<a class="headerlink" href="#id20" title="Permalink to this headline">¶</a></h3>
+<h3>0.1.17 (2016-06-15)<a class="headerlink" href="#id20" title="Permalink to this headline">¶</a></h3>
 <ul class="simple">
-<li>Added reader for CSV-formatted pinout files exported from the STM32CubeMx tool. (Thanks, Hasan Yavuz OZDERYA!)</li>
+<li><p>Use same type of sorting for unit names as for pin names so (for example) unit ‘ADC_12’ comes before unit ‘ADC_2’.</p></li>
 </ul>
 </div>
 <div class="section" id="id21">
-<h3>0.1.15 (2016-02-17)<a class="headerlink" href="#id21" title="Permalink to this headline">¶</a></h3>
+<h3>0.1.16 (2016-06-12)<a class="headerlink" href="#id21" title="Permalink to this headline">¶</a></h3>
 <ul class="simple">
-<li>Added reader for Xilinx Ultrascale FPGAs.</li>
-<li>Fixed insertion of spaces between groups of pins when pin number starts with ‘*’.</li>
-<li>Replaced call to warnings.warn with issues() function.</li>
-<li>fix_pin_data() now strips leading/trailing spaces from pin information.</li>
+<li><p>Added reader for CSV-formatted pinout files exported from the STM32CubeMx tool. (Thanks, Hasan Yavuz OZDERYA!)</p></li>
 </ul>
 </div>
 <div class="section" id="id22">
-<h3>0.1.14 (2016-01-30)<a class="headerlink" href="#id22" title="Permalink to this headline">¶</a></h3>
+<h3>0.1.15 (2016-02-17)<a class="headerlink" href="#id22" title="Permalink to this headline">¶</a></h3>
 <ul class="simple">
-<li>Fixed incorrect y-offset of pins for symbols that only have pins along the right side.</li>
+<li><p>Added reader for Xilinx Ultrascale FPGAs.</p></li>
+<li><p>Fixed insertion of spaces between groups of pins when pin number starts with ‘*’.</p></li>
+<li><p>Replaced call to warnings.warn with issues() function.</p></li>
+<li><p>fix_pin_data() now strips leading/trailing spaces from pin information.</p></li>
 </ul>
 </div>
 <div class="section" id="id23">
-<h3>0.1.13 (2015-09-09)<a class="headerlink" href="#id23" title="Permalink to this headline">¶</a></h3>
+<h3>0.1.14 (2016-01-30)<a class="headerlink" href="#id23" title="Permalink to this headline">¶</a></h3>
 <ul class="simple">
-<li>The number of pins in a bundle is now appended to the pin name instead of an ‘*’.</li>
+<li><p>Fixed incorrect y-offset of pins for symbols that only have pins along the right side.</p></li>
 </ul>
 </div>
 <div class="section" id="id24">
-<h3>0.1.12 (2015-09-03)<a class="headerlink" href="#id24" title="Permalink to this headline">¶</a></h3>
+<h3>0.1.13 (2015-09-09)<a class="headerlink" href="#id24" title="Permalink to this headline">¶</a></h3>
 <ul class="simple">
-<li>Added capability to insert non-existent “gap” pins that divide groups of pins into sections.</li>
+<li><p>The number of pins in a bundle is now appended to the pin name instead of an ‘*’.</p></li>
 </ul>
 </div>
 <div class="section" id="id25">
-<h3>0.1.11 (2015-09-02)<a class="headerlink" href="#id25" title="Permalink to this headline">¶</a></h3>
+<h3>0.1.12 (2015-09-03)<a class="headerlink" href="#id25" title="Permalink to this headline">¶</a></h3>
 <ul class="simple">
-<li>future module requirement added to setup.py.</li>
+<li><p>Added capability to insert non-existent “gap” pins that divide groups of pins into sections.</p></li>
 </ul>
 </div>
 <div class="section" id="id26">
-<h3>0.1.10 (2015-08-26)<a class="headerlink" href="#id26" title="Permalink to this headline">¶</a></h3>
+<h3>0.1.11 (2015-09-02)<a class="headerlink" href="#id26" title="Permalink to this headline">¶</a></h3>
 <ul class="simple">
-<li>Now runs under both Python 2.7 and 3.4.</li>
+<li><p>future module requirement added to setup.py.</p></li>
 </ul>
 </div>
 <div class="section" id="id27">
-<h3>0.1.9 (2015-08-21)<a class="headerlink" href="#id27" title="Permalink to this headline">¶</a></h3>
+<h3>0.1.10 (2015-08-26)<a class="headerlink" href="#id27" title="Permalink to this headline">¶</a></h3>
 <ul class="simple">
-<li>The bundling option now only bundles pins where that operation makes sense:
-power input pins (e.g., VCC and GND) and no-connect pins.</li>
+<li><p>Now runs under both Python 2.7 and 3.4.</p></li>
 </ul>
 </div>
 <div class="section" id="id28">
-<h3>0.1.8 (2015-08-17)<a class="headerlink" href="#id28" title="Permalink to this headline">¶</a></h3>
+<h3>0.1.9 (2015-08-21)<a class="headerlink" href="#id28" title="Permalink to this headline">¶</a></h3>
 <ul class="simple">
-<li>Input data from the CSV file is now scanned for errors and fixed before it can cause problems
-in the library file.</li>
+<li><p>The bundling option now only bundles pins where that operation makes sense:
+power input pins (e.g., VCC and GND) and no-connect pins.</p></li>
 </ul>
 </div>
 <div class="section" id="id29">
-<h3>0.1.7 (2015-08-14)<a class="headerlink" href="#id29" title="Permalink to this headline">¶</a></h3>
+<h3>0.1.8 (2015-08-17)<a class="headerlink" href="#id29" title="Permalink to this headline">¶</a></h3>
 <ul class="simple">
-<li>Added reader functions for Xilinx Virtex-6 and Spartan-6.</li>
-<li>Broke-out reader functions into separate modules.</li>
-<li>TXT and CSV files are now acceptable as part data files, but the reader has to be built to handle it.</li>
+<li><p>Input data from the CSV file is now scanned for errors and fixed before it can cause problems
+in the library file.</p></li>
 </ul>
 </div>
 <div class="section" id="id30">
-<h3>0.1.6 (2015-08-13)<a class="headerlink" href="#id30" title="Permalink to this headline">¶</a></h3>
+<h3>0.1.7 (2015-08-14)<a class="headerlink" href="#id30" title="Permalink to this headline">¶</a></h3>
 <ul class="simple">
-<li>Fuzzy string matching is now used for the column headers.</li>
-<li>Choice-type options are now case-insensitive.</li>
+<li><p>Added reader functions for Xilinx Virtex-6 and Spartan-6.</p></li>
+<li><p>Broke-out reader functions into separate modules.</p></li>
+<li><p>TXT and CSV files are now acceptable as part data files, but the reader has to be built to handle it.</p></li>
 </ul>
 </div>
 <div class="section" id="id31">
-<h3>0.1.5 (2015-07-29)<a class="headerlink" href="#id31" title="Permalink to this headline">¶</a></h3>
+<h3>0.1.6 (2015-08-13)<a class="headerlink" href="#id31" title="Permalink to this headline">¶</a></h3>
 <ul class="simple">
-<li>Multiple parts can now be described in a single CSV file.</li>
-<li>Added function and option for reading Cypress PSoC5LP CSV files.</li>
-<li>Simplified key generators for sorting pins by name or number.</li>
-<li>Improved ordering of pins by name.</li>
+<li><p>Fuzzy string matching is now used for the column headers.</p></li>
+<li><p>Choice-type options are now case-insensitive.</p></li>
 </ul>
 </div>
 <div class="section" id="id32">
-<h3>0.1.4 (2015-07-27)<a class="headerlink" href="#id32" title="Permalink to this headline">¶</a></h3>
+<h3>0.1.5 (2015-07-29)<a class="headerlink" href="#id32" title="Permalink to this headline">¶</a></h3>
 <ul class="simple">
-<li>Added option for approximate (fuzzy) matching for pin types, styles and orientations (sides).</li>
+<li><p>Multiple parts can now be described in a single CSV file.</p></li>
+<li><p>Added function and option for reading Cypress PSoC5LP CSV files.</p></li>
+<li><p>Simplified key generators for sorting pins by name or number.</p></li>
+<li><p>Improved ordering of pins by name.</p></li>
 </ul>
 </div>
 <div class="section" id="id33">
-<h3>0.1.3 (2015-07-26)<a class="headerlink" href="#id33" title="Permalink to this headline">¶</a></h3>
+<h3>0.1.4 (2015-07-27)<a class="headerlink" href="#id33" title="Permalink to this headline">¶</a></h3>
 <ul class="simple">
-<li>Multiple pins with the same name are now hidden by reducing their pin number size to zero
-(rather than enabling the hidden flag which can cause problems with power-in pins).</li>
+<li><p>Added option for approximate (fuzzy) matching for pin types, styles and orientations (sides).</p></li>
 </ul>
 </div>
 <div class="section" id="id34">
-<h3>0.1.2 (2015-07-24)<a class="headerlink" href="#id34" title="Permalink to this headline">¶</a></h3>
+<h3>0.1.3 (2015-07-26)<a class="headerlink" href="#id34" title="Permalink to this headline">¶</a></h3>
 <ul class="simple">
-<li>Symbols can now have pins on any combination of left, right, top and bottom sides.</li>
-<li>Added option to append parts to an existing library.</li>
-<li>Refactored kipart routine into subroutines.</li>
-<li>Added documentation.</li>
+<li><p>Multiple pins with the same name are now hidden by reducing their pin number size to zero
+(rather than enabling the hidden flag which can cause problems with power-in pins).</p></li>
 </ul>
 </div>
 <div class="section" id="id35">
-<h3>0.1.1 (2015-07-21)<a class="headerlink" href="#id35" title="Permalink to this headline">¶</a></h3>
+<h3>0.1.2 (2015-07-24)<a class="headerlink" href="#id35" title="Permalink to this headline">¶</a></h3>
 <ul class="simple">
-<li>Fixed calculation of pin name widths.</li>
-<li>Made CSV row order the default for arranging pins on the schematic symbol.</li>
-<li>Fixed sorting key routine for numeric pin numbers.</li>
-<li>Spaces are now stripped between fields in a CSV file.</li>
+<li><p>Symbols can now have pins on any combination of left, right, top and bottom sides.</p></li>
+<li><p>Added option to append parts to an existing library.</p></li>
+<li><p>Refactored kipart routine into subroutines.</p></li>
+<li><p>Added documentation.</p></li>
 </ul>
 </div>
 <div class="section" id="id36">
-<h3>0.1.0 (2015-07-20)<a class="headerlink" href="#id36" title="Permalink to this headline">¶</a></h3>
+<h3>0.1.1 (2015-07-21)<a class="headerlink" href="#id36" title="Permalink to this headline">¶</a></h3>
 <ul class="simple">
-<li>First release on PyPI.</li>
+<li><p>Fixed calculation of pin name widths.</p></li>
+<li><p>Made CSV row order the default for arranging pins on the schematic symbol.</p></li>
+<li><p>Fixed sorting key routine for numeric pin numbers.</p></li>
+<li><p>Spaces are now stripped between fields in a CSV file.</p></li>
+</ul>
+</div>
+<div class="section" id="id37">
+<h3>0.1.0 (2015-07-20)<a class="headerlink" href="#id37" title="Permalink to this headline">¶</a></h3>
+<ul class="simple">
+<li><p>First release on PyPI.</p></li>
 </ul>
 </div>
 </div>
@@ -717,9 +710,9 @@ in the library file.</li>
 <div class="section" id="indices-and-tables">
 <h1>Indices and tables<a class="headerlink" href="#indices-and-tables" title="Permalink to this headline">¶</a></h1>
 <ul class="simple">
-<li><a class="reference internal" href="genindex.html"><span class="std std-ref">Index</span></a></li>
-<li><a class="reference internal" href="py-modindex.html"><span class="std std-ref">Module Index</span></a></li>
-<li><a class="reference internal" href="search.html"><span class="std std-ref">Search Page</span></a></li>
+<li><p><a class="reference internal" href="genindex.html"><span class="std std-ref">Index</span></a></p></li>
+<li><p><a class="reference internal" href="py-modindex.html"><span class="std std-ref">Module Index</span></a></p></li>
+<li><p><a class="reference internal" href="search.html"><span class="std std-ref">Search Page</span></a></p></li>
 </ul>
 </div>
 
@@ -729,7 +722,7 @@ in the library file.</li>
       </div>
       <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
         <div class="sphinxsidebarwrapper">
-  <h3><a href="index.html#document-index">Table Of Contents</a></h3>
+  <h3><a href="index.html#document-index">Table of Contents</a></h3>
   <ul>
 <li class="toctree-l1"><a class="reference internal" href="index.html#document-readme">KiPart</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="index.html#features">Features</a></li>
@@ -754,40 +747,41 @@ in the library file.</li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="index.html#document-history">History</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="index.html#id1">0.1.33 (2018-01-03)</a></li>
-<li class="toctree-l2"><a class="reference internal" href="index.html#id2">0.1.32 (2017-12-08)</a></li>
-<li class="toctree-l2"><a class="reference internal" href="index.html#id3">0.1.31 (2017-10-10)</a></li>
-<li class="toctree-l2"><a class="reference internal" href="index.html#id6">0.1.30 (2017-10-05)</a></li>
-<li class="toctree-l2"><a class="reference internal" href="index.html#id7">0.1.29 (2017-07-31)</a></li>
-<li class="toctree-l2"><a class="reference internal" href="index.html#id8">0.1.28 (2017-07-27)</a></li>
-<li class="toctree-l2"><a class="reference internal" href="index.html#id9">0.1.27 (2017-05-24)</a></li>
-<li class="toctree-l2"><a class="reference internal" href="index.html#id10">0.1.26 (2017-05-21)</a></li>
-<li class="toctree-l2"><a class="reference internal" href="index.html#id11">0.1.25 (2017-05-03)</a></li>
-<li class="toctree-l2"><a class="reference internal" href="index.html#id12">0.1.24 (2016-12-22)</a></li>
-<li class="toctree-l2"><a class="reference internal" href="index.html#id13">0.1.23 (2016-12-13)</a></li>
-<li class="toctree-l2"><a class="reference internal" href="index.html#id14">0.1.22 (2016-11-29)</a></li>
-<li class="toctree-l2"><a class="reference internal" href="index.html#id15">0.1.21 (2016-09-20)</a></li>
-<li class="toctree-l2"><a class="reference internal" href="index.html#id16">0.1.20 (2016-09-16)</a></li>
-<li class="toctree-l2"><a class="reference internal" href="index.html#id17">0.1.19 (2016-09-16)</a></li>
-<li class="toctree-l2"><a class="reference internal" href="index.html#id18">0.1.18 (2016-09-14)</a></li>
-<li class="toctree-l2"><a class="reference internal" href="index.html#id19">0.1.17 (2016-06-15)</a></li>
-<li class="toctree-l2"><a class="reference internal" href="index.html#id20">0.1.16 (2016-06-12)</a></li>
-<li class="toctree-l2"><a class="reference internal" href="index.html#id21">0.1.15 (2016-02-17)</a></li>
-<li class="toctree-l2"><a class="reference internal" href="index.html#id22">0.1.14 (2016-01-30)</a></li>
-<li class="toctree-l2"><a class="reference internal" href="index.html#id23">0.1.13 (2015-09-09)</a></li>
-<li class="toctree-l2"><a class="reference internal" href="index.html#id24">0.1.12 (2015-09-03)</a></li>
-<li class="toctree-l2"><a class="reference internal" href="index.html#id25">0.1.11 (2015-09-02)</a></li>
-<li class="toctree-l2"><a class="reference internal" href="index.html#id26">0.1.10 (2015-08-26)</a></li>
-<li class="toctree-l2"><a class="reference internal" href="index.html#id27">0.1.9 (2015-08-21)</a></li>
-<li class="toctree-l2"><a class="reference internal" href="index.html#id28">0.1.8 (2015-08-17)</a></li>
-<li class="toctree-l2"><a class="reference internal" href="index.html#id29">0.1.7 (2015-08-14)</a></li>
-<li class="toctree-l2"><a class="reference internal" href="index.html#id30">0.1.6 (2015-08-13)</a></li>
-<li class="toctree-l2"><a class="reference internal" href="index.html#id31">0.1.5 (2015-07-29)</a></li>
-<li class="toctree-l2"><a class="reference internal" href="index.html#id32">0.1.4 (2015-07-27)</a></li>
-<li class="toctree-l2"><a class="reference internal" href="index.html#id33">0.1.3 (2015-07-26)</a></li>
-<li class="toctree-l2"><a class="reference internal" href="index.html#id34">0.1.2 (2015-07-24)</a></li>
-<li class="toctree-l2"><a class="reference internal" href="index.html#id35">0.1.1 (2015-07-21)</a></li>
-<li class="toctree-l2"><a class="reference internal" href="index.html#id36">0.1.0 (2015-07-20)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="index.html#id1">0.1.34 (2019-06-27)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="index.html#id2">0.1.33 (2018-01-03)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="index.html#id3">0.1.32 (2017-12-08)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="index.html#id4">0.1.31 (2017-10-10)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="index.html#id7">0.1.30 (2017-10-05)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="index.html#id8">0.1.29 (2017-07-31)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="index.html#id9">0.1.28 (2017-07-27)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="index.html#id10">0.1.27 (2017-05-24)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="index.html#id11">0.1.26 (2017-05-21)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="index.html#id12">0.1.25 (2017-05-03)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="index.html#id13">0.1.24 (2016-12-22)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="index.html#id14">0.1.23 (2016-12-13)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="index.html#id15">0.1.22 (2016-11-29)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="index.html#id16">0.1.21 (2016-09-20)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="index.html#id17">0.1.20 (2016-09-16)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="index.html#id18">0.1.19 (2016-09-16)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="index.html#id19">0.1.18 (2016-09-14)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="index.html#id20">0.1.17 (2016-06-15)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="index.html#id21">0.1.16 (2016-06-12)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="index.html#id22">0.1.15 (2016-02-17)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="index.html#id23">0.1.14 (2016-01-30)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="index.html#id24">0.1.13 (2015-09-09)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="index.html#id25">0.1.12 (2015-09-03)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="index.html#id26">0.1.11 (2015-09-02)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="index.html#id27">0.1.10 (2015-08-26)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="index.html#id28">0.1.9 (2015-08-21)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="index.html#id29">0.1.8 (2015-08-17)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="index.html#id30">0.1.7 (2015-08-14)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="index.html#id31">0.1.6 (2015-08-13)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="index.html#id32">0.1.5 (2015-07-29)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="index.html#id33">0.1.4 (2015-07-27)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="index.html#id34">0.1.3 (2015-07-26)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="index.html#id35">0.1.2 (2015-07-24)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="index.html#id36">0.1.1 (2015-07-21)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="index.html#id37">0.1.0 (2015-07-20)</a></li>
 </ul>
 </li>
 </ul>
@@ -799,12 +793,12 @@ in the library file.</li>
     <div class="related" role="navigation" aria-label="related navigation">
       <h3>Navigation</h3>
       <ul>
-        <li class="nav-item nav-item-0"><a href="index.html#document-index">KiPart 0.1.33 documentation</a> &#187;</li> 
+        <li class="nav-item nav-item-0"><a href="index.html#document-index">KiPart 0.1.34 documentation</a> &#187;</li> 
       </ul>
     </div>
     <div class="footer" role="contentinfo">
         &#169; Copyright 2015, XESS Corp..
-      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.6.3.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 2.0.1.
     </div>
   </body>
 </html>

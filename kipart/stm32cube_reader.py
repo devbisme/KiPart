@@ -20,72 +20,75 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 
-import csv
-from collections import defaultdict
-import re
-from operator import itemgetter
-import os
 import copy
+import csv
+import os
+import re
 from collections import defaultdict
+from operator import itemgetter
+
 from .common import *
 from .kipart import *
 
 # Pin type mappings of STM32Cube output to kipart accepted values.
 type_mappings = {
-    "Power" : "power_in",
-    "Input" : "input",
-    "Output" : "output",
-    "I/O" : "inout",
-    "Reset" : "input",
-    "Boot" : "input"
+    "Power": "power_in",
+    "Input": "input",
+    "Output": "output",
+    "I/O": "inout",
+    "Reset": "input",
+    "Boot": "input",
 }
+
 
 def parse_csv_file(csv_file):
     """Parses the CSV file and returns a list of pins in the form of (number, 'name', 'type')"""
 
     pins = []
-    reader = csv.reader(csv_file, delimiter=',', quotechar='"')
-    next(reader, None) # skip header
+    reader = csv.reader(csv_file, delimiter=",", quotechar='"')
+    next(reader, None)  # skip header
     for row in reader:
         number, name, ptype, signal, label = row
 
         if label:
-            name += '/' + label
+            name += "/" + label
         elif signal:
-            name += '/' + signal
+            name += "/" + signal
 
-        name = name.replace(' ', '_')
+        name = name.replace(" ", "_")
         pin_type = type_mappings.get(ptype, "inout")
 
         pins.append((number, name, pin_type))
 
     return pins
 
+
 def parse_portpin(name):
     """Finds the port name and number of a pin in a string. If found
     returns a tuple in the form of ('port_name', port_number).
     Otherwise returns `None`.
     """
-    m = re.search('P([A-Z])(\d+)', name)
+    m = re.search("P([A-Z])(\d+)", name)
     if m:
         port_name, port_number = m.groups()
         return (port_name, int(port_number))
+
 
 def group_pins(pins):
     """Groups pins together per their port name and functions. Returns a
     dictionary of {'port': [pin]}."""
     ports = defaultdict(list)
 
-    power_names = ['VDD', 'VSS', 'VCAP', 'VBAT', 'VREF']
-    config_names = ['RCC_OSC', 'NRST', 'PDR', 'SWCLK', 'SWDIO', 'BOOT']
+    power_names = ["VDD", "VSS", "VCAP", "VBAT", "VREF"]
+    config_names = ["RCC_OSC", "NRST", "PDR", "SWCLK", "SWDIO", "BOOT"]
 
     for pin in pins:
         number, name, ptype = pin
         if any(pn in name for pn in power_names):
-            ports['power'].append(pin)
+            ports["power"].append(pin)
 
         elif any(pn in name for pn in config_names):
-            ports['config'].append(pin)
+            ports["config"].append(pin)
 
         else:
             m = parse_portpin(name)
@@ -93,18 +96,19 @@ def group_pins(pins):
                 port_name, port_number = m
                 ports[port_name].append(pin)
             else:
-                ports['other'].append(pin)
+                ports["other"].append(pin)
 
     # sort pins
     for port in ports:
         # config and power gates are sorted according to their function name
-        if port in ['config', 'power']:
+        if port in ["config", "power"]:
             ports[port] = sorted(ports[port], key=itemgetter(1))
         # IO ports are sorted according to port number
         else:
             ports[port] = sorted(ports[port], key=lambda p: parse_portpin(p[1])[1])
 
     return ports
+
 
 def stm32cube_reader(csv_file):
     """Reader for STM32CubeMx pin list output.
@@ -143,7 +147,7 @@ def stm32cube_reader(csv_file):
     for port_name in ports:
         for p in ports[port_name]:
             # Get the pin attributes from the cells of the row of data.
-            pin = copy.copy(DEFAULT_PIN) # Start off with default values for the pin.
+            pin = copy.copy(DEFAULT_PIN)  # Start off with default values for the pin.
             pin.index = index = index + 1
             pin.num = p[0]
             pin.name = p[1]
@@ -156,4 +160,4 @@ def stm32cube_reader(csv_file):
     part_name = os.path.splitext(os.path.split(csv_file.name)[1])[0]
 
     # what should be the part_num?
-    yield part_name, 'U', '', '', pin_data
+    yield part_name, "U", "", "", "", "", pin_data

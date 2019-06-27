@@ -1,17 +1,17 @@
 # MIT license
-# 
+#
 # Copyright (C) 2015 by XESS Corp.
-# 
+#
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
 # in the Software without restriction, including without limitation the rights
 # to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
 # copies of the Software, and to permit persons to whom the Software is
 # furnished to do so, subject to the following conditions:
-# 
+#
 # The above copyright notice and this permission notice shall be included in
 # all copies or substantial portions of the Software.
-# 
+#
 # THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
 # IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
 # FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
@@ -21,9 +21,11 @@
 # THE SOFTWARE.
 
 from __future__ import absolute_import
-import csv
+
 import copy
+import csv
 from collections import defaultdict
+
 from .common import *
 from .kipart import *
 
@@ -31,25 +33,29 @@ from .kipart import *
 def psoc5lp_pin_name_process(name):
     #    leading_paren = re.compile(r'^\s*(?P<paren>\([^)]*\))\s*(?<pin_name>.+)$', re.IGNORECASE)
     #    leading_paren = re.compile(r'^\s*(?P<paren>\([^)]*\))', re.IGNORECASE)
-    leading_paren = re.compile(r'^\s*(?P<paren>\([^)]*\))\s*(?P<pin_name>.+)$',
-                               re.IGNORECASE)
+    leading_paren = re.compile(
+        r"^\s*(?P<paren>\([^)]*\))\s*(?P<pin_name>.+)$", re.IGNORECASE
+    )
     m = leading_paren.match(name)
     if m is not None:
-        name = m.group('pin_name') + ' ' + m.group('paren')
-    name = re.sub(r'^\s+', '', name)  # Remove leading spaces.
-    name = re.sub(r'\s+$', '', name)  # Remove trailing spaces.
-    name = re.sub(r'\s*([-@#$%^&*_=+|",.<>!;?]+)\s*', r'\1',
-                  name)  # Remove spaces around punc.
-    name = re.sub(r'([\[\{\(]+)\s*', r'\1',
-                  name)  # Remove spaces around braces and such.
-    name = re.sub(r'\s*([\]\}\)]+)', r'\1',
-                  name)  # Remove spaces around braces and such.
-    name = re.sub(r'\s+', '_', name)  # Replace spaces with underscores.
+        name = m.group("pin_name") + " " + m.group("paren")
+    name = re.sub(r"^\s+", "", name)  # Remove leading spaces.
+    name = re.sub(r"\s+$", "", name)  # Remove trailing spaces.
+    name = re.sub(
+        r'\s*([-@#$%^&*_=+|",.<>!;?]+)\s*', r"\1", name
+    )  # Remove spaces around punc.
+    name = re.sub(
+        r"([\[\{\(]+)\s*", r"\1", name
+    )  # Remove spaces around braces and such.
+    name = re.sub(
+        r"\s*([\]\}\)]+)", r"\1", name
+    )  # Remove spaces around braces and such.
+    name = re.sub(r"\s+", "_", name)  # Replace spaces with underscores.
     return name
 
 
 def psoc5lp_reader(csv_file):
-    '''Extract pin data from a Cypress PSoC5LP CSV file and return a dictionary of pin data.
+    """Extract pin data from a Cypress PSoC5LP CSV file and return a dictionary of pin data.
        The CSV file contains one or more groups of rows formatted as follows:
            A row with a single field containing the part number.
            Zero or more blank rows.
@@ -66,7 +72,7 @@ def psoc5lp_reader(csv_file):
                The 'Name' column contains the pin name.
            A blank row terminates the pin data for the part and begins
            a new group of rows for another part.
-    '''
+    """
 
     while True:
         # Create a dictionary that uses the unit numbers as keys. Each entry in this dictionary
@@ -83,7 +89,9 @@ def psoc5lp_reader(csv_file):
 
         # Extract part number from the first non-blank line. Break out of the infinite
         # while loop and stop processing this file if no part number is found.
-        part_num, part_ref_prefix, part_footprint, part_manf_num = get_part_info(csv_reader)
+        part_num, part_ref_prefix, part_footprint, part_manf_num, part_datasheet, part_desc = get_part_info(
+            csv_reader
+        )
         if part_num is None:
             break
 
@@ -101,32 +109,36 @@ def psoc5lp_reader(csv_file):
             # Get the pin attributes from the cells of the row of data.
             pin = copy.copy(DEFAULT_PIN)
             pin.index = index
-            pin.type = ''
+            pin.type = ""
             for c, a in list(COLUMN_NAMES.items()):
                 try:
-                    if c == 'name':
+                    if c == "name":
                         row[c] = psoc5lp_pin_name_process(row[c])
                     setattr(pin, a, row[c])
                 except KeyError:
                     pass
             if pin.num is None:
                 issue(
-                    'ERROR: No pin number on row {index} of {part_num}'.format(
-                        index=index,
-                        part_num=part_num), level='error')
-            if pin.type == '':
+                    "ERROR: No pin number on row {index} of {part_num}".format(
+                        index=index, part_num=part_num
+                    ),
+                    level="error",
+                )
+            if pin.type == "":
                 # No explicit pin type, so infer it from the pin name.
-                DEFAULT_PIN_TYPE = 'input'  # Assign this pin type if name inference can't be made.
+                DEFAULT_PIN_TYPE = (
+                    "input"
+                )  # Assign this pin type if name inference can't be made.
                 PIN_TYPE_PREFIXES = [
-                    (r'P[0-9]+\[[0-9]+\]', 'bidirectional'),
-                    (r'VCC', 'power_out'),
-                    (r'VDD', 'power_in'),
-                    (r'VSS', 'power_in'),
-                    (r'IND', 'passive'),
-                    (r'VBOOST', 'input'),
-                    (r'VBAT', 'power_in'),
-                    (r'XRES', 'input'),
-                    (r'NC', 'no_connect'),
+                    (r"P[0-9]+\[[0-9]+\]", "bidirectional"),
+                    (r"VCC", "power_out"),
+                    (r"VDD", "power_in"),
+                    (r"VSS", "power_in"),
+                    (r"IND", "passive"),
+                    (r"VBOOST", "input"),
+                    (r"VBAT", "power_in"),
+                    (r"XRES", "input"),
+                    (r"NC", "no_connect"),
                 ]
                 for prefix, typ in PIN_TYPE_PREFIXES:
                     if re.match(prefix, pin.name, re.IGNORECASE):
@@ -134,8 +146,10 @@ def psoc5lp_reader(csv_file):
                         break
                 else:
                     issue(
-                        'No match for pin {} on part {}, assigning as {}'.format(
-                            pin.name, part_num, DEFAULT_PIN_TYPE))
+                        "No match for pin {} on part {}, assigning as {}".format(
+                            pin.name, part_num, DEFAULT_PIN_TYPE
+                        )
+                    )
                     pin.type = DEFAULT_PIN_TYPE
 
             # Add the pin from this row of the CVS file to the pin dictionary.
@@ -143,4 +157,4 @@ def psoc5lp_reader(csv_file):
             # We'll unbundle them later, if necessary.
             pin_data[pin.unit][pin.side][pin.name].append(pin)
 
-        yield part_num, 'U', '', part_num, pin_data  # Return the dictionary of pins extracted from the CVS file.
+        yield part_num, part_ref_prefix, part_footprint, part_manf_num, part_datasheet, part_desc, pin_data  # Return the dictionary of pins extracted from the CVS file.

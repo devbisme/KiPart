@@ -3,6 +3,13 @@
 History
 -------
 
+0.1.34 (2019-06-27)
+______________________
+
+* All symbols now include F2 (package) and F3 (datasheet) fields.
+* Datasheet link and part description can be entered on the first line of a part description in the CSV file.
+
+
 0.1.33 (2018-01-03)
 ______________________
 

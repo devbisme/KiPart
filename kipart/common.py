@@ -21,20 +21,21 @@
 # THE SOFTWARE.
 
 from __future__ import print_function
-from builtins import object
-import re
+
 import difflib
+import re
+from builtins import object
 
 COLUMN_NAMES = {
-    'pin': 'num',
-    'num': 'num',
-    'name': 'name',
-    'type': 'type',
-    'style': 'style',
-    'side': 'side',
-    'unit': 'unit',
-    'bank': 'unit',
-    'hidden': 'hidden'
+    "pin": "num",
+    "num": "num",
+    "name": "name",
+    "type": "type",
+    "style": "style",
+    "side": "side",
+    "unit": "unit",
+    "bank": "unit",
+    "hidden": "hidden",
 }
 
 
@@ -46,26 +47,26 @@ class Pin(object):
 
 DEFAULT_PIN = Pin()
 DEFAULT_PIN.num = None
-DEFAULT_PIN.name = ''
-DEFAULT_PIN.type = 'io'
-DEFAULT_PIN.style = 'line'
+DEFAULT_PIN.name = ""
+DEFAULT_PIN.type = "io"
+DEFAULT_PIN.style = "line"
 DEFAULT_PIN.unit = 1
-DEFAULT_PIN.side = 'left'
-DEFAULT_PIN.hidden = 'no'
+DEFAULT_PIN.side = "left"
+DEFAULT_PIN.hidden = "no"
 
 
 def num_row_elements(row):
-    '''Get number of elements in CSV row.'''
+    """Get number of elements in CSV row."""
     try:
         rowset = set(row)
-        rowset.discard('')
+        rowset.discard("")
         return len(rowset)
     except TypeError:
         return 0
 
 
 def get_nonblank_row(csv_reader):
-    '''Return the first non-blank row encountered from the current point in a CSV file.'''
+    """Return the first non-blank row encountered from the current point in a CSV file."""
     for row in csv_reader:
         if num_row_elements(row) > 0:
             return row
@@ -73,27 +74,38 @@ def get_nonblank_row(csv_reader):
 
 
 def get_part_info(csv_reader):
-    '''Get the part number, ref prefix, footprint, MPN from a row of the CSV file.'''
+    """Get the part number, ref prefix, footprint, MPN, datasheet link, and description from a row of the CSV file."""
 
     # Read the first, nonblank row and pad it with None's to make sure it's long enough.
-    part_num, part_ref_prefix, part_footprint, part_manf_num = list(get_nonblank_row(csv_reader) + [None]*4)[:4]
+    part_num, part_ref_prefix, part_footprint, part_manf_num, part_datasheet, part_desc = list(
+        get_nonblank_row(csv_reader) + [None] * 6
+    )[
+        :6
+    ]
 
     # Put in the default part reference identifier if it isn't present.
-    if part_ref_prefix in (None, '', ' '):
-        part_ref_prefix = 'U'
+    if part_ref_prefix in (None, "", " "):
+        part_ref_prefix = "U"
 
     # Check to see if the row with the part identifier is missing.
     if part_num and part_num.lower() in list(COLUMN_NAMES.keys()):
-        issue('Row with part number is missing in CSV file.', 'error')
+        issue("Row with part number is missing in CSV file.", "error")
 
-    return part_num, part_ref_prefix, part_footprint, part_manf_num
+    return (
+        part_num,
+        part_ref_prefix,
+        part_footprint,
+        part_manf_num,
+        part_datasheet,
+        part_desc,
+    )
 
 
 def find_closest_match(name, name_dict, fuzzy_match, threshold=0.0):
-    '''Approximate matching subroutine'''
+    """Approximate matching subroutine"""
     # Scrub non-alphanumerics from name and lowercase it.
-    scrubber = re.compile('[\W.]+')
-    name = scrubber.sub('', name).lower()
+    scrubber = re.compile("[\W.]+")
+    name = scrubber.sub("", name).lower()
 
     # Return regular dictionary lookup if fuzzy matching is not enabled.
     if fuzzy_match == False:
@@ -107,25 +119,28 @@ def find_closest_match(name, name_dict, fuzzy_match, threshold=0.0):
 
 
 def clean_headers(headers):
-    '''Return a list of the closest valid column headers for the headers found in the file.'''
+    """Return a list of the closest valid column headers for the headers found in the file."""
     return [find_closest_match(h, COLUMN_NAMES, True) for h in headers]
 
 
-def issue(msg, level='warning'):
-    if level=='warning':
-        print('Warning: {}'.format(msg))
-    elif level == 'error':
-        print('ERROR: {}'.format(msg))
-        raise Exception('Unrecoverable error')
+def issue(msg, level="warning"):
+    if level == "warning":
+        print("Warning: {}".format(msg))
+    elif level == "error":
+        print("ERROR: {}".format(msg))
+        raise Exception("Unrecoverable error")
     else:
         print(msg)
 
 
 def fix_pin_data(pin_data, part_num):
-    '''Fix common errors in pin data.'''
+    """Fix common errors in pin data."""
     fixed_pin_data = pin_data.strip()  # Remove leading/trailing spaces.
-    if re.search('\s', fixed_pin_data) is not None:
-        fixed_pin_data = re.sub('\s', '_', fixed_pin_data)
-        issue("Replaced whitespace with '_' in pin '{pin_data}' of part {part_num}.".format(**locals()))
+    if re.search("\s", fixed_pin_data) is not None:
+        fixed_pin_data = re.sub("\s", "_", fixed_pin_data)
+        issue(
+            "Replaced whitespace with '_' in pin '{pin_data}' of part {part_num}.".format(
+                **locals()
+            )
+        )
     return fixed_pin_data
-
