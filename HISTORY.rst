@@ -26,7 +26,7 @@ ______________________
 0.1.31 (2017-10-10)
 ______________________
 
-* Removed *_ in statement that caused an error in Python2.
+* Removed \*_ in statement that caused an error in Python2.
 * Removed duplicated entries in pin-style table.
 * ~ and # are now allowed in pin-style keys.
 * Parts dictionary changed to OrderedDict so it retains the order parts were entered in. Important for passing random part generation tests.
