@@ -37,9 +37,9 @@ from builtins import open
 from future import standard_library
 from pyparsing import *
 
+from .common import issue
 from .pckg_info import __version__
 from .py_2_3 import *
-from .common import issue
 
 standard_library.install_aliases()
 
@@ -301,14 +301,13 @@ def main():
 
     args = parser.parse_args()
 
-
     # kilib2csv f1.lib f2.lib                 # Create f1.csv, f2.csv
     # kilib2csv f1.lib f2.lib -w              # Overwrite f1.csv, f2.csv
     # kilib2csv f1.lib f2.lib -a              # Append to f1.csv, f2.csv
     # kilib2csv f1.lib f2.lib -o f.csv        # Create f.csv
-    # kilib2csv f1.lib f2.lib -o f.csv -w     # Overwrite f.csv  
+    # kilib2csv f1.lib f2.lib -o f.csv -w     # Overwrite f.csv
     # kilib2csv f1.lib f2.lib -o f.csv -a     # Append to f.csv
-    
+
     check_file_exists = True  # Used to check for existence of a single output lib file.
 
     for input_file in args.input_files:
