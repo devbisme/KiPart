@@ -4,7 +4,7 @@
 <html xmlns="http://www.w3.org/1999/xhtml">
   <head>
     <meta charset="utf-8" />
-    <title>KiPart 0.0.35 documentation</title>
+    <title>KiPart 0.1.35 documentation</title>
     <link rel="stylesheet" href="_static/classic.css" type="text/css" />
     <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
     
@@ -20,7 +20,7 @@
     <div class="related" role="navigation" aria-label="related navigation">
       <h3>Navigation</h3>
       <ul>
-        <li class="nav-item nav-item-0"><a href="index.html#document-index">KiPart 0.0.35 documentation</a> &#187;</li> 
+        <li class="nav-item nav-item-0"><a href="index.html#document-index">KiPart 0.1.35 documentation</a> &#187;</li> 
       </ul>
     </div>  
 
@@ -233,11 +233,11 @@ if the <code class="docutils literal notranslate"><span class="pre">-w</span></c
 Any existing parts in the library that are not overwritten are retained.</p>
 <div class="section" id="examples">
 <h4>Examples<a class="headerlink" href="#examples" title="Permalink to this headline">¶</a></h4>
-<p>KiPart can handle single or multiple files.
+<p>KiPart can handle single or multiple input files.
 The simplest case is generating a symbol library from a single CSV file.
 The following command will process the <code class="docutils literal notranslate"><span class="pre">file.csv</span></code> file and place the
 symbols in <code class="docutils literal notranslate"><span class="pre">file.lib</span></code>:</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">kipart</span> <span class="n">file1</span><span class="o">.</span><span class="n">csv</span>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">kipart</span> <span class="n">file</span><span class="o">.</span><span class="n">csv</span>
 </pre></div>
 </div>
 <p>This also works with multiple input files with a separate library created
@@ -245,7 +245,7 @@ for each CSV file:</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">kipart</span> <span class="n">file1</span><span class="o">.</span><span class="n">csv</span> <span class="n">file2</span><span class="o">.</span><span class="n">csv</span>  <span class="c1"># Creates file1.lib and file2.lib.</span>
 </pre></div>
 </div>
-<p>Symbols from multiple CSV files can be placed into a single library as follows:</p>
+<p>Symbols from multiple CSV files can be placed into a single library using the <code class="docutils literal notranslate"><span class="pre">-o</span></code> option:</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">kipart</span> <span class="n">file1</span><span class="o">.</span><span class="n">csv</span> <span class="n">file2</span><span class="o">.</span><span class="n">csv</span> <span class="o">-</span><span class="n">o</span> <span class="n">total</span><span class="o">.</span><span class="n">lib</span>
 </pre></div>
 </div>
@@ -372,7 +372,9 @@ KiPart only supports boring, box-like part symbols.)</strong></p>
   <span class="o">-</span><span class="n">w</span><span class="p">,</span> <span class="o">--</span><span class="n">overwrite</span>       <span class="n">Allow</span> <span class="n">overwriting</span> <span class="n">of</span> <span class="n">an</span> <span class="n">existing</span> <span class="n">CSV</span> <span class="n">file</span><span class="o">.</span>
 </pre></div>
 </div>
-<p>The utility is easy to use:</p>
+<p>This utility handles single and multiple input files in the same manner
+as KiPart and supports some of the same options for overwriting and appending
+to the output CSV file:</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">kilib2csv</span> <span class="n">my_lib1</span><span class="o">.</span><span class="n">lib</span> <span class="n">my_lib2</span><span class="o">.</span><span class="n">lib</span> <span class="o">-</span><span class="n">o</span> <span class="n">my_library</span><span class="o">.</span><span class="n">csv</span>
 </pre></div>
 </div>
@@ -816,7 +818,7 @@ in the library file.</p></li>
     <div class="related" role="navigation" aria-label="related navigation">
       <h3>Navigation</h3>
       <ul>
-        <li class="nav-item nav-item-0"><a href="index.html#document-index">KiPart 0.0.35 documentation</a> &#187;</li> 
+        <li class="nav-item nav-item-0"><a href="index.html#document-index">KiPart 0.1.35 documentation</a> &#187;</li> 
       </ul>
     </div>
     <div class="footer" role="contentinfo">
