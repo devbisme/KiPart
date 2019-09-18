@@ -5,21 +5,19 @@ Usage
 KiPart
 ------------------
 
-KiPart is mainly intended to be  used as a script::
+KiPart is mainly intended to be used as a script::
 
     usage: kipart [-h] [-v]
                   [-r [{generic,xilinxultra,xilinx7,xilinx6s,xilinx6v,psoc5lp,stm32cube,lattice}]]
                   [-s [{row,num,name}]] [--reverse]
                   [--side [{left,right,top,bottom}]] [-o [file.lib]] [-f] [-b]
                   [-a] [-w] [-d [LEVEL]]
-                  file1.[csv|zip] file2.[csv|zip] ... [file1.[csv|zip]
-                  file2.[csv|zip] ... ...]
+                  file.[csv|zip] [file.[csv|zip] ...]
 
     Generate single & multi-unit schematic symbols for KiCad from a CSV file.
 
     positional arguments:
-      file1.[csv|zip] file2.[csv|zip] ...
-                            Files for parts in CSV format or as CSV files in .zip
+      file.[csv|zip]        Files for parts in CSV format or as CSV files in .zip
                             archives.
 
     optional arguments:
@@ -152,7 +150,34 @@ Any existing parts in the library that are not overwritten are retained.
 
 
 Examples
------------
+^^^^^^^^^^^^
+
+KiPart can handle single or multiple input files.
+The simplest case is generating a symbol library from a single CSV file.
+The following command will process the ``file.csv`` file and place the 
+symbols in ``file.lib``:: 
+
+    kipart file.csv
+
+This also works with multiple input files with a separate library created
+for each CSV file::
+
+    kipart file1.csv file2.csv  # Creates file1.lib and file2.lib.
+
+Symbols from multiple CSV files can be placed into a single library using the ``-o`` option::
+
+    kipart file1.csv file2.csv -o total.lib
+
+If ``total.lib`` already exists, the previous command will report that
+the file cannot be overwritten. Use the ``-w`` option to force
+the overwrite::
+
+    kipart file1.csv file2.csv -w -o total.lib
+
+Symbol libraries can also be built incrementally by appending symbols
+generated from CSV files::
+
+    kipart file3.csv file4.csv -a -o total.lib
 
 Assume the following data for a single-unit part is placed into the `example.csv` file::
 
@@ -243,7 +268,7 @@ If the input file has a ``Hidden`` column, then some, none, or all pins can be m
 
     Pin,    Name,   Type,   Side,   Style,      Hidden
     1,      N.C.,   in,     left,   clk_low,    Y
-    2,      GND,    pwr,    left,   ,           yeS
+    2,      GND,    pwr,    left,   ,           yes
     3,      SS_INH, in,     left,   ,           True
     4,      OSC,    in,     left,   ,
     5,      A1,     out,    right,  ,           False
@@ -258,7 +283,7 @@ But in Eeschema, they won't be visible at all:
 
 
 kilib2csv
----------------------
+------------------
 
 Sometimes you have existing libraries that you want to manage with a spreadsheet
 instead of the KiCad symbol editor.
@@ -270,8 +295,7 @@ KiPart only supports boring, box-like part symbols.)**
 
 ::
 
-    usage: kilib2csv-script.py [-h] [-v] [-o [file.csv]] [-a] [-w]
-                               file.lib [file.lib ...]
+    usage: kilib2csv [-h] [-v] [-o [file.csv]] [-a] [-w] file.lib [file.lib ...]
 
     Convert a KiCad schematic symbol library file into a CSV file for KiPart.
 
@@ -286,7 +310,9 @@ KiPart only supports boring, box-like part symbols.)**
       -a, --append          Append to an existing CSV file.
       -w, --overwrite       Allow overwriting of an existing CSV file.
 
-The utility is easy to use::
+This utility handles single and multiple input files in the same manner
+as KiPart and supports some of the same options for overwriting and appending
+to the output CSV file::
 
     kilib2csv my_lib1.lib my_lib2.lib -o my_library.csv
 

@@ -5,7 +5,7 @@ import sys
 
 import setuptools
 
-__version__ = "0.0.35"
+__version__ = "0.1.35"
 __author__ = "XESS Corp."
 __email__ = "info@xess.com"
 
@@ -40,7 +40,7 @@ setup(
     packages=setuptools.find_packages(),
     entry_points={
         "console_scripts": [
-            "kipart = kipart.__main__:main",
+            "kipart = kipart.kipart:main",
             "kilib2csv = kipart.kilib2csv:main",
         ]
     },
@@ -53,7 +53,7 @@ setup(
     zip_safe=False,
     keywords="kipart kicad electronic circuit schematics",
     classifiers=[
-        "Development Status :: 4 - Beta",
+        "Development Status :: 5 - Production/Stable",
         "Intended Audience :: Developers",
         "License :: OSI Approved :: MIT License",
         "Natural Language :: English",

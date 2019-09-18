@@ -4,7 +4,7 @@
 <html xmlns="http://www.w3.org/1999/xhtml">
   <head>
     <meta charset="utf-8" />
-    <title>KiPart 0.1.34 documentation</title>
+    <title>KiPart 0.0.35 documentation</title>
     <link rel="stylesheet" href="_static/classic.css" type="text/css" />
     <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
     
@@ -20,7 +20,7 @@
     <div class="related" role="navigation" aria-label="related navigation">
       <h3>Navigation</h3>
       <ul>
-        <li class="nav-item nav-item-0"><a href="index.html#document-index">KiPart 0.1.34 documentation</a> &#187;</li> 
+        <li class="nav-item nav-item-0"><a href="index.html#document-index">KiPart 0.0.35 documentation</a> &#187;</li> 
       </ul>
     </div>  
 
@@ -48,7 +48,7 @@
 <li><p>Converts lists of pins in a CSV file into a multi-unit schematic part symbol.</p></li>
 <li><p>Converts multiple CSV files stored in .zip archives.</p></li>
 <li><p>Each row of the CSV file lists the number, name, type, style, unit and side of a pin.</p></li>
-<li><p>Pins on a unit with the same name (e.g., GND) are placed at the same location
+<li><p>Pins on a unit with the same name (e.g., GND) can be placed at the same location
 so they can all be tied to the same net with a single connection.</p></li>
 <li><p>Also includes <code class="docutils literal notranslate"><span class="pre">kilib2csv</span></code> for converting schematic part libraries into
 CSV files suitable for input to KiPart.</p></li>
@@ -77,20 +77,18 @@ window and typing the command:</p>
 <h2>Usage<a class="headerlink" href="#usage" title="Permalink to this headline">¶</a></h2>
 <div class="section" id="kipart">
 <h3>KiPart<a class="headerlink" href="#kipart" title="Permalink to this headline">¶</a></h3>
-<p>KiPart is mainly intended to be  used as a script:</p>
+<p>KiPart is mainly intended to be used as a script:</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">usage</span><span class="p">:</span> <span class="n">kipart</span> <span class="p">[</span><span class="o">-</span><span class="n">h</span><span class="p">]</span> <span class="p">[</span><span class="o">-</span><span class="n">v</span><span class="p">]</span>
               <span class="p">[</span><span class="o">-</span><span class="n">r</span> <span class="p">[{</span><span class="n">generic</span><span class="p">,</span><span class="n">xilinxultra</span><span class="p">,</span><span class="n">xilinx7</span><span class="p">,</span><span class="n">xilinx6s</span><span class="p">,</span><span class="n">xilinx6v</span><span class="p">,</span><span class="n">psoc5lp</span><span class="p">,</span><span class="n">stm32cube</span><span class="p">,</span><span class="n">lattice</span><span class="p">}]]</span>
               <span class="p">[</span><span class="o">-</span><span class="n">s</span> <span class="p">[{</span><span class="n">row</span><span class="p">,</span><span class="n">num</span><span class="p">,</span><span class="n">name</span><span class="p">}]]</span> <span class="p">[</span><span class="o">--</span><span class="n">reverse</span><span class="p">]</span>
               <span class="p">[</span><span class="o">--</span><span class="n">side</span> <span class="p">[{</span><span class="n">left</span><span class="p">,</span><span class="n">right</span><span class="p">,</span><span class="n">top</span><span class="p">,</span><span class="n">bottom</span><span class="p">}]]</span> <span class="p">[</span><span class="o">-</span><span class="n">o</span> <span class="p">[</span><span class="n">file</span><span class="o">.</span><span class="n">lib</span><span class="p">]]</span> <span class="p">[</span><span class="o">-</span><span class="n">f</span><span class="p">]</span> <span class="p">[</span><span class="o">-</span><span class="n">b</span><span class="p">]</span>
               <span class="p">[</span><span class="o">-</span><span class="n">a</span><span class="p">]</span> <span class="p">[</span><span class="o">-</span><span class="n">w</span><span class="p">]</span> <span class="p">[</span><span class="o">-</span><span class="n">d</span> <span class="p">[</span><span class="n">LEVEL</span><span class="p">]]</span>
-              <span class="n">file1</span><span class="o">.</span><span class="p">[</span><span class="n">csv</span><span class="o">|</span><span class="nb">zip</span><span class="p">]</span> <span class="n">file2</span><span class="o">.</span><span class="p">[</span><span class="n">csv</span><span class="o">|</span><span class="nb">zip</span><span class="p">]</span> <span class="o">...</span> <span class="p">[</span><span class="n">file1</span><span class="o">.</span><span class="p">[</span><span class="n">csv</span><span class="o">|</span><span class="nb">zip</span><span class="p">]</span>
-              <span class="n">file2</span><span class="o">.</span><span class="p">[</span><span class="n">csv</span><span class="o">|</span><span class="nb">zip</span><span class="p">]</span> <span class="o">...</span> <span class="o">...</span><span class="p">]</span>
+              <span class="n">file</span><span class="o">.</span><span class="p">[</span><span class="n">csv</span><span class="o">|</span><span class="nb">zip</span><span class="p">]</span> <span class="p">[</span><span class="n">file</span><span class="o">.</span><span class="p">[</span><span class="n">csv</span><span class="o">|</span><span class="nb">zip</span><span class="p">]</span> <span class="o">...</span><span class="p">]</span>
 
 <span class="n">Generate</span> <span class="n">single</span> <span class="o">&amp;</span> <span class="n">multi</span><span class="o">-</span><span class="n">unit</span> <span class="n">schematic</span> <span class="n">symbols</span> <span class="k">for</span> <span class="n">KiCad</span> <span class="kn">from</span> <span class="nn">a</span> <span class="n">CSV</span> <span class="n">file</span><span class="o">.</span>
 
 <span class="n">positional</span> <span class="n">arguments</span><span class="p">:</span>
-  <span class="n">file1</span><span class="o">.</span><span class="p">[</span><span class="n">csv</span><span class="o">|</span><span class="nb">zip</span><span class="p">]</span> <span class="n">file2</span><span class="o">.</span><span class="p">[</span><span class="n">csv</span><span class="o">|</span><span class="nb">zip</span><span class="p">]</span> <span class="o">...</span>
-                        <span class="n">Files</span> <span class="k">for</span> <span class="n">parts</span> <span class="ow">in</span> <span class="n">CSV</span> <span class="nb">format</span> <span class="ow">or</span> <span class="k">as</span> <span class="n">CSV</span> <span class="n">files</span> <span class="ow">in</span> <span class="o">.</span><span class="n">zip</span>
+  <span class="n">file</span><span class="o">.</span><span class="p">[</span><span class="n">csv</span><span class="o">|</span><span class="nb">zip</span><span class="p">]</span>        <span class="n">Files</span> <span class="k">for</span> <span class="n">parts</span> <span class="ow">in</span> <span class="n">CSV</span> <span class="nb">format</span> <span class="ow">or</span> <span class="k">as</span> <span class="n">CSV</span> <span class="n">files</span> <span class="ow">in</span> <span class="o">.</span><span class="n">zip</span>
                         <span class="n">archives</span><span class="o">.</span>
 
 <span class="n">optional</span> <span class="n">arguments</span><span class="p">:</span>
@@ -233,9 +231,35 @@ from the CSV file. The old contents of the library are lost.</p>
 If a part with the same name already exists, the new part will only overwrite it
 if the <code class="docutils literal notranslate"><span class="pre">-w</span></code> flag is also used.
 Any existing parts in the library that are not overwritten are retained.</p>
-</div>
 <div class="section" id="examples">
-<h3>Examples<a class="headerlink" href="#examples" title="Permalink to this headline">¶</a></h3>
+<h4>Examples<a class="headerlink" href="#examples" title="Permalink to this headline">¶</a></h4>
+<p>KiPart can handle single or multiple files.
+The simplest case is generating a symbol library from a single CSV file.
+The following command will process the <code class="docutils literal notranslate"><span class="pre">file.csv</span></code> file and place the
+symbols in <code class="docutils literal notranslate"><span class="pre">file.lib</span></code>:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">kipart</span> <span class="n">file1</span><span class="o">.</span><span class="n">csv</span>
+</pre></div>
+</div>
+<p>This also works with multiple input files with a separate library created
+for each CSV file:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">kipart</span> <span class="n">file1</span><span class="o">.</span><span class="n">csv</span> <span class="n">file2</span><span class="o">.</span><span class="n">csv</span>  <span class="c1"># Creates file1.lib and file2.lib.</span>
+</pre></div>
+</div>
+<p>Symbols from multiple CSV files can be placed into a single library as follows:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">kipart</span> <span class="n">file1</span><span class="o">.</span><span class="n">csv</span> <span class="n">file2</span><span class="o">.</span><span class="n">csv</span> <span class="o">-</span><span class="n">o</span> <span class="n">total</span><span class="o">.</span><span class="n">lib</span>
+</pre></div>
+</div>
+<p>If <code class="docutils literal notranslate"><span class="pre">total.lib</span></code> already exists, the previous command will report that
+the file cannot be overwritten. Use the <code class="docutils literal notranslate"><span class="pre">-w</span></code> option to force
+the overwrite:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">kipart</span> <span class="n">file1</span><span class="o">.</span><span class="n">csv</span> <span class="n">file2</span><span class="o">.</span><span class="n">csv</span> <span class="o">-</span><span class="n">w</span> <span class="o">-</span><span class="n">o</span> <span class="n">total</span><span class="o">.</span><span class="n">lib</span>
+</pre></div>
+</div>
+<p>Symbol libraries can also be built incrementally by appending symbols
+generated from CSV files:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">kipart</span> <span class="n">file3</span><span class="o">.</span><span class="n">csv</span> <span class="n">file4</span><span class="o">.</span><span class="n">csv</span> <span class="o">-</span><span class="n">a</span> <span class="o">-</span><span class="n">o</span> <span class="n">total</span><span class="o">.</span><span class="n">lib</span>
+</pre></div>
+</div>
 <p>Assume the following data for a single-unit part is placed into the <cite>example.csv</cite> file:</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">example_part</span>
 
@@ -311,7 +335,7 @@ all the outputs on the right side, the <code class="docutils literal notranslate
 
 <span class="n">Pin</span><span class="p">,</span>    <span class="n">Name</span><span class="p">,</span>   <span class="n">Type</span><span class="p">,</span>   <span class="n">Side</span><span class="p">,</span>   <span class="n">Style</span><span class="p">,</span>      <span class="n">Hidden</span>
 <span class="mi">1</span><span class="p">,</span>      <span class="n">N</span><span class="o">.</span><span class="n">C</span><span class="o">.</span><span class="p">,</span>   <span class="ow">in</span><span class="p">,</span>     <span class="n">left</span><span class="p">,</span>   <span class="n">clk_low</span><span class="p">,</span>    <span class="n">Y</span>
-<span class="mi">2</span><span class="p">,</span>      <span class="n">GND</span><span class="p">,</span>    <span class="n">pwr</span><span class="p">,</span>    <span class="n">left</span><span class="p">,</span>   <span class="p">,</span>           <span class="n">yeS</span>
+<span class="mi">2</span><span class="p">,</span>      <span class="n">GND</span><span class="p">,</span>    <span class="n">pwr</span><span class="p">,</span>    <span class="n">left</span><span class="p">,</span>   <span class="p">,</span>           <span class="n">yes</span>
 <span class="mi">3</span><span class="p">,</span>      <span class="n">SS_INH</span><span class="p">,</span> <span class="ow">in</span><span class="p">,</span>     <span class="n">left</span><span class="p">,</span>   <span class="p">,</span>           <span class="kc">True</span>
 <span class="mi">4</span><span class="p">,</span>      <span class="n">OSC</span><span class="p">,</span>    <span class="ow">in</span><span class="p">,</span>     <span class="n">left</span><span class="p">,</span>   <span class="p">,</span>
 <span class="mi">5</span><span class="p">,</span>      <span class="n">A1</span><span class="p">,</span>     <span class="n">out</span><span class="p">,</span>    <span class="n">right</span><span class="p">,</span>  <span class="p">,</span>           <span class="kc">False</span>
@@ -322,6 +346,7 @@ all the outputs on the right side, the <code class="docutils literal notranslate
 <p>But in Eeschema, they won’t be visible at all:</p>
 <img alt="_images/hidden_eeschema.png" src="_images/hidden_eeschema.png" />
 </div>
+</div>
 <div class="section" id="kilib2csv">
 <h3>kilib2csv<a class="headerlink" href="#kilib2csv" title="Permalink to this headline">¶</a></h3>
 <p>Sometimes you have existing libraries that you want to manage with a spreadsheet
@@ -331,8 +356,7 @@ into a CSV file.
 Then the CSV file can be manipulated with a spreadsheet and used as input to KiPart.
 <strong>(Note that any stylized part symbol graphics will be lost in the conversion.
 KiPart only supports boring, box-like part symbols.)</strong></p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">usage</span><span class="p">:</span> <span class="n">kilib2csv</span><span class="o">-</span><span class="n">script</span><span class="o">.</span><span class="n">py</span> <span class="p">[</span><span class="o">-</span><span class="n">h</span><span class="p">]</span> <span class="p">[</span><span class="o">-</span><span class="n">v</span><span class="p">]</span> <span class="p">[</span><span class="o">-</span><span class="n">o</span> <span class="p">[</span><span class="n">file</span><span class="o">.</span><span class="n">csv</span><span class="p">]]</span> <span class="p">[</span><span class="o">-</span><span class="n">a</span><span class="p">]</span> <span class="p">[</span><span class="o">-</span><span class="n">w</span><span class="p">]</span>
-                           <span class="n">file</span><span class="o">.</span><span class="n">lib</span> <span class="p">[</span><span class="n">file</span><span class="o">.</span><span class="n">lib</span> <span class="o">...</span><span class="p">]</span>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">usage</span><span class="p">:</span> <span class="n">kilib2csv</span> <span class="p">[</span><span class="o">-</span><span class="n">h</span><span class="p">]</span> <span class="p">[</span><span class="o">-</span><span class="n">v</span><span class="p">]</span> <span class="p">[</span><span class="o">-</span><span class="n">o</span> <span class="p">[</span><span class="n">file</span><span class="o">.</span><span class="n">csv</span><span class="p">]]</span> <span class="p">[</span><span class="o">-</span><span class="n">a</span><span class="p">]</span> <span class="p">[</span><span class="o">-</span><span class="n">w</span><span class="p">]</span> <span class="n">file</span><span class="o">.</span><span class="n">lib</span> <span class="p">[</span><span class="n">file</span><span class="o">.</span><span class="n">lib</span> <span class="o">...</span><span class="p">]</span>
 
 <span class="n">Convert</span> <span class="n">a</span> <span class="n">KiCad</span> <span class="n">schematic</span> <span class="n">symbol</span> <span class="n">library</span> <span class="n">file</span> <span class="n">into</span> <span class="n">a</span> <span class="n">CSV</span> <span class="n">file</span> <span class="k">for</span> <span class="n">KiPart</span><span class="o">.</span>
 
@@ -731,7 +755,6 @@ in the library file.</p></li>
 <li class="toctree-l1"><a class="reference internal" href="index.html#document-installation">Installation</a></li>
 <li class="toctree-l1"><a class="reference internal" href="index.html#document-usage">Usage</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="index.html#kipart">KiPart</a></li>
-<li class="toctree-l2"><a class="reference internal" href="index.html#examples">Examples</a></li>
 <li class="toctree-l2"><a class="reference internal" href="index.html#kilib2csv">kilib2csv</a></li>
 </ul>
 </li>
@@ -793,7 +816,7 @@ in the library file.</p></li>
     <div class="related" role="navigation" aria-label="related navigation">
       <h3>Navigation</h3>
       <ul>
-        <li class="nav-item nav-item-0"><a href="index.html#document-index">KiPart 0.1.34 documentation</a> &#187;</li> 
+        <li class="nav-item nav-item-0"><a href="index.html#document-index">KiPart 0.0.35 documentation</a> &#187;</li> 
       </ul>
     </div>
     <div class="footer" role="contentinfo">

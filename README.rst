@@ -18,7 +18,7 @@ Features
 * Converts lists of pins in a CSV file into a multi-unit schematic part symbol.
 * Converts multiple CSV files stored in .zip archives.
 * Each row of the CSV file lists the number, name, type, style, unit and side of a pin.
-* Pins on a unit with the same name (e.g., GND) are placed at the same location
+* Pins on a unit with the same name (e.g., GND) can be placed at the same location
   so they can all be tied to the same net with a single connection.
 * Also includes ``kilib2csv`` for converting schematic part libraries into
   CSV files suitable for input to KiPart.
