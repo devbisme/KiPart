@@ -39,6 +39,7 @@ from pyparsing import *
 
 from .__init__ import __version__
 from .py_2_3 import *
+from .common import issue
 
 standard_library.install_aliases()
 
@@ -300,26 +301,65 @@ def main():
 
     args = parser.parse_args()
 
-    if args.output == None:
-        issue("No output file specified. Using kipart.csv as the default.")
-        args.output = "kipart.csv"
-    else:
-        args.output = os.path.splitext(args.output)[0] + ".csv"
 
-    if os.path.isfile(args.output):
-        if not (args.overwrite or args.append):
-            print(
-                "Output file {} already exists! Use the --overwrite option to replace it or the --append option to append to it.".format(
-                    args.output
-                )
-            )
-            sys.exit(1)
+    # kilib2csv f1.lib f2.lib                 # Create f1.csv, f2.csv
+    # kilib2csv f1.lib f2.lib -w              # Overwrite f1.csv, f2.csv
+    # kilib2csv f1.lib f2.lib -a              # Append to f1.csv, f2.csv
+    # kilib2csv f1.lib f2.lib -o f.csv        # Create f.csv
+    # kilib2csv f1.lib f2.lib -o f.csv -w     # Overwrite f.csv  
+    # kilib2csv f1.lib f2.lib -o f.csv -a     # Append to f.csv
+    
+    check_file_exists = True  # Used to check for existence of a single output lib file.
 
-    file_mode = "a" if args.append else "w"
-    with open(args.output, file_mode) as out_file:
-        for lib in args.input_files:
-            parsed_lib = _parse_lib(lib)
-            out_file.write(_gen_csv(parsed_lib))
+    for input_file in args.input_files:
+
+        # No explicit output .csv file, so each individual input file will generate its own .csv file.
+        if check_file_exists or not args.output:
+            output_file = args.output or os.path.splitext(input_file)[0] + ".csv"
+            if os.path.isfile(output_file):
+                # The output .csv file already exists.
+                if args.overwrite:
+                    # Overwriting an existing file, so ignore the existing parts.
+                    csv = ""
+                elif args.append:
+                    # Appending to an existing file, so read in existing parts.
+                    csv = read_csv_file(output_file)
+                else:
+                    print(
+                        "Output file {} already exists! Use the --overwrite option to replace it or the --append option to append to it.".format(
+                            output_file
+                        )
+                    )
+                    sys.exit(1)
+            else:
+                # .csv file doesn't exist, so create a new .csv file starting with no parts.
+                csv = ""
+
+        # Don't setup the output .csv file again if -o option was used to specify a single output .csv file.
+        check_file_exists = not args.output
+
+        file_ext = os.path.splitext(input_file)[-1]  # Get input file extension.
+
+        if file_ext == ".lib":
+            # Process .lib input file.
+            with open(input_file, "r") as lib:
+                parsed_lib = _parse_lib(lib)
+                csv += _gen_csv(parsed_lib)
+
+        else:
+            # Skip unrecognized files.
+            continue
+
+        if not args.output:
+            # No global output .csv file, so output a .csv file for each input file.
+            with open(output_file, "w") as out_fp:
+                out_fp.write(csv)
+
+    if args.output:
+        # Only a single .csv output file was given, so write to it after all
+        # the input files were processed.
+        with open(output_file, "w") as out_fp:
+            out_fp.write(csv)
 
 
 # main entrypoint.
