@@ -30,7 +30,7 @@ import sys
 import zipfile
 from collections import OrderedDict
 
-from .__init__ import __version__
+from .pckg_info import __version__
 from .common import DEFAULT_PIN, issue
 from .kipart import *
 

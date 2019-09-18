@@ -1,9 +1,18 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
+import sys
+
 import setuptools
 
-import kipart
+__version__ = "0.0.35"
+__author__ = "XESS Corp."
+__email__ = "info@xess.com"
+
+if "sdist" in sys.argv[1:]:
+    with open("kipart/pckg_info.py", "w") as f:
+        for name in ["__version__", "__author__", "__email__"]:
+            f.write('{} = "{}"\n'.format(name, locals()[name]))
 
 try:
     from setuptools import setup
@@ -22,11 +31,11 @@ test_requirements = []  # TODO: put package test requirements here
 
 setup(
     name="kipart",
-    version=kipart.__version__,
+    version=__version__,
     description="Part creator for KiCad.",
     long_description=readme + "\n\n" + history,
-    author=kipart.__author__,
-    author_email=kipart.__email__,
+    author=__author__,
+    author_email=__email__,
     url="https://github.com/xesscorp/kipart",
     packages=setuptools.find_packages(),
     entry_points={
@@ -42,14 +51,14 @@ setup(
     install_requires=requirements,
     license="MIT",
     zip_safe=False,
-    keywords="kipart",
+    keywords="kipart kicad electronic circuit schematics",
     classifiers=[
-        "Development Status :: 2 - Pre-Alpha",
+        "Development Status :: 4 - Beta",
         "Intended Audience :: Developers",
         "License :: OSI Approved :: MIT License",
         "Natural Language :: English",
         "Programming Language :: Python :: 2.7",
-        "Programming Language :: Python :: 3.4",
+        "Programming Language :: Python :: 3",
     ],
     test_suite="tests",
     tests_require=test_requirements,

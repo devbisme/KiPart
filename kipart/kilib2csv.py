@@ -37,7 +37,7 @@ from builtins import open
 from future import standard_library
 from pyparsing import *
 
-from .__init__ import __version__
+from .pckg_info import __version__
 from .py_2_3 import *
 from .common import issue
 

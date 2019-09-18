@@ -112,9 +112,9 @@ def generic_reader(csv_file):
             if not pin.side:
                 pin.side = DEFAULT_PIN.side
 
-            # Add the pin from this row of the CVS file to the pin dictionary.
+            # Add the pin from this row of the CSV file to the pin dictionary.
             # Place all the like-named pins into a list under their common name.
             # We'll unbundle them later, if necessary.
             pin_data[pin.unit][pin.side.lower()][pin.name].append(pin)
 
-        yield part_num, part_ref_prefix, part_footprint, part_manf_num, part_datasheet, part_desc, pin_data  # Return the dictionary of pins extracted from the CVS file.
+        yield part_num, part_ref_prefix, part_footprint, part_manf_num, part_datasheet, part_desc, pin_data  # Return the dictionary of pins extracted from the CSV file.
