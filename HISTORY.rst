@@ -3,6 +3,14 @@
 History
 -------
 
+0.1.35 (2019-09-19)
+______________________
+
+* Kipart now creates individual .lib files if given multiple .csv files with no global output .lib file specified using the -o option.
+* kilib2csv now creates individual .csv files if given multiple .lib files with no global output .csv file specified using the -o option.
+
+
+
 0.1.34 (2019-06-27)
 ______________________
 
