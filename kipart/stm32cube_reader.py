@@ -110,7 +110,7 @@ def group_pins(pins):
     return ports
 
 
-def stm32cube_reader(csv_file):
+def stm32cube_reader(part_data_file, part_data_file_type=".csv"):
     """Reader for STM32CubeMx pin list output.
 
     STM32CubeMx is a tool for creating firmware projects for STM32
@@ -135,6 +135,12 @@ def stm32cube_reader(csv_file):
     Configuration related pins such as boot, clock etc will be grouped
     as a separate unit. Power pins will be a separate unit as well.
     """
+
+    # If part data file is Excel, convert it to CSV.
+    if part_data_file_type == ".xlsx":
+        part_data_file = convert_xlsx_to_csv(part_data_file)
+    csv_file = part_data_file
+
     pins = parse_csv_file(csv_file)
 
     ports = group_pins(pins)

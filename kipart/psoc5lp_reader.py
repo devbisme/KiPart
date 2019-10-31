@@ -54,9 +54,9 @@ def psoc5lp_pin_name_process(name):
     return name
 
 
-def psoc5lp_reader(csv_file):
-    """Extract pin data from a Cypress PSoC5LP CSV file and return a dictionary of pin data.
-       The CSV file contains one or more groups of rows formatted as follows:
+def psoc5lp_reader(part_data_file, part_data_file_name, part_data_file_type=".csv"):
+    """Extract pin data from a Cypress PSoC5LP CSV/text/Excel file and return a dictionary of pin data.
+       The file contains one or more groups of rows formatted as follows:
            A row with a single field containing the part number.
            Zero or more blank rows.
            A row containing the column headers:
@@ -73,6 +73,11 @@ def psoc5lp_reader(csv_file):
            A blank row terminates the pin data for the part and begins
            a new group of rows for another part.
     """
+
+    # If part data file is Excel, convert it to CSV.
+    if part_data_file_type == ".xlsx":
+        part_data_file = convert_xlsx_to_csv(part_data_file)
+    csv_file = part_data_file
 
     while True:
         # Create a dictionary that uses the unit numbers as keys. Each entry in this dictionary

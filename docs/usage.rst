@@ -8,39 +8,40 @@ KiPart
 KiPart is mainly intended to be used as a script::
 
     usage: kipart [-h] [-v]
-                  [-r [{generic,xilinxultra,xilinx7,xilinx6s,xilinx6v,psoc5lp,stm32cube,lattice}]]
-                  [-s [{row,num,name}]] [--reverse]
-                  [--side [{left,right,top,bottom}]] [-o [file.lib]] [-f] [-b]
-                  [-a] [-w] [-d [LEVEL]]
-                  file.[csv|zip] [file.[csv|zip] ...]
+                [-r [{generic,xilinxultra,xilinx7,xilinx6s,xilinx6v,psoc5lp,stm32cube,lattice,gowin}]]
+                [-s [{row,num,name}]] [--reverse]
+                [--side [{left,right,top,bottom}]] [-o [file.lib]] [-f] [-b]
+                [-a] [-w] [-d [LEVEL]]
+                file.[csv|txt|xlsx|zip] [file.[csv|txt|xlsx|zip] ...]
 
     Generate single & multi-unit schematic symbols for KiCad from a CSV file.
 
     positional arguments:
-      file.[csv|zip]        Files for parts in CSV format or as CSV files in .zip
-                            archives.
+    file.[csv|txt|xlsx|zip]
+                            Files for parts in CSV/text/Excel format or as such
+                            files in .zip archives.
 
     optional arguments:
-      -h, --help            show this help message and exit
-      -v, --version         show program's version number and exit
-      -r [{generic,xilinxultra,xilinx7,xilinx6s,xilinx6v,psoc5lp,stm32cube,lattice}], --reader [{generic,xilinxultra,xilinx7,xilinx6s,xilinx6v,psoc5lp,stm32cube,lattice}]
-                            Name of function for reading the CSV files.
-      -s [{row,num,name}], --sort [{row,num,name}]
-                            Sort the part pins by their entry order in the CSV
+    -h, --help            show this help message and exit
+    -v, --version         show program's version number and exit
+    -r [{generic,xilinxultra,xilinx7,xilinx6s,xilinx6v,psoc5lp,stm32cube,lattice,gowin}], --reader [{generic,xilinxultra,xilinx7,xilinx6s,xilinx6v,psoc5lp,stm32cube,lattice,gowin}]
+                            Name of function for reading the CSV/text/Excel files.
+    -s [{row,num,name}], --sort [{row,num,name}]
+                            Sort the part pins by their entry order in the
                             file, their pin number, or their pin name.
-      --reverse             Sort pins in reverse order.
-      --side [{left,right,top,bottom}]
+    --reverse             Sort pins in reverse order.
+    --side [{left,right,top,bottom}]
                             Which side to place the pins by default.
-      -o [file.lib], --output [file.lib]
+    -o [file.lib], --output [file.lib]
                             Generated KiCad symbol library for parts.
-      -f, --fuzzy_match     Use approximate string matching when looking-up the
+    -f, --fuzzy_match     Use approximate string matching when looking-up the
                             pin type, style and orientation.
-      -b, --bundle          Bundle multiple, identically-named power and ground
+    -b, --bundle          Bundle multiple, identically-named power and ground
                             pins each into a single schematic pin.
-      -a, --append, --add   Add parts to an existing part library. Overwrite
+    -a, --append, --add   Add parts to an existing part library. Overwrite
                             existing parts only if used in conjunction with -w.
-      -w, --overwrite       Allow overwriting of an existing part library.
-      -d [LEVEL], --debug [LEVEL]
+    -w, --overwrite       Allow overwriting of an existing part library.
+    -d [LEVEL], --debug [LEVEL]
                             Print debugging info. (Larger LEVEL means more info.)
 
 A generic part file is expected when the ``-r generic`` option is specified.
@@ -101,26 +102,29 @@ It contains the following items:
    separated by blank lines are allowed in a single CSV file.
    Each part will become a separate symbol in the KiCad library.
 
-When the option ``-r xilinx7`` is used, the individual CSV pin files or entire .zip archives
+When the option ``-r xilinx7`` is used, the individual pin files or entire .zip archives
 for the `Xilinx 7-Series FPGAs <http://www.xilinx.com/support/packagefiles/>`_ can be processed.
 
-When the option ``-r psoc5lp`` is used, the CSV pin file contains the pinout text
+When the option ``-r psoc5lp`` is used, the pin file contains the pinout text
 extracted from a Cypress PSoC5LP datasheet.
 
-When the option '-r stm32cube' is used, the input CSV file should be the
+When the option '-r stm32cube' is used, the input file should be the
 pin layout file exported from the STM32CubeMx tool. To create this
 file; create a project with STM32CubeMx then from window menu select
 "Pinout -> Generate CSV pinout text file". If you select pin features
 or define labels for pins these will be reflected in the generated
 library symbol.
 
-When the option ``-r lattice`` is used, the input CSV file should come from the
+When the option ``-r lattice`` is used, the input file should come from the
 Lattice website or from their Diamond tool. (The iCE40 FPGAs are not supported
 since they use a different format.)
 
+When the option ``-r gowin`` is used, one of the Excel pinout files from the
+`GOWIN Semiconductor website <https://www.gowinsemi.com/en/support/database/>`_ should be used.
+
 The ``-s`` option specifies the arrangement of the pins in the schematic symbol:
 
-* ``-s row`` places the pins in the order they were entered into the CSV file.
+* ``-s row`` places the pins in the order they were entered into the file.
 * ``-s name`` places the pins in increasing order of their names.
 * ``-s num`` places the pins in increasing order of their pin numbers
   and arranged in a counter-clockwise fashion around the symbol starting from
@@ -129,7 +133,7 @@ The ``-s`` option specifies the arrangement of the pins in the schematic symbol:
 The ``--reverse`` option reverses the sort order for the pins.
 
 Using the ``--side`` option you can set the default side for the
-pins. The option from the CSV file will override the command line
+pins. The option from the file will override the command line
 option. The default choice is ``left``.
 
 Specifying the ``-f`` option enables *fuzzy matching* on the pin types, styles and sides used in the
@@ -141,7 +145,7 @@ such that they can all attach to the same net with a single connection.
 This is helpful for handling the multiple VCC and GND pins found on many high pin-count devices.
 
 The ``-w`` option is used to overwrite an existing library with any new parts
-from the CSV file. The old contents of the library are lost.
+from the file. The old contents of the library are lost.
 
 The ``-a`` option is used to add parts to an existing library.
 If a part with the same name already exists, the new part will only overwrite it

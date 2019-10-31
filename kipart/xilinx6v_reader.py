@@ -31,8 +31,13 @@ from .common import *
 from .kipart import *
 
 
-def xilinx6v_reader(txt_file):
+def xilinx6v_reader(part_data_file, part_data_file_name, part_data_file_type=".txt"):
     """Extract the pin data from a Xilinx Virtex-6 TXT file and return a dictionary of pin data."""
+
+    # If part data file is Excel, convert it to CSV.
+    if part_data_file_type == ".xlsx":
+        part_data_file = convert_xlsx_to_csv(part_data_file)
+    txt_file = part_data_file
 
     # Create a dictionary that uses the unit numbers as keys. Each entry in this dictionary
     # contains another dictionary that uses the side of the symbol as a key. Each entry in

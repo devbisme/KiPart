@@ -776,6 +776,8 @@ def do_bundling(pin_data, bundle, fuzzy_match):
 def kipart(
     reader_type,
     part_data_file,
+    part_data_file_name,
+    part_data_file_type,
     parts_lib,
     allow_overwrite=False,
     sort_type="name",
@@ -784,7 +786,7 @@ def kipart(
     bundle=False,
     debug_level=0,
 ):
-    """Read part pin data from a CSV file and write or append it to a library file."""
+    """Read part pin data from a CSV/text/Excel file and write or append it to a library file."""
 
     part_reader_module = "{}_reader".format(reader_type)
     importlib.import_module("kipart." + part_reader_module)
@@ -800,7 +802,7 @@ def kipart(
         part_datasheet,
         part_desc,
         pin_data,
-    ) in part_reader(part_data_file):
+    ) in part_reader(part_data_file, part_data_file_name, part_data_file_type):
 
         # Handle retaining/overwriting parts that are already in the library.
         if parts_lib.get(part_num):
@@ -839,8 +841,8 @@ def main():
         "input_files",
         nargs="+",
         type=str,
-        metavar="file.[csv|zip]",
-        help="Files for parts in CSV format or as CSV files in .zip archives.",
+        metavar="file.[csv|txt|xlsx|zip]",
+        help="Files for parts in CSV/text/Excel format or as such files in .zip archives.",
     )
     parser.add_argument(
         "-r",
@@ -856,6 +858,7 @@ def main():
             "psoc5lp",
             "stm32cube",
             "lattice",
+            "gowin",
         ],
         default="generic",
         help="Name of function for reading the CSV files.",
@@ -950,17 +953,20 @@ def main():
         return parts_lib
 
     def write_lib_file(parts_lib, lib_file):
+        print("Writing", lib_file, len(parts_lib))
         LIB_HEADER = "EESchema-LIBRARY Version 2.3\n"
         with open(lib_file, "w") as lib_fp:
             lib_fp.write(LIB_HEADER)
             for part_def in parts_lib.values():
                 lib_fp.write(part_def)
 
-    def call_kipart(part_data_file):
+    def call_kipart(part_data_file, file_name, file_type):
         """Helper routine for calling kipart."""
         return kipart(
             reader_type=args.reader,
             part_data_file=part_data_file,
+            part_data_file_name=file_name,
+            part_data_file_type=file_type,
             parts_lib=parts_lib,
             allow_overwrite=args.overwrite,
             sort_type=args.sort,
@@ -1005,19 +1011,31 @@ def main():
 
         if file_ext == ".zip":
             # Process the individual files inside a ZIP archive.
-            zip_file = zipfile.ZipFile(input_file, "r")
-            zipped_files = zip_file.infolist()
-            for zipped_file in zipped_files:
-                if os.path.splitext(zipped_file.filename)[-1] in [".csv", ".txt"]:
-                    # Only process CSV and TXT files in the archive.
-                    with zip_file.open(zipped_file, "r") as part_data_file:
-                        part_data_file = io.TextIOWrapper(part_data_file)
-                        call_kipart(part_data_file)
+            with zipfile.ZipFile(input_file, "r") as zip_file:
+                for zipped_file in zip_file.infolist():
+                    zip_file_ext = os.path.splitext(zipped_file.filename)[-1]
+                    if zip_file_ext in [".csv", ".txt"]:
+                        # Only process CSV, TXT, Excel files in the archive.
+                        with zip_file.open(zipped_file, "r") as part_data_file:
+                            part_data_file = io.TextIOWrapper(part_data_file)
+                            call_kipart(part_data_file, zipped_file.filename, zip_file_ext)
+                    elif zip_file_ext in [".xlsx"]:
+                        xlsx_data = zip_file.read(zipped_file)
+                        part_data_file = io.BytesIO(xlsx_data)
+                        call_kipart(part_data_file, zipped_file.filename, zip_file_ext)
+                    else:
+                        # Skip unrecognized files.
+                        continue
 
         elif file_ext in [".csv", ".txt"]:
             # Process CSV and TXT files.
             with open(input_file, "r") as part_data_file:
-                call_kipart(part_data_file)
+                call_kipart(part_data_file, input_file, file_ext)
+
+        elif file_ext in [".xlsx"]:
+            # Process Excel files.
+            with open(input_file, "rb") as part_data_file:
+                call_kipart(part_data_file, input_file, file_ext)
 
         else:
             # Skip unrecognized files.

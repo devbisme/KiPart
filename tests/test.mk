@@ -1,5 +1,5 @@
-tests := example1 example2 example3 example4 example5 example6 lt1512 helwig test1 hidden_test
-examples := example1 example2 example3 example4 example5 example6
+tests := example1 example2 example3 example4 example5 example6 example7 lt1512 helwig test1 hidden_test
+examples := example1 example2 example3 example4 example5 example6 example7
 
 #all: randomtest
 all: randomtest1 randomtest2 randomtest3 $(tests:=.tst)
@@ -55,6 +55,9 @@ example5.lib: example2.csv
 
 example6.lib: example3.csv
 	kipart $^ -o $@ -w -b
+
+example7.lib: example1.xlsx
+	kipart $^ -o $@ -w
 
 lt1512.lib: lt1512.csv
 	kipart $^ -o $@ -w

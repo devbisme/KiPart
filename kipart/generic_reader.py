@@ -30,10 +30,10 @@ from .common import *
 from .kipart import *
 
 
-def generic_reader(csv_file):
-    """Extract pin data from a CSV file and return a dictionary of pin data.
-       The CSV file contains one or more groups of rows formatted as follows:
-           A row with a single field containing the part number.
+def generic_reader(part_data_file, part_data_file_name, part_data_file_type):
+    """Extract pin data from a CSV/text/Excel file and return a dictionary of pin data.
+       The file contains one or more groups of rows formatted as follows:
+           A row with a part info fields containing the part number, prefix, footprint id, etc.
            Zero or more blank rows.
            A row containing the column headers:
                'Pin', 'Unit', 'Type', 'Style', 'Side', and 'Name'.
@@ -50,6 +50,10 @@ def generic_reader(csv_file):
            a new group of rows for another part.
     """
 
+    # If part data file is Excel, convert it to CSV.
+    if part_data_file_type == ".xlsx":
+        part_data_file = convert_xlsx_to_csv(part_data_file)
+
     while True:
         # Create a dictionary that uses the unit numbers as keys. Each entry in this dictionary
         # contains another dictionary that uses the side of the symbol as a key. Each entry in
@@ -61,7 +65,7 @@ def generic_reader(csv_file):
         pin_data = defaultdict(lambda: defaultdict(lambda: defaultdict(list)))
 
         # Create a reader that starts from the current position in the CSV file.
-        csv_reader = csv.reader(csv_file, skipinitialspace=True)
+        csv_reader = csv.reader(part_data_file, skipinitialspace=True)
 
         # Extract part number from the first non-blank line. Break out of the infinite
         # while loop and stop processing this file if no part number is found.
@@ -75,7 +79,7 @@ def generic_reader(csv_file):
         headers = clean_headers(get_nonblank_row(csv_reader))
 
         # Scan through the file line-by-line.
-        for index, row in enumerate(csv_file):
+        for index, row in enumerate(part_data_file):
 
             # A blank line signals the end of the pin data.
             # (A csv.DictReader would completely skip a blank line.)
@@ -118,3 +122,5 @@ def generic_reader(csv_file):
             pin_data[pin.unit][pin.side.lower()][pin.name].append(pin)
 
         yield part_num, part_ref_prefix, part_footprint, part_manf_num, part_datasheet, part_desc, pin_data  # Return the dictionary of pins extracted from the CSV file.
+
+    part_data_file.close()

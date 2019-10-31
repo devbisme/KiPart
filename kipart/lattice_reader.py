@@ -31,10 +31,15 @@ from .common import *
 from .kipart import *
 
 
-def lattice_reader(csv_file):
-    """Extract the pin data from a Lattice CSV file and return a dictionary of pin data.
-    Both csv files available on Lattice website and csv files exported from Diamond are supported.
+def lattice_reader(part_data_file, part_data_file_name, part_data_file_type=".csv"):
+    """Extract the pin data from a Lattice CSV/text/Excel file and return a dictionary of pin data.
+    Both files available on Lattice website and files exported from Diamond are supported.
     ICE40 family is NOT supported, since they use a completely different format."""
+
+    # If part data file is Excel, convert it to CSV.
+    if part_data_file_type == ".xlsx":
+        part_data_file = convert_xlsx_to_csv(part_data_file)
+    csv_file = part_data_file
 
     # Create a dictionary that uses the package name as key. Each entry in this dictionary
     # uses the unit numbers as keys. Each entry in this dictionary contains another

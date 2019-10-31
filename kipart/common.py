@@ -22,9 +22,12 @@
 
 from __future__ import print_function
 
+import csv
 import difflib
 import re
 from builtins import object
+import openpyxl
+import os.path
 
 COLUMN_NAMES = {
     "pin": "num",
@@ -144,3 +147,31 @@ def fix_pin_data(pin_data, part_num):
             )
         )
     return fixed_pin_data
+
+
+def is_xlsx(filename):
+    return os.path.splitext(filename)[1] == ".xlsx"
+
+
+def convert_xlsx_to_csv(xlsx_file, sheetname=None):
+    """
+    Convert sheet of an Excel workbook into a CSV file in the same directory
+    and return the path of the CSV file.
+    """
+    wb = openpyxl.load_workbook(xlsx_file)
+    if sheetname:
+        sh = wb[sheetname]
+    else:
+        sh = wb.active
+    csv_filename = "xlsx_to_csv_filename.csv"
+    with open(csv_filename, "w", newline="") as f:
+        col = csv.writer(f)
+        for row in sh.rows:
+            try:
+                col.writerow([cell.value for cell in row])
+            except UnicodeEncodeError:
+                for cell in row:
+                    if cell.value:
+                        cell.value = "".join([c for c in cell.value if ord(c)<128])
+                col.writerow([cell.value for cell in row])
+    return open(csv_filename, "r")
