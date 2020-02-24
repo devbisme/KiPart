@@ -110,7 +110,7 @@ def group_pins(pins):
     return ports
 
 
-def stm32cube_reader(part_data_file, part_data_file_type=".csv"):
+def stm32cube_reader(part_data_file, part_data_file_name, part_data_file_type=".csv"):
     """Reader for STM32CubeMx pin list output.
 
     STM32CubeMx is a tool for creating firmware projects for STM32

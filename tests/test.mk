@@ -2,7 +2,7 @@ tests := example1 example2 example3 example4 example5 example6 example7 lt1512 h
 examples := example1 example2 example3 example4 example5 example6 example7
 
 #all: randomtest
-all: randomtest1 randomtest2 randomtest3 $(tests:=.tst)
+all: randomtest1 randomtest2 randomtest3 stm32_test $(tests:=.tst)
 clean: randomtest_clean $(tests:=.clean)
 examples: $(examples:=.lib)
 tests: $(tests:=.tst)
@@ -70,6 +70,9 @@ helwig.lib: helwig.csv
 
 hidden_test.lib: hidden_test.csv
 	kipart $^ -o $@ -w
+
+stm32_test: stm32_test.csv
+	kipart -r stm32cube $^ -w
 
 %.tst : %.clean %.lib
 	@-/bin/diff -qsw "$*.lib" "$* - Copy.lib"

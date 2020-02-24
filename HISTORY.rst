@@ -3,7 +3,19 @@
 History
 -------
 
-0.1.36 (2019-10-3119)
+0.1.38 (2020-02-24)
+______________________
+
+* Added missing parameter to stm32cube_reader().
+
+
+0.1.37 (2020-01-28)
+______________________
+
+* Added requirement for openpyxl.
+
+
+0.1.36 (2019-10-31)
 ______________________
 
 * KiPart now accepts part data stored in Excel .xlsx files.

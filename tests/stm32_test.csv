@@ -1,0 +1,5 @@
+"Position","Name","Type","Signal","Label"
+"1","VBAT","Power","",""
+"2","PC13-ANTI_TAMP","I/O","",""
+"3","PC14-OSC32_IN","I/O","RCC_OSC32_IN",""
+"4","PC15-OSC32_OUT","I/O","RCC_OSC32_OUT",""
