@@ -40,6 +40,7 @@ from pprint import pprint
 from affine import Affine
 from past.utils import old_div
 
+from .py_2_3 import *
 from .common import *
 from .pckg_info import __version__
 
@@ -848,7 +849,8 @@ def main():
         "-r",
         "--reader",
         nargs="?",
-        type=str.lower,
+#        type=str.lower,
+        type=lambda s: unicode(s).lower(),
         choices=[
             "generic",
             "xilinxultra",
@@ -867,7 +869,8 @@ def main():
         "-s",
         "--sort",
         nargs="?",
-        type=str.lower,
+#        type=str.lower,
+        type=lambda s: unicode(s).lower(),
         choices=["row", "num", "name"],
         default="row",
         help="Sort the part pins by their entry order in the CSV file, their pin number, or their pin name.",
@@ -878,7 +881,8 @@ def main():
     parser.add_argument(
         "--side",
         nargs="?",
-        type=str.lower,
+#        type=str.lower,
+        type=lambda s: unicode(s).lower(),
         choices=["left", "right", "top", "bottom"],
         default="left",
         help="Which side to place the pins by default.",

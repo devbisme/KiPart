@@ -40,3 +40,6 @@ if USING_PYTHON3:
     # Python 2 doesn't work with type(''),
     # so....
     basestring = type("")
+    
+    # Python 3 doesn't have unicode().
+    unicode = lambda s: s

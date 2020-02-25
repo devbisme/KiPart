@@ -3,6 +3,12 @@
 History
 -------
 
+0.1.39 (2020-02-25)
+______________________
+
+* Fixed Python 2 str.lower() error requiring conversion of str to unicode.
+
+
 0.1.38 (2020-02-24)
 ______________________
 

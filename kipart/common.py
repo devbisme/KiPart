@@ -164,7 +164,8 @@ def convert_xlsx_to_csv(xlsx_file, sheetname=None):
     else:
         sh = wb.active
     csv_filename = "xlsx_to_csv_filename.csv"
-    with open(csv_filename, "w", newline="") as f:
+#    with open(csv_filename, "w", newline="") as f:
+    with open(csv_filename, "w") as f:
         col = csv.writer(f)
         for row in sh.rows:
             try:
