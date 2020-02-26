@@ -37,12 +37,13 @@ from collections import OrderedDict
 from copy import copy
 from pprint import pprint
 
-from affine import Affine
 from past.utils import old_div
 
-from .py_2_3 import *
+from affine import Affine
+
 from .common import *
 from .pckg_info import __version__
+from .py_2_3 import *
 
 __all__ = ["kipart"]  # Only export this routine for use by the outside world.
 
@@ -849,7 +850,7 @@ def main():
         "-r",
         "--reader",
         nargs="?",
-#        type=str.lower,
+        #        type=str.lower,
         type=lambda s: unicode(s).lower(),
         choices=[
             "generic",
@@ -869,7 +870,7 @@ def main():
         "-s",
         "--sort",
         nargs="?",
-#        type=str.lower,
+        #        type=str.lower,
         type=lambda s: unicode(s).lower(),
         choices=["row", "num", "name"],
         default="row",
@@ -881,7 +882,7 @@ def main():
     parser.add_argument(
         "--side",
         nargs="?",
-#        type=str.lower,
+        #        type=str.lower,
         type=lambda s: unicode(s).lower(),
         choices=["left", "right", "top", "bottom"],
         default="left",
@@ -1022,7 +1023,9 @@ def main():
                         # Only process CSV, TXT, Excel files in the archive.
                         with zip_file.open(zipped_file, "r") as part_data_file:
                             part_data_file = io.TextIOWrapper(part_data_file)
-                            call_kipart(part_data_file, zipped_file.filename, zip_file_ext)
+                            call_kipart(
+                                part_data_file, zipped_file.filename, zip_file_ext
+                            )
                     elif zip_file_ext in [".xlsx"]:
                         xlsx_data = zip_file.read(zipped_file)
                         part_data_file = io.BytesIO(xlsx_data)

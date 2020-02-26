@@ -94,9 +94,14 @@ def psoc5lp_reader(part_data_file, part_data_file_name, part_data_file_type=".cs
 
         # Extract part number from the first non-blank line. Break out of the infinite
         # while loop and stop processing this file if no part number is found.
-        part_num, part_ref_prefix, part_footprint, part_manf_num, part_datasheet, part_desc = get_part_info(
-            csv_reader
-        )
+        (
+            part_num,
+            part_ref_prefix,
+            part_footprint,
+            part_manf_num,
+            part_datasheet,
+            part_desc,
+        ) = get_part_info(csv_reader)
         if part_num is None:
             break
 
@@ -132,8 +137,8 @@ def psoc5lp_reader(part_data_file, part_data_file_name, part_data_file_type=".cs
             if pin.type == "":
                 # No explicit pin type, so infer it from the pin name.
                 DEFAULT_PIN_TYPE = (
-                    "input"
-                )  # Assign this pin type if name inference can't be made.
+                    "input"  # Assign this pin type if name inference can't be made.
+                )
                 PIN_TYPE_PREFIXES = [
                     (r"P[0-9]+\[[0-9]+\]", "bidirectional"),
                     (r"VCC", "power_out"),

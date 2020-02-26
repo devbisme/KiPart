@@ -223,9 +223,7 @@ def _gen_csv(parsed_lib):
                     s,
                 )
             except TypeError:
-                return (
-                    s
-                )  # The input is probably not a string, so just return it unchanged.
+                return s  # The input is probably not a string, so just return it unchanged.
 
         def num_key(pin):
             """Generate a key from a pin's number so they are sorted by position on the package."""

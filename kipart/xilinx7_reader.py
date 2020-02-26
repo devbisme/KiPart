@@ -94,8 +94,8 @@ def xilinx7_reader(part_data_file, part_data_file_name, part_data_file_type=".cs
         # from the name of the pin. Pin names starting with the following prefixes
         # are assigned the given pin type.
         DEFAULT_PIN_TYPE = (
-            "input"
-        )  # Assign this pin type if name inference can't be made.
+            "input"  # Assign this pin type if name inference can't be made.
+        )
         PIN_TYPE_PREFIXES = [
             (r"VCC", "power_in"),
             (r"GND", "power_in"),

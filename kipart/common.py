@@ -169,13 +169,15 @@ def convert_xlsx_to_csv(xlsx_file, sheetname=None):
         sh = wb[sheetname]
     else:
         sh = wb.active
-    csv_filename = "xlsx_to_csv_file.csv"
+
     if USING_PYTHON2:
-        xlsx_open = lambda f: open(f, "w")
+        # Python 2 doesn't accept newline parameter when opening file.
         newline = {}
     else:
-        xlsx_open = lambda f: open(f, "w", newline="")
-        newline = {'newline': ""}
+        # kipart fails on Python 3 unless file is opened with this newline.
+        newline = {"newline": ""}
+
+    csv_filename = "xlsx_to_csv_file.csv"
     with open(csv_filename, "w", **newline) as f:
         col = csv.writer(f)
         for row in sh.rows:

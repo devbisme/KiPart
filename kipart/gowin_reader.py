@@ -52,10 +52,14 @@ def gowin_reader(part_data_file, part_data_file_name="", part_data_file_type=".c
     # Since the GOWIN FPGA spreadsheets include several columns of pin numbers for each
     # package variant, an additional dictionary layer was added for the type of package used
     # by the part. So the layers are pin_data[pckg][pin.unit][pin.side][pin.name].
-    pin_data = defaultdict(lambda: defaultdict(lambda: defaultdict(lambda: defaultdict(list))))
+    pin_data = defaultdict(
+        lambda: defaultdict(lambda: defaultdict(lambda: defaultdict(list)))
+    )
 
     # Extract the base part number from the file name.
-    part_num = re.search(r"GW[0-9]+\S*", part_data_file_name, flags=re.IGNORECASE).group(0)
+    part_num = re.search(
+        r"GW[0-9]+\S*", part_data_file_name, flags=re.IGNORECASE
+    ).group(0)
 
     # Scan the initial portion of the file for the column headers.
     while True:
@@ -73,11 +77,15 @@ def gowin_reader(part_data_file, part_data_file_name="", part_data_file_type=".c
             pckg_field_start_index = -1
             for col_hdr in ("LVDS", "DIFFERENTIAL PAIR", "X16"):
                 try:
-                    pckg_field_start_index = max(pckg_field_start_index, field_names.index(col_hdr)+1)
+                    pckg_field_start_index = max(
+                        pckg_field_start_index, field_names.index(col_hdr) + 1
+                    )
                 except ValueError:
                     pass
-            assert(pckg_field_start_index>=0)
-            pckgs = list(set(field_names[pckg_field_start_index:]))  # FPGA package variants.
+            assert pckg_field_start_index >= 0
+            pckgs = list(
+                set(field_names[pckg_field_start_index:])
+            )  # FPGA package variants.
             try:
                 pckgs.remove("")
             except ValueError:
@@ -100,8 +108,8 @@ def gowin_reader(part_data_file, part_data_file_name="", part_data_file_type=".c
 
         # Translate the GOWIN pin function to something KiPart understands.
         DEFAULT_PIN_TYPE = (
-            "input"
-        )  # Assign this pin type if name inference can't be made.
+            "input"  # Assign this pin type if name inference can't be made.
+        )
         PIN_TYPE_PREFIXES = [
             (r"Power$", "power_in"),
             (r"Ground$", "power_in"),
@@ -134,4 +142,6 @@ def gowin_reader(part_data_file, part_data_file_name="", part_data_file_type=".c
     for pckg in pckgs:
         if pin_data[pckg]:
             part_pckg_num = "_".join((part_num, pckg))
-            yield part_pckg_num, "U", "", "", "", part_pckg_num, pin_data[pckg]  # Return the dictionary of pins extracted from the CVS file.
+            yield part_pckg_num, "U", "", "", "", part_pckg_num, pin_data[
+                pckg
+            ]  # Return the dictionary of pins extracted from the CVS file.

@@ -69,9 +69,14 @@ def generic_reader(part_data_file, part_data_file_name, part_data_file_type):
 
         # Extract part number from the first non-blank line. Break out of the infinite
         # while loop and stop processing this file if no part number is found.
-        part_num, part_ref_prefix, part_footprint, part_manf_num, part_datasheet, part_desc = get_part_info(
-            csv_reader
-        )
+        (
+            part_num,
+            part_ref_prefix,
+            part_footprint,
+            part_manf_num,
+            part_datasheet,
+            part_desc,
+        ) = get_part_info(csv_reader)
         if part_num is None:
             break
 
