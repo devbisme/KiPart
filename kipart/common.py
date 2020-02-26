@@ -24,10 +24,13 @@ from __future__ import print_function
 
 import csv
 import difflib
+import os.path
 import re
 from builtins import object
+
 import openpyxl
-import os.path
+
+from .py_2_3 import *
 
 COLUMN_NAMES = {
     "pin": "num",
@@ -80,11 +83,14 @@ def get_part_info(csv_reader):
     """Get the part number, ref prefix, footprint, MPN, datasheet link, and description from a row of the CSV file."""
 
     # Read the first, nonblank row and pad it with None's to make sure it's long enough.
-    part_num, part_ref_prefix, part_footprint, part_manf_num, part_datasheet, part_desc = list(
-        get_nonblank_row(csv_reader) + [None] * 6
-    )[
-        :6
-    ]
+    (
+        part_num,
+        part_ref_prefix,
+        part_footprint,
+        part_manf_num,
+        part_datasheet,
+        part_desc,
+    ) = list(get_nonblank_row(csv_reader) + [None] * 6)[:6]
 
     # Put in the default part reference identifier if it isn't present.
     if part_ref_prefix in (None, "", " "):
@@ -156,16 +162,21 @@ def is_xlsx(filename):
 def convert_xlsx_to_csv(xlsx_file, sheetname=None):
     """
     Convert sheet of an Excel workbook into a CSV file in the same directory
-    and return the path of the CSV file.
+    and return the read handle of the CSV file.
     """
     wb = openpyxl.load_workbook(xlsx_file)
     if sheetname:
         sh = wb[sheetname]
     else:
         sh = wb.active
-    csv_filename = "xlsx_to_csv_filename.csv"
-#    with open(csv_filename, "w", newline="") as f:
-    with open(csv_filename, "w") as f:
+    csv_filename = "xlsx_to_csv_file.csv"
+    if USING_PYTHON2:
+        xlsx_open = lambda f: open(f, "w")
+        newline = {}
+    else:
+        xlsx_open = lambda f: open(f, "w", newline="")
+        newline = {'newline': ""}
+    with open(csv_filename, "w", **newline) as f:
         col = csv.writer(f)
         for row in sh.rows:
             try:
@@ -173,6 +184,6 @@ def convert_xlsx_to_csv(xlsx_file, sheetname=None):
             except UnicodeEncodeError:
                 for cell in row:
                     if cell.value:
-                        cell.value = "".join([c for c in cell.value if ord(c)<128])
+                        cell.value = "".join([c for c in cell.value if ord(c) < 128])
                 col.writerow([cell.value for cell in row])
     return open(csv_filename, "r")
