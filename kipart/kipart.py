@@ -72,7 +72,6 @@ PIN_SPACER_PREFIX = "*"
 
 # Settings for box drawn around pins in a unit.
 BOX_LINE_WIDTH = 12
-FILL = "no_fill"
 
 # Part reference.
 REF_SIZE = 60  # Font size.
@@ -499,6 +498,7 @@ def draw_symbol(
     sort_type,
     reverse,
     fuzzy_match,
+    fill,
 ):
     """Add a symbol for a part to the library."""
 
@@ -740,7 +740,7 @@ def draw_symbol(
             y1=int(box_pt["bottom"][Y]),
             unit_num=unit_num,
             line_width=BOX_LINE_WIDTH,
-            fill=FILLS[FILL],
+            fill=FILLS[fill],
         )
 
     # Close the section that holds the part's units.
@@ -781,6 +781,7 @@ def kipart(
     part_data_file_name,
     part_data_file_type,
     parts_lib,
+    fill,
     allow_overwrite=False,
     sort_type="name",
     reverse=False,
@@ -828,6 +829,7 @@ def kipart(
             sort_type=sort_type,
             reverse=reverse,
             fuzzy_match=fuzzy_match,
+            fill=fill,
         )
 
 
@@ -930,6 +932,14 @@ def main():
         metavar="LEVEL",
         help="Print debugging info. (Larger LEVEL means more info.)",
     )
+    parser.add_argument(
+        "--fill",
+        nargs="?",
+        type=lambda s: unicode(s).lower(),
+        choices=["no_fill", "fg_fill", "bg_fill"],
+        default="no_fill",
+        help="Whether to fill schematic boxes",
+    )
 
     args = parser.parse_args()
 
@@ -973,6 +983,7 @@ def main():
             part_data_file_name=file_name,
             part_data_file_type=file_type,
             parts_lib=parts_lib,
+            fill=args.fill,
             allow_overwrite=args.overwrite,
             sort_type=args.sort,
             reverse=args.reverse,

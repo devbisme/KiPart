@@ -11,7 +11,7 @@ KiPart is mainly intended to be used as a script::
                 [-r [{generic,xilinxultra,xilinx7,xilinx6s,xilinx6v,psoc5lp,stm32cube,lattice,gowin}]]
                 [-s [{row,num,name}]] [--reverse]
                 [--side [{left,right,top,bottom}]] [-o [file.lib]] [-f] [-b]
-                [-a] [-w] [-d [LEVEL]]
+                [-a] [-w] [-d [LEVEL]] [--fill [{no_fill,fg_fill,bg_fill}]]
                 file.[csv|txt|xlsx|zip] [file.[csv|txt|xlsx|zip] ...]
 
     Generate single & multi-unit schematic symbols for KiCad from a CSV file.
@@ -43,6 +43,8 @@ KiPart is mainly intended to be used as a script::
     -w, --overwrite       Allow overwriting of an existing part library.
     -d [LEVEL], --debug [LEVEL]
                             Print debugging info. (Larger LEVEL means more info.)
+    --fill [{no_fill,fg_fill,bg_fill}]
+                            Whether to fill schematic boxes
 
 A generic part file is expected when the ``-r generic`` option is specified.
 It contains the following items:
@@ -152,6 +154,11 @@ If a part with the same name already exists, the new part will only overwrite it
 if the ``-w`` flag is also used.
 Any existing parts in the library that are not overwritten are retained.
 
+Specifying the ``--fill`` option will determine how schematic boxes are filled
+
+* ``no_fill``: Default. Schematic symbols are created with no filled boxes.
+* ``fg_fill``: Schematic boxes will be foreground filled
+* ``bg_fill``: Schematic boxes will be background filled
 
 Examples
 ^^^^^^^^^^^^
