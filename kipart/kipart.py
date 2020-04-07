@@ -37,9 +37,8 @@ from collections import OrderedDict
 from copy import copy
 from pprint import pprint
 
-from past.utils import old_div
-
 from affine import Affine
+from past.utils import old_div
 
 from .common import *
 from .pckg_info import __version__
@@ -938,7 +937,7 @@ def main():
         type=lambda s: unicode(s).lower(),
         choices=["no_fill", "fg_fill", "bg_fill"],
         default="no_fill",
-        help="Whether to fill schematic boxes",
+        help="Select fill/no-fill for schematic symbol boxes.",
     )
 
     args = parser.parse_args()
@@ -1023,7 +1022,7 @@ def main():
         # Don't setup the output lib file again if -o option was used to specify a single output lib.
         check_file_exists = not args.output
 
-        file_ext = os.path.splitext(input_file)[-1]  # Get input file extension.
+        file_ext = os.path.splitext(input_file)[-1].lower()  # Get input file extension.
 
         if file_ext == ".zip":
             # Process the individual files inside a ZIP archive.

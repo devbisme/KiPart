@@ -7,14 +7,14 @@ KiPart
 
 KiPart is mainly intended to be used as a script::
 
-    usage: kipart [-h] [-v]
-                [-r [{generic,xilinxultra,xilinx7,xilinx6s,xilinx6v,psoc5lp,stm32cube,lattice,gowin}]]
-                [-s [{row,num,name}]] [--reverse]
-                [--side [{left,right,top,bottom}]] [-o [file.lib]] [-f] [-b]
-                [-a] [-w] [-d [LEVEL]] [--fill [{no_fill,fg_fill,bg_fill}]]
-                file.[csv|txt|xlsx|zip] [file.[csv|txt|xlsx|zip] ...]
-
-    Generate single & multi-unit schematic symbols for KiCad from a CSV file.
+    usage: kipart [-h] [-v]                                                                                        
+                [-r [{generic,xilinxultra,xilinx7,xilinx6s,xilinx6v,psoc5lp,stm32cube,lattice,gowin}]]           
+                [-s [{row,num,name}]] [--reverse]                                                                
+                [--side [{left,right,top,bottom}]] [-o [file.lib]] [-f] [-b]                                     
+                [-a] [-w] [-d [LEVEL]] [--fill [{no_fill,fg_fill,bg_fill}]]                                      
+                file.[csv|txt|xlsx|zip] [file.[csv|txt|xlsx|zip] ...]                                            
+                                                                                                                
+    Generate single & multi-unit schematic symbols for KiCad from a CSV file.                                      
 
     positional arguments:
     file.[csv|txt|xlsx|zip]
@@ -25,9 +25,9 @@ KiPart is mainly intended to be used as a script::
     -h, --help            show this help message and exit
     -v, --version         show program's version number and exit
     -r [{generic,xilinxultra,xilinx7,xilinx6s,xilinx6v,psoc5lp,stm32cube,lattice,gowin}], --reader [{generic,xilinxultra,xilinx7,xilinx6s,xilinx6v,psoc5lp,stm32cube,lattice,gowin}]
-                            Name of function for reading the CSV/text/Excel files.
+                            Name of function for reading the CSV files.
     -s [{row,num,name}], --sort [{row,num,name}]
-                            Sort the part pins by their entry order in the
+                            Sort the part pins by their entry order in the CSV
                             file, their pin number, or their pin name.
     --reverse             Sort pins in reverse order.
     --side [{left,right,top,bottom}]
@@ -44,7 +44,7 @@ KiPart is mainly intended to be used as a script::
     -d [LEVEL], --debug [LEVEL]
                             Print debugging info. (Larger LEVEL means more info.)
     --fill [{no_fill,fg_fill,bg_fill}]
-                            Whether to fill schematic boxes
+                            Select fill/no-fill for schematic symbol boxes.
 
 A generic part file is expected when the ``-r generic`` option is specified.
 It contains the following items:
@@ -154,7 +154,7 @@ If a part with the same name already exists, the new part will only overwrite it
 if the ``-w`` flag is also used.
 Any existing parts in the library that are not overwritten are retained.
 
-Specifying the ``--fill`` option will determine how schematic boxes are filled
+Specifying the ``--fill`` option will determine how schematic boxes are filled:
 
 * ``no_fill``: Default. Schematic symbols are created with no filled boxes.
 * ``fg_fill``: Schematic boxes will be foreground filled

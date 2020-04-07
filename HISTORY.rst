@@ -3,6 +3,19 @@
 History
 -------
 
+
+0.1.41 (2020-04-07)
+______________________
+
+* Added option to select schematic symbol fill style.
+
+
+0.1.40 (2020-02-26)
+______________________
+
+* Handled differing line terminations between Python 2/3 when converting XLSX to CSV file.
+
+
 0.1.39 (2020-02-25)
 ______________________
 
