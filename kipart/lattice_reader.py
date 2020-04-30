@@ -59,29 +59,20 @@ def lattice_reader(part_data_file, part_data_file_name, part_data_file_type=".cs
     while True:
         pos = csv_file.tell()
         line = csv_file.readline()
-        if line[0:8] == "#DEVICE=":
-            global_device_name = (
-                line[9:]
-                .split(",")[0]
-                .strip()
-                .upper()
-                .replace("-", "_")
-                .replace(" ", "_")
-            )
-        if line[0:9] == "#PACKAGE=":
-            global_package_name = (
-                line[10:]
-                .split(",")[0]
-                .strip()
-                .upper()
-                .replace("-", "_")
-                .replace(" ", "_")
-            )
+        for prefix in ("#DEVICE", "#PACKAGE", "# Pin Out For "):
+            if line.startswith(prefix):
+                global_device_name = (
+                    line[len(prefix) :]
+                    .split(",")[0]
+                    .strip()
+                    .upper()
+                    .replace("-", "_")
+                    .replace(" ", "_")
+                )
         test_field = line.split(",")[0].strip().upper()
-        if test_field == "INDEX" or test_field == "PAD":
+        if test_field in ("INDEX", "PAD"):
             break
     csv_file.seek(pos)
-
     # If no device name found in comments, get part number from file name
     if global_device_name:
         part_num = global_device_name
@@ -124,15 +115,12 @@ def lattice_reader(part_data_file, part_data_file_name, part_data_file_type=".cs
             "I/O GROUPING",
             "PIN NUMBER",
         ]
-        csv_reader.fieldnames = [
-            x if x in known_fields else x.upper().replace("-", "_").replace(" ", "_")
-            for x in csv_reader.fieldnames
-        ]
         package = [
             x
             for x in csv_reader.fieldnames
             if x and x not in known_fields and not x.endswith("_DQS")
         ]
+        csv_reader.fieldnames = [x.upper() for x in csv_reader.fieldnames]
 
     if not package:
         print("Warning : no package found, exiting")
@@ -142,7 +130,19 @@ def lattice_reader(part_data_file, part_data_file_name, part_data_file_type=".cs
     for index, row in enumerate(csv_reader):
         pin = copy.copy(DEFAULT_PIN)
         pin.index = index
-        pin.name = row["PIN/BALL FUNCTION"]
+        differential = (
+            ""
+            if row["DIFFERENTIAL"] in ("", "-")
+            else ("/+" if row["DIFFERENTIAL"].upper().startswith("TRUE") else "/-")
+        )
+        dual_func = (
+            "" if row["DUAL FUNCTION"] in ("", "-") else "/" + row["DUAL FUNCTION"]
+        )
+        high_speed = "/HS" if row["HIGH SPEED"].upper() == "TRUE" else ""
+        dqs = "" if row["DQS"] in ("", "-") else "/" + row["DQS"]
+        pin.name = (
+            row["PIN/BALL FUNCTION"] + differential + dual_func + high_speed + dqs
+        )
         if not row["BANK"] or row["BANK"] == "-" or row["BANK"] == " ":
             pin.unit = 1
         else:
@@ -156,6 +156,7 @@ def lattice_reader(part_data_file, part_data_file_name, part_data_file_type=".cs
             (r"VCC", "power_in"),
             (r"GND", "power_in"),
             (r"NC", "no_connect"),
+            (r"RESERVED", "no_connect"),
         ]
         for prefix, typ in PIN_TYPE_PREFIXES:
             if re.match(prefix, pin.name, re.IGNORECASE):
