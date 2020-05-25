@@ -227,7 +227,7 @@ PARTNUM_FIELD = 'F1 "{num}" {x} {y} {font_size} H V {text_justification} CNN\n'
 FOOTPRINT_FIELD = 'F2 "{footprint}" {x} {y} {font_size} H I {text_justification} CNN\n'
 DATASHEET_FIELD = 'F3 "{datasheet}" {x} {y} {font_size} H I {text_justification} CNN\n'
 MPN_FIELD = 'F4 "{manf_num}" {x} {y} {font_size} H I {text_justification} CNN "manf#"\n'
-DESC_FIELD = 'F5 "{desc}" {x} {y} {font_size} H I {text_justification} CNN\n'
+DESC_FIELD = 'F5 "{desc}" {x} {y} {font_size} H I {text_justification} CNN "desc"\n'
 
 START_DRAW = "DRAW\n"
 END_DRAW = "ENDDRAW\n"

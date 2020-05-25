@@ -42,6 +42,7 @@ COLUMN_NAMES = {
     "unit": "unit",
     "bank": "unit",
     "hidden": "hidden",
+    "": "",  # Blank column names stay blank.
 }
 
 
@@ -112,6 +113,7 @@ def get_part_info(csv_reader):
 
 def find_closest_match(name, name_dict, fuzzy_match, threshold=0.0):
     """Approximate matching subroutine"""
+
     # Scrub non-alphanumerics from name and lowercase it.
     scrubber = re.compile("[\W.]+")
     name = scrubber.sub("", name).lower()

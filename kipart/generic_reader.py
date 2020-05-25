@@ -81,7 +81,8 @@ def generic_reader(part_data_file, part_data_file_name, part_data_file_type):
             break
 
         # Get the column header row for the part's pin data.
-        headers = clean_headers(get_nonblank_row(csv_reader))
+        headers = get_nonblank_row(csv_reader)
+        headers = clean_headers(headers)
 
         # Scan through the file line-by-line.
         for index, row in enumerate(part_data_file):
