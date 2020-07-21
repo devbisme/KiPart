@@ -79,7 +79,7 @@ def group_pins(pins):
     dictionary of {'port': [pin]}."""
     ports = defaultdict(list)
 
-    power_names = ["VDD", "VSS", "VCAP", "VBAT", "VREF"]
+    power_names = ["VDD", "VSS", "VCAP", "VBAT", "VREF", "V12PHYHS"]
     config_names = ["RCC_OSC", "NRST", "PDR", "SWCLK", "SWDIO", "BOOT"]
 
     for pin in pins:
@@ -101,7 +101,7 @@ def group_pins(pins):
     # sort pins
     for port in ports:
         # config and power gates are sorted according to their function name
-        if port in ["config", "power"]:
+        if port in ["config", "power", "other"]:
             ports[port] = sorted(ports[port], key=itemgetter(1))
         # IO ports are sorted according to port number
         else:

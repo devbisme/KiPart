@@ -1,8 +1,8 @@
-tests := example1 example2 example3 example4 example5 example6 example7 lt1512 helwig test1 hidden_test
+tests := example1 example2 example3 example4 example5 example6 example7 lt1512 helwig test1 hidden_test stm32_test
 examples := example1 example2 example3 example4 example5 example6 example7
 
 #all: randomtest
-all: randomtest1 randomtest2 randomtest3 stm32_test $(tests:=.tst)
+all: randomtest1 randomtest2 randomtest3 $(tests:=.tst)
 clean: randomtest_clean $(tests:=.clean)
 examples: $(examples:=.lib)
 tests: $(tests:=.tst)
@@ -71,7 +71,7 @@ helwig.lib: helwig.csv
 hidden_test.lib: hidden_test.csv
 	kipart $^ -o $@ -w
 
-stm32_test: stm32_test.csv
+stm32_test.lib: stm32_test.csv
 	kipart -r stm32cube $^ -w
 
 %.tst : %.clean %.lib
@@ -82,4 +82,4 @@ stm32_test: stm32_test.csv
 	@echo "*********************************************************************"
 
 %.clean :
-	@rm -f $*.lib "$*_sorted.lib" "$*_sorted_copy.lib"
+	@rm -f $*.lib "$*_sorted.lib" "$*_sorted_copy.lib" xlsx_to_csv_file.csv

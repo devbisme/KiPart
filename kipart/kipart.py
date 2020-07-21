@@ -774,8 +774,21 @@ def do_bundling(pin_data, bundle, fuzzy_match):
                     del side[name]
 
 
+def scan_for_readers():
+    """Look for scripts for reading part description files."""
+
+    trailer = "_reader.py"  # Reader file names always end with this.
+    readers = {}
+    for dir in [os.path.dirname(os.path.abspath(__file__)), "."]:
+        for f in os.listdir(dir):
+            if f.endswith(trailer):
+                reader_name = f.replace(trailer, "")
+                readers[reader_name] = dir
+    return readers
+
+
 def kipart(
-    reader_type,
+    part_reader,
     part_data_file,
     part_data_file_name,
     part_data_file_type,
@@ -789,11 +802,6 @@ def kipart(
     debug_level=0,
 ):
     """Read part pin data from a CSV/text/Excel file and write or append it to a library file."""
-
-    part_reader_module = "{}_reader".format(reader_type)
-    importlib.import_module("kipart." + part_reader_module)
-    READER_MODULE = sys.modules["kipart." + part_reader_module]
-    part_reader = getattr(READER_MODULE, part_reader_module)
 
     # Get the part number and pin data from the CSV file.
     for (
@@ -832,7 +840,56 @@ def kipart(
         )
 
 
+def read_lib_file(lib_file):
+    parts_lib = OrderedDict()
+    with open(lib_file, "r") as lib:
+        part_def = ""
+        for line in lib:
+            start = re.match("DEF (?P<part_name>\S+)", line)
+            end = re.match("ENDDEF$", line)
+            if start:
+                part_def = line
+                part_name = start.group("part_name")
+            elif end:
+                part_def += line
+                parts_lib[part_name] = part_def
+            else:
+                part_def += line
+    return parts_lib
+
+
+def write_lib_file(parts_lib, lib_file):
+    print("Writing", lib_file, len(parts_lib))
+    LIB_HEADER = "EESchema-LIBRARY Version 2.3\n"
+    with open(lib_file, "w") as lib_fp:
+        lib_fp.write(LIB_HEADER)
+        for part_def in parts_lib.values():
+            lib_fp.write(part_def)
+
+
+def call_kipart(args, part_reader, part_data_file, file_name, file_type, parts_lib):
+    """Helper routine for calling kipart from main()."""
+    return kipart(
+        part_reader=part_reader,
+        part_data_file=part_data_file,
+        part_data_file_name=file_name,
+        part_data_file_type=file_type,
+        parts_lib=parts_lib,
+        fill=args.fill,
+        allow_overwrite=args.overwrite,
+        sort_type=args.sort,
+        reverse=args.reverse,
+        fuzzy_match=args.fuzzy_match,
+        bundle=args.bundle,
+        debug_level=args.debug,
+    )
+
+
 def main():
+
+    # Get Python routines for reading part description/CSV files.
+    readers = scan_for_readers()
+
     parser = ap.ArgumentParser(
         description="Generate single & multi-unit schematic symbols for KiCad from a CSV file."
     )
@@ -851,21 +908,10 @@ def main():
         "-r",
         "--reader",
         nargs="?",
-        #        type=str.lower,
         type=lambda s: unicode(s).lower(),
-        choices=[
-            "generic",
-            "xilinxultra",
-            "xilinx7",
-            "xilinx6s",
-            "xilinx6v",
-            "psoc5lp",
-            "stm32cube",
-            "lattice",
-            "gowin",
-        ],
+        choices=readers.keys(),
         default="generic",
-        help="Name of function for reading the CSV files.",
+        help="Name of function for reading the CSV or part description files.",
     )
     parser.add_argument(
         "-s",
@@ -949,47 +995,19 @@ def main():
     # kipart f1.csv f2.csv -w -o f.lib  # Overwrite f.lib
     # kipart f1.csv f2.csv -a -o f.lib  # Append to f.lib
 
-    def read_lib_file(lib_file):
-        parts_lib = OrderedDict()
-        with open(lib_file, "r") as lib:
-            part_def = ""
-            for line in lib:
-                start = re.match("DEF (?P<part_name>\S+)", line)
-                end = re.match("ENDDEF$", line)
-                if start:
-                    part_def = line
-                    part_name = start.group("part_name")
-                elif end:
-                    part_def += line
-                    parts_lib[part_name] = part_def
-                else:
-                    part_def += line
-        return parts_lib
-
-    def write_lib_file(parts_lib, lib_file):
-        print("Writing", lib_file, len(parts_lib))
-        LIB_HEADER = "EESchema-LIBRARY Version 2.3\n"
-        with open(lib_file, "w") as lib_fp:
-            lib_fp.write(LIB_HEADER)
-            for part_def in parts_lib.values():
-                lib_fp.write(part_def)
-
-    def call_kipart(part_data_file, file_name, file_type):
-        """Helper routine for calling kipart."""
-        return kipart(
-            reader_type=args.reader,
-            part_data_file=part_data_file,
-            part_data_file_name=file_name,
-            part_data_file_type=file_type,
-            parts_lib=parts_lib,
-            fill=args.fill,
-            allow_overwrite=args.overwrite,
-            sort_type=args.sort,
-            reverse=args.reverse,
-            fuzzy_match=args.fuzzy_match,
-            bundle=args.bundle,
-            debug_level=args.debug,
-        )
+    # Load the function for reading the part description file.
+    part_reader_name = args.reader + "_reader"  # Name of the reader module.
+    reader_dir = readers[args.reader]
+    sys.path.append(reader_dir)  # Import from dir where the reader is
+    if reader_dir == ".":
+        importlib.import_module(part_reader_name)  # Import module.
+        reader_module = sys.modules[part_reader_name]  # Get imported module.
+    else:
+        importlib.import_module("kipart." + part_reader_name)  # Import module.
+        reader_module = sys.modules[
+            "kipart." + part_reader_name
+        ]  # Get imported module.
+    part_reader = getattr(reader_module, part_reader_name)  # Get reader function.
 
     DEFAULT_PIN.side = args.side
 
@@ -1034,12 +1052,24 @@ def main():
                         with zip_file.open(zipped_file, "r") as part_data_file:
                             part_data_file = io.TextIOWrapper(part_data_file)
                             call_kipart(
-                                part_data_file, zipped_file.filename, zip_file_ext
+                                args,
+                                part_reader,
+                                part_data_file,
+                                zipped_file.filename,
+                                zip_file_ext,
+                                parts_lib,
                             )
                     elif zip_file_ext in [".xlsx"]:
                         xlsx_data = zip_file.read(zipped_file)
                         part_data_file = io.BytesIO(xlsx_data)
-                        call_kipart(part_data_file, zipped_file.filename, zip_file_ext)
+                        call_kipart(
+                            args,
+                            part_reader,
+                            part_data_file,
+                            zipped_file.filename,
+                            zip_file_ext,
+                            parts_lib,
+                        )
                     else:
                         # Skip unrecognized files.
                         continue
@@ -1047,12 +1077,16 @@ def main():
         elif file_ext in [".csv", ".txt"]:
             # Process CSV and TXT files.
             with open(input_file, "r") as part_data_file:
-                call_kipart(part_data_file, input_file, file_ext)
+                call_kipart(
+                    args, part_reader, part_data_file, input_file, file_ext, parts_lib
+                )
 
         elif file_ext in [".xlsx"]:
             # Process Excel files.
             with open(input_file, "rb") as part_data_file:
-                call_kipart(part_data_file, input_file, file_ext)
+                call_kipart(
+                    args, part_reader, part_data_file, input_file, file_ext, parts_lib
+                )
 
         else:
             # Skip unrecognized files.

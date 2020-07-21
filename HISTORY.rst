@@ -4,6 +4,14 @@ History
 -------
 
 
+0.1.44 (2020-07-21)
+______________________
+
+* Added "other" category to stm32cube_reader.py to remain compatible with new STM32cube software.
+* KiPart will now use a *_reader.py file in the current directory to process part information.
+* Cleaned up tests directory.
+
+
 0.1.43 (2020-05-25)
 ______________________
 
