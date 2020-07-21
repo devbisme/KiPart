@@ -7,14 +7,14 @@ KiPart
 
 KiPart is mainly intended to be used as a script::
 
-    usage: kipart [-h] [-v]                                                                                        
-                [-r [{generic,xilinxultra,xilinx7,xilinx6s,xilinx6v,psoc5lp,stm32cube,lattice,gowin}]]           
-                [-s [{row,num,name}]] [--reverse]                                                                
-                [--side [{left,right,top,bottom}]] [-o [file.lib]] [-f] [-b]                                     
-                [-a] [-w] [-d [LEVEL]] [--fill [{no_fill,fg_fill,bg_fill}]]                                      
-                file.[csv|txt|xlsx|zip] [file.[csv|txt|xlsx|zip] ...]                                            
-                                                                                                                
-    Generate single & multi-unit schematic symbols for KiCad from a CSV file.                                      
+    usage: kipart [-h] [-v]
+                [-r [{generic,lattice,stm32cube,xilinx6s,xilinx6v,xilinx7,xilinxultra}]]
+                [-s [{row,num,name}]] [--reverse]
+                [--side [{left,right,top,bottom}]] [-o [file.lib]] [-f] [-b]
+                [-a] [-w] [-d [LEVEL]] [--fill [{no_fill,fg_fill,bg_fill}]]
+                file.[csv|txt|xlsx|zip] [file.[csv|txt|xlsx|zip] ...]
+
+    Generate single & multi-unit schematic symbols for KiCad from a CSV file.
 
     positional arguments:
     file.[csv|txt|xlsx|zip]
@@ -24,8 +24,9 @@ KiPart is mainly intended to be used as a script::
     optional arguments:
     -h, --help            show this help message and exit
     -v, --version         show program's version number and exit
-    -r [{generic,xilinxultra,xilinx7,xilinx6s,xilinx6v,psoc5lp,stm32cube,lattice,gowin}], --reader [{generic,xilinxultra,xilinx7,xilinx6s,xilinx6v,psoc5lp,stm32cube,lattice,gowin}]
-                            Name of function for reading the CSV files.
+    -r [{generic,lattice,stm32cube,xilinx6s,xilinx6v,xilinx7,xilinxultra}], --reader [{generic,lattice,stm32cube,xilinx6s,xilinx6v,xilinx7,xilinxultra}]
+                            Name of function for reading the CSV or part
+                            description files.
     -s [{row,num,name}], --sort [{row,num,name}]
                             Sort the part pins by their entry order in the CSV
                             file, their pin number, or their pin name.
@@ -107,9 +108,6 @@ It contains the following items:
 When the option ``-r xilinx7`` is used, the individual pin files or entire .zip archives
 for the `Xilinx 7-Series FPGAs <http://www.xilinx.com/support/packagefiles/>`_ can be processed.
 
-When the option ``-r psoc5lp`` is used, the pin file contains the pinout text
-extracted from a Cypress PSoC5LP datasheet.
-
 When the option '-r stm32cube' is used, the input file should be the
 pin layout file exported from the STM32CubeMx tool. To create this
 file; create a project with STM32CubeMx then from window menu select
@@ -120,9 +118,6 @@ library symbol.
 When the option ``-r lattice`` is used, the input file should come from the
 Lattice website or from their Diamond tool. (The iCE40 FPGAs are not supported
 since they use a different format.)
-
-When the option ``-r gowin`` is used, one of the Excel pinout files from the
-`GOWIN Semiconductor website <https://www.gowinsemi.com/en/support/database/>`_ should be used.
 
 The ``-s`` option specifies the arrangement of the pins in the schematic symbol:
 
