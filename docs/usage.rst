@@ -116,8 +116,7 @@ or define labels for pins these will be reflected in the generated
 library symbol.
 
 When the option ``-r lattice`` is used, the input file should come from the
-Lattice website or from their Diamond tool. (The iCE40 FPGAs are not supported
-since they use a different format.)
+Lattice website.
 
 The ``-s`` option specifies the arrangement of the pins in the schematic symbol:
 

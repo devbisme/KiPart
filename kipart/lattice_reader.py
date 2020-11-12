@@ -32,9 +32,7 @@ from .kipart import *
 
 
 def lattice_reader(part_data_file, part_data_file_name, part_data_file_type=".csv"):
-    """Extract the pin data from a Lattice CSV/text/Excel file and return a dictionary of pin data.
-    Both files available on Lattice website and files exported from Diamond are supported.
-    ICE40 family is NOT supported, since they use a completely different format."""
+    """Extract the pin data from a Lattice CSV/text/Excel file and return a dictionary of pin data."""
 
     # If part data file is Excel, convert it to CSV.
     if part_data_file_type == ".xlsx":
