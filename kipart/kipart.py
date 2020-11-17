@@ -70,7 +70,7 @@ MULTI_PIN_SUFFIX = "*"
 PIN_SPACER_PREFIX = "*"
 
 # Settings for box drawn around pins in a unit.
-BOX_LINE_WIDTH = 12
+DEFAULT_BOX_LINE_WIDTH = 12
 
 # Part reference.
 REF_SIZE = 60  # Font size.
@@ -498,6 +498,7 @@ def draw_symbol(
     reverse,
     fuzzy_match,
     fill,
+    box_line_width,
 ):
     """Add a symbol for a part to the library."""
 
@@ -731,14 +732,14 @@ def draw_symbol(
                 unit_num, sorted_side_pins, bbox[side], transform[side], fuzzy_match
             )
 
-            # Create the box around the unit's pins.
+        # Create the box around the unit's pins.
         part_defn += BOX.format(
             x0=int(box_pt["left"][X]),
             y0=int(box_pt["top"][Y]),
             x1=int(box_pt["right"][X]),
             y1=int(box_pt["bottom"][Y]),
             unit_num=unit_num,
-            line_width=BOX_LINE_WIDTH,
+            line_width=box_line_width,
             fill=FILLS[fill],
         )
 
@@ -794,6 +795,7 @@ def kipart(
     part_data_file_type,
     parts_lib,
     fill,
+    box_line_width,
     allow_overwrite=False,
     sort_type="name",
     reverse=False,
@@ -837,6 +839,7 @@ def kipart(
             reverse=reverse,
             fuzzy_match=fuzzy_match,
             fill=fill,
+            box_line_width=box_line_width,
         )
 
 
@@ -876,6 +879,7 @@ def call_kipart(args, part_reader, part_data_file, file_name, file_type, parts_l
         part_data_file_type=file_type,
         parts_lib=parts_lib,
         fill=args.fill,
+        box_line_width=args.box_line_width,
         allow_overwrite=args.overwrite,
         sort_type=args.sort,
         reverse=args.reverse,
@@ -936,6 +940,20 @@ def main():
         help="Which side to place the pins by default.",
     )
     parser.add_argument(
+        "--fill",
+        nargs="?",
+        type=lambda s: unicode(s).lower(),
+        choices=["no_fill", "fg_fill", "bg_fill"],
+        default="no_fill",
+        help="Select fill style for schematic symbol boxes.",
+    )
+    parser.add_argument(
+        "--box_line_width",
+        type=int,
+        default=DEFAULT_BOX_LINE_WIDTH,
+        help="Set line width for schematic symbol boxes.",
+    )
+    parser.add_argument(
         "-o",
         "--output",
         nargs="?",
@@ -976,14 +994,6 @@ def main():
         default=0,
         metavar="LEVEL",
         help="Print debugging info. (Larger LEVEL means more info.)",
-    )
-    parser.add_argument(
-        "--fill",
-        nargs="?",
-        type=lambda s: unicode(s).lower(),
-        choices=["no_fill", "fg_fill", "bg_fill"],
-        default="no_fill",
-        help="Select fill/no-fill for schematic symbol boxes.",
     )
 
     args = parser.parse_args()
