@@ -7,45 +7,40 @@ KiPart
 
 KiPart is mainly intended to be used as a script::
 
-    usage: kipart [-h] [-v]
-                [-r [{generic,lattice,stm32cube,xilinx6s,xilinx6v,xilinx7,xilinxultra}]]
-                [-s [{row,num,name}]] [--reverse]
-                [--side [{left,right,top,bottom}]] [-o [file.lib]] [-f] [-b]
-                [-a] [-w] [-d [LEVEL]] [--fill [{no_fill,fg_fill,bg_fill}]]
+    usage: kipart [-h] [-v] [-r [{generic,lattice,stm32cube,xilinx6s,xilinx6v,xilinx7,xilinxultra}]] [-s [{row,num,name}]] [--reverse]
+                [--side [{left,right,top,bottom}]] [--fill [{no_fill,fg_fill,bg_fill}]] [--box_line_width BOX_LINE_WIDTH] [--push PUSH]
+                [-o [file.lib]] [-f] [-b] [-a] [-w] [-d [LEVEL]]
                 file.[csv|txt|xlsx|zip] [file.[csv|txt|xlsx|zip] ...]
 
     Generate single & multi-unit schematic symbols for KiCad from a CSV file.
 
     positional arguments:
     file.[csv|txt|xlsx|zip]
-                            Files for parts in CSV/text/Excel format or as such
-                            files in .zip archives.
+                            Files for parts in CSV/text/Excel format or as such files in .zip archives.
 
     optional arguments:
     -h, --help            show this help message and exit
     -v, --version         show program's version number and exit
     -r [{generic,lattice,stm32cube,xilinx6s,xilinx6v,xilinx7,xilinxultra}], --reader [{generic,lattice,stm32cube,xilinx6s,xilinx6v,xilinx7,xilinxultra}]
-                            Name of function for reading the CSV or part
-                            description files.
+                            Name of function for reading the CSV or part description files.
     -s [{row,num,name}], --sort [{row,num,name}]
-                            Sort the part pins by their entry order in the CSV
-                            file, their pin number, or their pin name.
+                            Sort the part pins by their entry order in the CSV file, their pin number, or their pin name.
     --reverse             Sort pins in reverse order.
     --side [{left,right,top,bottom}]
                             Which side to place the pins by default.
+    --fill [{no_fill,fg_fill,bg_fill}]
+                            Select fill style for schematic symbol boxes.
+    --box_line_width BOX_LINE_WIDTH
+                            Set line width of the schematic symbol box.
+    --push PUSH           Push pins left/up (0.0), center (0.5), or right/down(1.0) on the sides of the schematic symbol box.
     -o [file.lib], --output [file.lib]
                             Generated KiCad symbol library for parts.
-    -f, --fuzzy_match     Use approximate string matching when looking-up the
-                            pin type, style and orientation.
-    -b, --bundle          Bundle multiple, identically-named power and ground
-                            pins each into a single schematic pin.
-    -a, --append, --add   Add parts to an existing part library. Overwrite
-                            existing parts only if used in conjunction with -w.
+    -f, --fuzzy_match     Use approximate string matching when looking-up the pin type, style and orientation.
+    -b, --bundle          Bundle multiple, identically-named power and ground pins each into a single schematic pin.
+    -a, --append, --add   Add parts to an existing part library. Overwrite existing parts only if used in conjunction with -w.
     -w, --overwrite       Allow overwriting of an existing part library.
     -d [LEVEL], --debug [LEVEL]
                             Print debugging info. (Larger LEVEL means more info.)
-    --fill [{no_fill,fg_fill,bg_fill}]
-                            Select fill/no-fill for schematic symbol boxes.
 
 A generic part file is expected when the ``-r generic`` option is specified.
 It contains the following items:
@@ -108,15 +103,14 @@ It contains the following items:
 When the option ``-r xilinx7`` is used, the individual pin files or entire .zip archives
 for the `Xilinx 7-Series FPGAs <http://www.xilinx.com/support/packagefiles/>`_ can be processed.
 
-When the option '-r stm32cube' is used, the input file should be the
+When the option ``-r stm32cube`` is used, the input file should be the
 pin layout file exported from the STM32CubeMx tool. To create this
-file; create a project with STM32CubeMx then from window menu select
+file, create a project with STM32CubeMx and then from window menu select
 "Pinout -> Generate CSV pinout text file". If you select pin features
 or define labels for pins these will be reflected in the generated
 library symbol.
 
-When the option ``-r lattice`` is used, the input file should come from the
-Lattice website.
+When the option ``-r lattice`` is used, the input file should come from the Lattice website.
 
 The ``-s`` option specifies the arrangement of the pins in the schematic symbol:
 
@@ -152,7 +146,16 @@ Specifying the ``--fill`` option will determine how schematic boxes are filled:
 
 * ``no_fill``: Default. Schematic symbols are created with no filled boxes.
 * ``fg_fill``: Schematic boxes will be foreground filled
-* ``bg_fill``: Schematic boxes will be background filled
+* ``bg_fill``: Schematic boxes will be background filled. (This is the default.)
+
+The ``--box_line_width`` option sets the linewidth of the schematic symbol
+box in units of mils. The default setting is zero.
+
+The ``--push`` option affects the positions of the pins on each side of the
+schematic symbol box. A value of 0.0 pushes them to the upper-most or left-most
+position on the left/right or top/bottom sides. A value of 1.0 pushes them to
+the bottom-most or right-most position on the left-right or top-bottom sides.
+A value of 0.5 (the default) centers them.
 
 Examples
 ^^^^^^^^^^^^

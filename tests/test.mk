@@ -7,9 +7,11 @@ clean: randomtest_clean $(tests:=.clean)
 examples: $(examples:=.lib)
 tests: $(tests:=.tst)
 
+FLAGS= --box_line_width 12 --fill no_fill
+
 randomtest1:
 	@python random_csv.py > randomtest.csv
-	@kipart randomtest.csv -o randomtest.lib -w
+	@kipart $(FLAGS) randomtest.csv -o randomtest.lib -w
 	@kilib2csv randomtest.lib -o randomtest2.csv -w
 	@-/bin/diff -s randomtest.csv randomtest2.csv
 	@echo "*********************************************************************"
@@ -17,9 +19,9 @@ randomtest1:
 randomtest2:
 	@python random_csv.py > randomtest1.csv
 	@python random_csv.py > randomtest2.csv
-	@kipart randomtest1.csv randomtest2.csv -o randomtest.lib -w
+	@kipart $(FLAGS) randomtest1.csv randomtest2.csv -o randomtest.lib -w
 	@-/bin/sort -u randomtest.lib > randomtest_sorted.lib
-	@kipart randomtest1.csv randomtest2.csv -w
+	@kipart $(FLAGS) randomtest1.csv randomtest2.csv -w
 	@cat randomtest1.lib randomtest2.lib > randomtest3.lib
 	@-/bin/sort -u randomtest3.lib > randomtest3_sorted.lib
 	@-/bin/diff -s randomtest_sorted.lib randomtest3_sorted.lib
@@ -28,7 +30,7 @@ randomtest2:
 randomtest3:
 	@python random_csv.py > randomtest1.csv
 	@python random_csv.py > randomtest2.csv
-	@kipart randomtest1.csv randomtest2.csv -w
+	@kipart $(FLAGS) randomtest1.csv randomtest2.csv -w
 	@kilib2csv randomtest1.lib -o randomtest1_rebuilt.csv -w
 	@kilib2csv randomtest2.lib -o randomtest2_rebuilt.csv -w
 	@-/bin/diff -s randomtest1.csv randomtest1_rebuilt.csv
@@ -39,40 +41,40 @@ randomtest_clean:
 	@rm -f randomtest*.csv randomtest*.lib
 
 example1.lib: example1.csv
-	kipart $^ -o $@ -w
+	kipart $(FLAGS) $^ -o $@ -w
 
 example2.lib: example1.csv
-	kipart $^ -o $@ -w -s num
+	kipart $(FLAGS) $^ -o $@ -w -s num
 
 example3.lib: example1.csv
-	kipart $^ -o $@ -w -s name
+	kipart $(FLAGS) $^ -o $@ -w -s name
 
 example4.lib: example1.csv
-	kipart $^ -o $@ -w -b
+	kipart $(FLAGS) $^ -o $@ -w -b
 
 example5.lib: example2.csv
-	kipart $^ -o $@ -w -b
+	kipart $(FLAGS) $^ -o $@ -w -b
 
 example6.lib: example3.csv
-	kipart $^ -o $@ -w -b
+	kipart $(FLAGS) $^ -o $@ -w -b
 
 example7.lib: example1.xlsx
-	kipart $^ -o $@ -w
+	kipart $(FLAGS) $^ -o $@ -w
 
 lt1512.lib: lt1512.csv
-	kipart $^ -o $@ -w
+	kipart $(FLAGS) $^ -o $@ -w
 
 test1.lib: test1.csv
-	kipart $^ -o $@ -w -s name
+	kipart $(FLAGS) $^ -o $@ -w -s name
 
 helwig.lib: helwig.csv
-	kipart $^ -o $@ -w
+	kipart $(FLAGS) $^ -o $@ -w
 
 hidden_test.lib: hidden_test.csv
-	kipart $^ -o $@ -w
+	kipart $(FLAGS) $^ -o $@ -w
 
 stm32_test.lib: stm32_test.csv
-	kipart -r stm32cube $^ -w
+	kipart $(FLAGS) -r stm32cube $^ -w
 
 %.tst : %.clean %.lib
 	@-/bin/diff -qsw "$*.lib" "$* - Copy.lib"

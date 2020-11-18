@@ -3,6 +3,17 @@
 History
 -------
 
+* Added option to set thickness of schematic symbol box.
+* Added option to push pins left/up or right/down on the sides of the schematic symbol box.
+
+
+0.1.45 (2020-11-18)
+______________________
+
+* Added "other" category to stm32cube_reader.py to remain compatible with new STM32cube software.
+* KiPart will now use a <name>_reader.py file in the current directory to process part information.
+* Cleaned up tests directory.
+
 
 0.1.44 (2020-07-21)
 ______________________
