@@ -70,7 +70,12 @@ MULTI_PIN_SUFFIX = "*"
 PIN_SPACER_PREFIX = "*"
 
 # Settings for box drawn around pins in a unit.
-DEFAULT_BOX_LINE_WIDTH = 12
+DEFAULT_BOX_LINE_WIDTH = 0
+
+# Mapping from understandable schematic symbol box fill-type name 
+# to the fill-type indicator used in the KiCad part library.
+BOX_FILLS = {"no_fill": "N", "fg_fill": "F", "bg_fill": "f"}
+DEFAULT_BOX_FILL = "bg_fill"
 
 # Part reference.
 REF_SIZE = 60  # Font size.
@@ -213,10 +218,6 @@ PIN_STYLES = {
     "analog": "X",
 }
 PIN_STYLES = {scrubber.sub("", k).lower(): v for k, v in list(PIN_STYLES.items())}
-
-# Mapping from understandable box fill-type name to the fill-type
-# indicator used in the KiCad part library.
-FILLS = {"no_fill": "N", "fg_fill": "F", "bg_fill": "f"}
 
 # Format strings for various items in a KiCad part library.
 LIB_HEADER = "EESchema-LIBRARY Version 2.3\n"
@@ -372,7 +373,7 @@ def balance_bboxes(bboxes):
             bboxes["bottom"][1][Y] = bal_bbox[1][Y]
 
 
-def draw_pins(unit_num, unit_pins, bbox, transform, fuzzy_match):
+def draw_pins(unit_num, unit_pins, bbox, transform, side, push, fuzzy_match):
     """Draw a column of pins rotated/translated by the transform matrix."""
 
     # String to add pin definitions to.
@@ -384,10 +385,11 @@ def draw_pins(unit_num, unit_pins, bbox, transform, fuzzy_match):
     Y = 1  # Index for Y coordinate.
     pins_bb = pins_bbox(unit_pins)
     height_offset = abs(bbox[0][Y] - bbox[1][Y]) - abs(pins_bb[0][Y] - pins_bb[1][Y])
-    height_offset /= 2
-    height_offset -= (
-        height_offset % PIN_SPACING
-    )  # Keep everything on the PIN_SPACING grid.
+    push = min(max(0.0, push), 1.0)
+    if side in ("right", "top"):
+        push = 1.0 - push
+    height_offset *= push
+    height_offset -= height_offset % PIN_SPACING # Keep stuff on the PIN_SPACING grid.
 
     # Start drawing pins from the origin.
     x = XO
@@ -499,6 +501,7 @@ def draw_symbol(
     fuzzy_match,
     fill,
     box_line_width,
+    push,
 ):
     """Add a symbol for a part to the library."""
 
@@ -729,7 +732,7 @@ def draw_symbol(
             )
             # Draw the transformed pins for this side of the symbol.
             part_defn += draw_pins(
-                unit_num, sorted_side_pins, bbox[side], transform[side], fuzzy_match
+                unit_num, sorted_side_pins, bbox[side], transform[side], side, push, fuzzy_match
             )
 
         # Create the box around the unit's pins.
@@ -740,7 +743,7 @@ def draw_symbol(
             y1=int(box_pt["bottom"][Y]),
             unit_num=unit_num,
             line_width=box_line_width,
-            fill=FILLS[fill],
+            fill=BOX_FILLS[fill],
         )
 
     # Close the section that holds the part's units.
@@ -796,6 +799,7 @@ def kipart(
     parts_lib,
     fill,
     box_line_width,
+    push,
     allow_overwrite=False,
     sort_type="name",
     reverse=False,
@@ -840,6 +844,7 @@ def kipart(
             fuzzy_match=fuzzy_match,
             fill=fill,
             box_line_width=box_line_width,
+            push=push,
         )
 
 
@@ -880,6 +885,7 @@ def call_kipart(args, part_reader, part_data_file, file_name, file_type, parts_l
         parts_lib=parts_lib,
         fill=args.fill,
         box_line_width=args.box_line_width,
+        push=args.push,
         allow_overwrite=args.overwrite,
         sort_type=args.sort,
         reverse=args.reverse,
@@ -943,15 +949,21 @@ def main():
         "--fill",
         nargs="?",
         type=lambda s: unicode(s).lower(),
-        choices=["no_fill", "fg_fill", "bg_fill"],
-        default="no_fill",
+        choices=BOX_FILLS.keys(),
+        default=DEFAULT_BOX_FILL,
         help="Select fill style for schematic symbol boxes.",
     )
     parser.add_argument(
         "--box_line_width",
         type=int,
         default=DEFAULT_BOX_LINE_WIDTH,
-        help="Set line width for schematic symbol boxes.",
+        help="Set line width of the schematic symbol box.",
+    )
+    parser.add_argument(
+        "--push",
+        type=float,
+        default=0.5,
+        help="Push pins left/up (0.0), center (0.5), or right/down(1.0) on the sides of the schematic symbol box."
     )
     parser.add_argument(
         "-o",
