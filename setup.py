@@ -38,7 +38,7 @@ setup(
     author_email=__email__,
     url="https://github.com/devbisme/kipart",
     project_urls={
-        "Documentation": "https://devbisme.github.io/kipart",
+        "Documentation": "https://devbisme.github.io/KiPart",
         "Source": "https://github.com/devbisme/kipart",
         "Changelog": "https://github.com/devbisme/kipart/blob/master/HISTORY.rst",
         "Tracker": "https://github.com/devbisme/kipart/issues",
