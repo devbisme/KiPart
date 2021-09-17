@@ -1,3 +1,3 @@
-__version__ = "0.1.45"
-__author__ = "XESS Corp."
-__email__ = "info@xess.com"
+__version__ = "1.0.0"
+__author__ = "Dave Vandenbout"
+__email__ = "devb@xess.com"

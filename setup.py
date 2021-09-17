@@ -5,9 +5,9 @@ import sys
 
 import setuptools
 
-__version__ = "0.1.45"
-__author__ = "XESS Corp."
-__email__ = "info@xess.com"
+__version__ = "1.0.0"
+__author__ = "Dave Vandenbout"
+__email__ = "devb@xess.com"
 
 if "sdist" in sys.argv[1:]:
     with open("kipart/pckg_info.py", "w") as f:
@@ -36,7 +36,13 @@ setup(
     long_description=readme + "\n\n" + history,
     author=__author__,
     author_email=__email__,
-    url="https://github.com/xesscorp/kipart",
+    url="https://github.com/devbisme/kipart",
+    project_urls={
+        "Documentation": "https://devbisme.github.io/kipart",
+        "Source": "https://github.com/devbisme/kipart",
+        "Changelog": "https://github.com/devbisme/kipart/blob/master/HISTORY.rst",
+        "Tracker": "https://github.com/devbisme/kipart/issues",
+    },
     packages=setuptools.find_packages(),
     entry_points={
         "console_scripts": [
@@ -54,15 +60,13 @@ setup(
     keywords="kipart kicad electronic circuit schematics",
     classifiers=[
         "Development Status :: 5 - Production/Stable",
-        "Intended Audience :: Developers",
+        "Intended Audience :: Manufacturing",
         "License :: OSI Approved :: MIT License",
         "Natural Language :: English",
+        "Operating System :: OS Independent",
         "Programming Language :: Python :: 2.7",
         "Programming Language :: Python :: 3",
-        "Programming Language :: Python :: 3.5",
-        "Programming Language :: Python :: 3.6",
-        "Programming Language :: Python :: 3.7",
-        "Programming Language :: Python :: 3.8",
+        "Topic :: Scientific/Engineering :: Electronic Design Automation (EDA)",
     ],
     test_suite="tests",
     tests_require=test_requirements,

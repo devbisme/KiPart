@@ -3,16 +3,18 @@
 History
 -------
 
-* Added option to set thickness of schematic symbol box.
-* Added option to push pins left/up or right/down on the sides of the schematic symbol box.
+1.0.0 (2021-09-17)
+__________________
+
+* Decided this tool has matured to the point it could be called 1.0.0.
 
 
 0.1.45 (2020-11-18)
 ______________________
 
-* Added "other" category to stm32cube_reader.py to remain compatible with new STM32cube software.
-* KiPart will now use a <name>_reader.py file in the current directory to process part information.
-* Cleaned up tests directory.
+* Added option to set thickness of schematic symbol box.
+* Added option to push pins left/up or right/down on the sides of the schematic symbol box.
+* Removed reference to Lattice Diamond tool since it's no longer supported.
 
 
 0.1.44 (2020-07-21)

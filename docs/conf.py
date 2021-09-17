@@ -56,7 +56,7 @@ master_doc = 'index'
 
 # General information about the project.
 project = u'KiPart'
-copyright = u'2015, XESS Corp.'
+copyright = u'2015-2021, Dave Vandenbout'
 
 # The version info for the project you're documenting, acts as replacement
 # for |version| and |release|, also used in various other places throughout
@@ -210,7 +210,7 @@ latex_elements = {
 latex_documents = [
     ('index', 'kipart.tex',
      u'KiPart Documentation',
-     u'XESS Corp.', 'manual'),
+     u'Dave Vandenbout', 'manual'),
 ]
 
 # The name of an image file (relative to this directory) to place at
@@ -241,7 +241,7 @@ latex_documents = [
 man_pages = [
     ('index', 'kipart',
      u'KiPart Documentation',
-     [u'XESS Corp.'], 1)
+     [u'Dave Vandenbout'], 1)
 ]
 
 # If true, show URL addresses after external links.
@@ -256,7 +256,7 @@ man_pages = [
 texinfo_documents = [
     ('index', 'kipart',
      u'KiPart Documentation',
-     u'XESS Corp.',
+     u'Dave Vandenbout',
      'kipart',
      'One line description of project.',
      'Miscellaneous'),

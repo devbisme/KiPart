@@ -4,13 +4,11 @@ KiPart
 
 .. image:: https://img.shields.io/pypi/v/kipart.svg
         :target: https://pypi.python.org/pypi/kipart
-.. image:: https://travis-ci.com/xesscorp/KiPart.svg?branch=master
-    :target: https://travis-ci.com/xesscorp/KiPart
 
 Generate multi-unit schematic symbols for KiCad from a CSV, text, or Excel file.
 
 * Free software: MIT license
-* Documentation: https://xesscorp.github.io/KiPart.
+* Documentation: https://devbisme.github.io/KiPart.
 
 Features
 --------
