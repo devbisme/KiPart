@@ -38,7 +38,6 @@ from copy import copy
 from pprint import pprint
 
 from affine import Affine
-from past.utils import old_div
 
 from .common import *
 from .pckg_info import __version__
@@ -298,7 +297,7 @@ def pins_bbox(unit_pins):
     width += PIN_LENGTH + 2 * PIN_NAME_OFFSET
 
     # Make bounding box an integer number of pin spaces so pin connections are always on the grid.
-    width = math.ceil(old_div(float(width), PIN_SPACING)) * PIN_SPACING
+    width = math.ceil(float(width) / PIN_SPACING) * PIN_SPACING
 
     # Compute the height of the column of pins.
     height = count_pin_slots(unit_pins) * PIN_SPACING
