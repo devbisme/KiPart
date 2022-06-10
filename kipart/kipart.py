@@ -282,7 +282,7 @@ def count_pin_slots(unit_pins):
     return num_slots
 
 
-def pins_bbox(unit_pins):
+def pins_bbox(unit_pins, center_symbol):
     """Return the bounding box of a column of pins and their names."""
 
     if len(unit_pins) == 0:
@@ -303,8 +303,12 @@ def pins_bbox(unit_pins):
 
     # Compute the height of the column of pins.
     height = count_pin_slots(unit_pins) * PIN_SPACING
+    height = 2*math.ceil(old_div(float(height/2), PIN_SPACING)) * PIN_SPACING
 
-    return [[XO, YO + PIN_SPACING], [XO + width, YO - height]]
+    if not center_symbol:
+        return [[XO, YO + PIN_SPACING], [XO + width, YO - height]]
+    else:
+        return [[-width/2, height/2 + PIN_SPACING], [width/2, -height/2]]
 
 
 def balance_bboxes(bboxes):
@@ -374,7 +378,7 @@ def balance_bboxes(bboxes):
             bboxes["bottom"][1][Y] = bal_bbox[1][Y]
 
 
-def draw_pins(unit_num, unit_pins, bbox, transform, side, push, fuzzy_match):
+def draw_pins(unit_num, unit_pins, bbox, transform, side, push, fuzzy_match, center_symbol):
     """Draw a column of pins rotated/translated by the transform matrix."""
 
     # String to add pin definitions to.
@@ -384,7 +388,7 @@ def draw_pins(unit_num, unit_pins, bbox, transform, side, push, fuzzy_match):
     # bounding box (which should be at least as large). Half the difference
     # will be the offset needed to center the pins on the side of the symbol.
     Y = 1  # Index for Y coordinate.
-    pins_bb = pins_bbox(unit_pins)
+    pins_bb = pins_bbox(unit_pins, center_symbol)
     height_offset = abs(bbox[0][Y] - bbox[1][Y]) - abs(pins_bb[0][Y] - pins_bb[1][Y])
     push = min(max(0.0, push), 1.0)
     if side in ("right", "top"):
@@ -392,9 +396,14 @@ def draw_pins(unit_num, unit_pins, bbox, transform, side, push, fuzzy_match):
     height_offset *= push
     height_offset -= height_offset % PIN_SPACING # Keep stuff on the PIN_SPACING grid.
 
-    # Start drawing pins from the origin.
-    x = XO
-    y = YO - height_offset
+    if center_symbol:
+        # Start drawing pins from the pins_bbox
+        x = pins_bbox[0][0]
+        y = pins_bbox[0][1] - height_offset
+    else:
+        # Start drawing pins from the origin.
+        x = XO
+        y = YO - height_offset
 
     for name, pins in unit_pins:
 
@@ -509,6 +518,7 @@ def draw_symbol(
     box_line_width,
     push,
     annotation_style,
+    center_symbol,
 ):
     """Add a symbol for a part to the library."""
 
@@ -631,7 +641,7 @@ def draw_symbol(
         # Determine the actual bounding box for each side.
         bbox = {}
         for side, side_pins in list(unit.items()):
-            bbox[side] = pins_bbox(list(side_pins.items()))
+            bbox[side] = pins_bbox(list(side_pins.items()), center_symbol)
 
         # Adjust the sizes of the bboxes to make the unit look more symmetrical.
         balance_bboxes(bbox)
@@ -739,9 +749,10 @@ def draw_symbol(
                 list(side_pins.items()), key=pin_key_func, reverse=side_reverse
             )
             # Draw the transformed pins for this side of the symbol.
-            part_defn += draw_pins(
-                unit_num, sorted_side_pins, bbox[side], transform[side], side, push, fuzzy_match
+            part_tmp = draw_pins(
+                unit_num, sorted_side_pins, bbox[side], transform[side], side, push, fuzzy_match, center_symbol
             )
+            part_defn += part_tmp
 
         # Create the box around the unit's pins.
         part_defn += BOX.format(
@@ -816,6 +827,7 @@ def kipart(
     fuzzy_match=False,
     bundle=False,
     annotation_style="count",
+    center_symbol=False,
     debug_level=0,
 ):
     """Read part pin data from a CSV/text/Excel file and write or append it to a library file."""
@@ -857,6 +869,7 @@ def kipart(
             box_line_width=box_line_width,
             push=push,
             annotation_style=annotation_style,
+            center_symbol=center_symbol,
         )
 
 
@@ -904,6 +917,7 @@ def call_kipart(args, part_reader, part_data_file, file_name, file_type, parts_l
         fuzzy_match=args.fuzzy_match,
         bundle=args.bundle,
         annotation_style=args.annotation_style,
+        center_symbol=args.center_symbol,
         debug_level=args.debug,
     )
 
@@ -999,12 +1013,19 @@ def main():
         help="Bundle multiple, identically-named power and ground pins each into a single schematic pin.",
     )
     parser.add_argument(
+    parser.add_argument(
         "--annotation_style",
         nargs="?",
         type=lambda s: unicode(s).lower(),
         choices=["none", "count", "range"],
         default="count",
         help="Selects suffix appended to bundled pin names: none (), count ([n]), range ([n:0]).",
+    )
+    parser.add_argument(
+        "-c",
+        "--center",
+        action="store_true",
+        help="Place symbol origin in the center of the symbol.",
     )
     parser.add_argument(
         "-a",
