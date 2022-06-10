@@ -66,7 +66,6 @@ PIN_STYLE = "line"
 SHOW_PIN_NUMBER = True  # Show pin numbers when True.
 SHOW_PIN_NAME = True  # Show pin names when True.
 SINGLE_PIN_SUFFIX = ""
-MULTI_PIN_SUFFIX = "*"
 PIN_SPACER_PREFIX = "*"
 
 # Settings for box drawn around pins in a unit.
@@ -236,7 +235,7 @@ BOX = "S {x0} {y0} {x1} {y1} {unit_num} 1 {line_width} {fill}\n"
 PIN = "X {name} {num} {x} {y} {length} {orientation} {num_sz} {name_sz} {unit_num} 1 {pin_type} {pin_style}\n"
 
 
-def annotate_pins(unit_pins):
+def annotate_pins(unit_pins, annotation_style):
     """Annotate pin names to indicate special information."""
     for name, pins in unit_pins:
         # If there are multiple pins with the same name in a unit, then append a
@@ -246,8 +245,10 @@ def annotate_pins(unit_pins):
         # net connection in the schematic.)
         name_suffix = SINGLE_PIN_SUFFIX
         if len(pins) > 1:
-            # name_suffix = MULTI_PIN_SUFFIX
-            name_suffix = "[{}]".format(len(pins))
+            if annotation_style == "count":
+                name_suffix = "[{}]".format(len(pins))
+            elif annotation_style == "range":
+                name_suffix = "[{}:0]".format(len(pins)-1)
         for pin in pins:
             pin.name += name_suffix
 
@@ -502,6 +503,7 @@ def draw_symbol(
     fill,
     box_line_width,
     push,
+    annotation_style,
 ):
     """Add a symbol for a part to the library."""
 
@@ -619,7 +621,7 @@ def draw_symbol(
 
         # Annotate the pins for each side of the symbol.
         for side_pins in list(unit.values()):
-            annotate_pins(list(side_pins.items()))
+            annotate_pins(list(side_pins.items()), annotation_style)
 
         # Determine the actual bounding box for each side.
         bbox = {}
@@ -805,6 +807,7 @@ def kipart(
     reverse=False,
     fuzzy_match=False,
     bundle=False,
+    annotation_style="count",
     debug_level=0,
 ):
     """Read part pin data from a CSV/text/Excel file and write or append it to a library file."""
@@ -845,6 +848,7 @@ def kipart(
             fill=fill,
             box_line_width=box_line_width,
             push=push,
+            annotation_style=annotation_style,
         )
 
 
@@ -891,6 +895,7 @@ def call_kipart(args, part_reader, part_data_file, file_name, file_type, parts_l
         reverse=args.reverse,
         fuzzy_match=args.fuzzy_match,
         bundle=args.bundle,
+        annotation_style=args.annotation_style,
         debug_level=args.debug,
     )
 
@@ -984,6 +989,14 @@ def main():
         "--bundle",
         action="store_true",
         help="Bundle multiple, identically-named power and ground pins each into a single schematic pin.",
+    )
+    parser.add_argument(
+        "--annotation_style",
+        nargs="?",
+        type=lambda s: unicode(s).lower(),
+        choices=["none", "count", "range"],
+        default="count",
+        help="When bundling pins, selects what is appended to the net name.",
     )
     parser.add_argument(
         "-a",
