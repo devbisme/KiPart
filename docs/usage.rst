@@ -7,9 +7,9 @@ KiPart
 
 KiPart is mainly intended to be used as a script::
 
-    usage: kipart [-h] [-v] [-r [{generic,lattice,stm32cube,xilinx6s,xilinx6v,xilinx7,xilinxultra}]] [-s [{row,num,name}]] [--reverse]
-                [--side [{left,right,top,bottom}]] [--fill [{no_fill,fg_fill,bg_fill}]] [--box_line_width BOX_LINE_WIDTH] [--push PUSH]
-                [-o [file.lib]] [-f] [-b] [-a] [-w] [-d [LEVEL]]
+    usage: kipart [-h] [-v] [-r [{xilinx6v,xilinxultra,xilinx6s,stm32cube,lattice,generic,xilinx7}]] [-s [{row,num,name}]] [--reverse]
+                [--side [{left,right,top,bottom}]] [--fill [{no_fill,fg_fill,bg_fill}]] [--box_line_width BOX_LINE_WIDTH] [--push PUSH] [-o [file.lib]]
+                [-f] [-b] [--annotation_style [{none,count,range}]] [-a] [-w] [-d [LEVEL]]
                 file.[csv|txt|xlsx|zip] [file.[csv|txt|xlsx|zip] ...]
 
     Generate single & multi-unit schematic symbols for KiCad from a CSV file.
@@ -21,7 +21,7 @@ KiPart is mainly intended to be used as a script::
     optional arguments:
     -h, --help            show this help message and exit
     -v, --version         show program's version number and exit
-    -r [{generic,lattice,stm32cube,xilinx6s,xilinx6v,xilinx7,xilinxultra}], --reader [{generic,lattice,stm32cube,xilinx6s,xilinx6v,xilinx7,xilinxultra}]
+    -r [{xilinx6v,xilinxultra,xilinx6s,stm32cube,lattice,generic,xilinx7}], --reader [{xilinx6v,xilinxultra,xilinx6s,stm32cube,lattice,generic,xilinx7}]
                             Name of function for reading the CSV or part description files.
     -s [{row,num,name}], --sort [{row,num,name}]
                             Sort the part pins by their entry order in the CSV file, their pin number, or their pin name.
@@ -37,6 +37,8 @@ KiPart is mainly intended to be used as a script::
                             Generated KiCad symbol library for parts.
     -f, --fuzzy_match     Use approximate string matching when looking-up the pin type, style and orientation.
     -b, --bundle          Bundle multiple, identically-named power and ground pins each into a single schematic pin.
+    --annotation_style [{none,count,range}]
+                            Selects suffix appended to bundled pin names: none (), count ([n]), range ([n:0]).
     -a, --append, --add   Add parts to an existing part library. Overwrite existing parts only if used in conjunction with -w.
     -w, --overwrite       Allow overwriting of an existing part library.
     -d [LEVEL], --debug [LEVEL]
@@ -132,7 +134,12 @@ So, for example, ``ck`` would match ``clk`` or ``rgt`` would match ``right``.
 
 Specifying the ``-b`` option will place multiple pins with the identical names at the same location
 such that they can all attach to the same net with a single connection.
-This is helpful for handling the multiple VCC and GND pins found on many high pin-count devices.
+This is helpful for handling the multiple VCC, GND, and NC pins found on many high pin-count devices.
+
+The ``--annotation`` option determines the suffix added to bundled pin names:
+  * ``none``: No suffix is added.
+  * ``count``: The number of bundled pins is added as ``[n]``.
+  * ``range``: The range of bundled pins is added as ``[n:0]``.
 
 The ``-w`` option is used to overwrite an existing library with any new parts
 from the file. The old contents of the library are lost.

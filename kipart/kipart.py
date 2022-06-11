@@ -1006,7 +1006,7 @@ def main():
         type=lambda s: unicode(s).lower(),
         choices=["none", "count", "range"],
         default="count",
-        help="When bundling pins, selects what is appended to the net name.",
+        help="Selects suffix appended to bundled pin names: none (), count ([n]), range ([n:0]).",
     )
     parser.add_argument(
         "-a",

@@ -3,6 +3,13 @@
 History
 -------
 
+1.0.1 (2022-06-11)
+__________________
+
+* No-connect pins were added to the types of pins that can be bundled.
+* Option was added to select the suffix for bundled pins: none, count (`[n]`), or range (`[n:0]`).
+
+
 1.0.0 (2021-09-17)
 __________________
 
