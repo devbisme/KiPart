@@ -235,14 +235,14 @@ def _gen_csv(parsed_lib):
 
         for p in sorted(part.pins, key=num_key):
             # Replace commas in pin numbers, names and units so it doesn't screw-up the CSV file.
-            p.num = re.sub(",", ";", p.num)
-            p.name = re.sub(",", ";", p.name)
-            p.unit = re.sub(",", ";", p.unit)
+            p["num"] = re.sub(",", ";", p.num)
+            p["name"] = re.sub(",", ";", p.name)
+            p["unit"] = re.sub(",", ";", p.unit)
 
             is_hidden = ""
 
             if p.style.find("N") != -1:
-                p.style = p.style.replace("N", "")
+                p["style"] = p.style.replace("N", "")
                 is_hidden = "Y"
 
             csv += (
