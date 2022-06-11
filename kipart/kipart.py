@@ -869,8 +869,6 @@ def read_lib_file(lib_file):
 
 def write_lib_file(parts_lib, lib_file):
     print("Writing", lib_file, len(parts_lib))
-    LIB_HEADER = "EESchema-LIBRARY Version 2.3\n"
-    LIB_FOOTER = "#End Library\n"
     with open(lib_file, "w") as lib_fp:
         lib_fp.write(LIB_HEADER)
         for part_def in parts_lib.values():
