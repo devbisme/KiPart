@@ -419,9 +419,9 @@ def draw_pins(unit_num, unit_pins, bbox, transform, side, push, fuzzy_match):
             pin_style = "N" + pin_style
 
         # Create all the pins with a particular name. If there are more than one,
-        # they are laid on top of each other and only the first is visible.
-        num_size = PIN_NUM_SIZE  # First pin will be visible.
-        for pin in pins:
+        # pin numbers are hidden, and everything after the first are hidden.
+        num_size = PIN_NUM_SIZE if len(pins) == 1 else 0
+        for index, pin in enumerate(pins):
 
             pin_num = str(pin.num)
 
@@ -444,8 +444,16 @@ def draw_pins(unit_num, unit_pins, bbox, transform, side, push, fuzzy_match):
                 pin_style=pin_style,
             )
 
-            # Turn off visibility after the first pin.
-            num_size = 0
+            # Make tweaks to subsequent bundled pins:
+            # make them invisible
+            pin_style = 'N' + pin_style.lstrip('N')
+            # power pins become passive pins
+            if pin_type in 'wW':
+                pin_type = 'P'
+            # NC pins should be shifted off-grid into the symbol to avoid shorts
+            if pin_type == 'N':
+                (draw_x, draw_y) = transform * (x + index, y + 1)
+
 
         # Move to the next pin placement location on this unit.
         y -= PIN_SPACING
@@ -756,23 +764,25 @@ def draw_symbol(
     return part_defn
 
 
-def is_pwr(pin, fuzzy_match):
-    """Return true if this is a power input pin."""
+def can_bundle(pin, fuzzy_match):
+    """Return true if the pin type can be bundled.
+    Currently support bundling power input, power output, and NC pins.
+    """
     return (
         find_closest_match(name=pin.type, name_dict=PIN_TYPES, fuzzy_match=fuzzy_match)
-        == "W"
+        in "wWN"
     )
 
 
 def do_bundling(pin_data, bundle, fuzzy_match):
-    """Handle bundling for power pins. Unbundle everything else."""
+    """Handle bundling. Unbundle everything else."""
     for unit in list(pin_data.values()):
         for side in list(unit.values()):
             for name, pins in list(side.items()):
                 if len(pins) > 1:
                     for index, p in enumerate(pins):
-                        if is_pwr(p, fuzzy_match) and bundle:
-                            side[p.name + "_pwr"].append(p)
+                        if can_bundle(p, fuzzy_match) and bundle:
+                            side[p.name + "_bundle"].append(p)
                         else:
                             side[p.name + "_" + str(index)].append(p)
                     del side[name]
