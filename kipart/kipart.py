@@ -421,7 +421,7 @@ def draw_pins(unit_num, unit_pins, bbox, transform, side, push, fuzzy_match):
 
         # Create all the pins with a particular name. If there are more than one,
         # pin numbers are hidden, and everything after the first are hidden.
-        num_size = PIN_NUM_SIZE if len(pins) == 1 else 0
+        num_size = PIN_NUM_SIZE if pin_type != "N" else 0
         for index, pin in enumerate(pins):
 
             pin_num = str(pin.num)
