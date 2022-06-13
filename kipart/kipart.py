@@ -473,28 +473,25 @@ def zero_pad_nums(s):
     except TypeError:
         return s  # The input is probably not a string, so just return it unchanged.
 
+def str_to_num_alpha_tuple(s):
+    # Split a string of alphas and digits into a tuple of alpha/digit strings.
+    try:
+        seq = re.split(r'(?<=\D)(?=\d)|(?<=\d)(?=\D)', s)
+    except ValueError:
+        return (zero_pad_nums(s), )
+    return tuple(zero_pad_nums(_) for _ in seq)
 
 def num_key(pin):
     """Generate a key from a pin's number so they are sorted by position on the package."""
-
-    # Pad all numeric strings in the pin name with leading 0's.
-    # Thus, 'A10' and 'A2' will become 'A00010' and 'A00002' and A2 will
-    # appear before A10 in a list.
-    return zero_pad_nums(pin[1][0].num)
-
+    return str_to_num_alpha_tuple(pin[1][0].num) + str_to_num_alpha_tuple(pin[1][0].name)
 
 def name_key(pin):
-    """Generate a key from a pin's name so they are sorted more logically."""
-
-    # Pad all numeric strings in the pin name with leading 0's.
-    # Thus, 'adc10' and 'adc2' will become 'adc00010' and 'adc00002' and adc2 will
-    # appear before adc10 in a list.
-    return zero_pad_nums(pin[1][0].name)
-
+    "Generate a key from a pin's name so they are sorted more logically."""
+    return str_to_num_alpha_tuple(pin[1][0].name) + str_to_num_alpha_tuple(pin[1][0].num)
 
 def row_key(pin):
     """Generate a key from the order the pins were entered into the CSV file."""
-    return pin[1][0].index
+    return (pin[1][0].index, )
 
 
 def draw_symbol(
@@ -728,7 +725,8 @@ def draw_symbol(
             box_pt[side] = transform[side] * box_pt[side]
 
         # Draw the transformed pins for each side of the symbol.
-        for side, side_pins in list(unit.items()):
+        for side in all_sides:
+            side_pins = unit[side]
             # If the pins are ordered by their row in the spreadsheet or by their name,
             # then reverse their order on the right and top sides so they go from top-to-bottom
             # on the right side and left-to-right on the top side instead of the opposite

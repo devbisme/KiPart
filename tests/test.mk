@@ -7,24 +7,24 @@ clean: randomtest_clean $(tests:=.clean)
 examples: $(examples:=.lib)
 tests: $(tests:=.tst)
 
-FLAGS= --box_line_width 12 --fill no_fill
+FLAGS= -s num --box_line_width 12 --fill no_fill
 
 randomtest1:
 	@python random_csv.py > randomtest.csv
 	@kipart $(FLAGS) randomtest.csv -o randomtest.lib -w
 	@kilib2csv randomtest.lib -o randomtest2.csv -w
-	@-/bin/diff -s randomtest.csv randomtest2.csv
+	@/bin/diff -s randomtest.csv randomtest2.csv
 	@echo "*********************************************************************"
 
 randomtest2:
 	@python random_csv.py > randomtest1.csv
 	@python random_csv.py > randomtest2.csv
 	@kipart $(FLAGS) randomtest1.csv randomtest2.csv -o randomtest.lib -w
-	@-/bin/sort -u randomtest.lib > randomtest_sorted.lib
+	@/bin/sort -u randomtest.lib > randomtest_sorted.lib
 	@kipart $(FLAGS) randomtest1.csv randomtest2.csv -w
 	@cat randomtest1.lib randomtest2.lib > randomtest3.lib
-	@-/bin/sort -u randomtest3.lib > randomtest3_sorted.lib
-	@-/bin/diff -s randomtest_sorted.lib randomtest3_sorted.lib
+	@/bin/sort -u randomtest3.lib > randomtest3_sorted.lib
+	@/bin/diff -s randomtest_sorted.lib randomtest3_sorted.lib
 	@echo "*********************************************************************"
 
 randomtest3:
@@ -33,8 +33,8 @@ randomtest3:
 	@kipart $(FLAGS) randomtest1.csv randomtest2.csv -w
 	@kilib2csv randomtest1.lib -o randomtest1_rebuilt.csv -w
 	@kilib2csv randomtest2.lib -o randomtest2_rebuilt.csv -w
-	@-/bin/diff -s randomtest1.csv randomtest1_rebuilt.csv
-	@-/bin/diff -s randomtest2.csv randomtest2_rebuilt.csv
+	@/bin/diff -s randomtest1.csv randomtest1_rebuilt.csv
+	@/bin/diff -s randomtest2.csv randomtest2_rebuilt.csv
 	@echo "*********************************************************************"
 
 randomtest_clean:
@@ -77,10 +77,10 @@ stm32_test.lib: stm32_test.csv
 	kipart $(FLAGS) -r stm32cube $^ -w
 
 %.tst : %.clean %.lib
-	@-/bin/diff -qsw "$*.lib" "$* - Copy.lib"
+	@/bin/diff -qsw "$*.lib" "$* - Copy.lib"
 	@sort $*.lib > "$*_sorted.lib"
 	@sort "$* - Copy.lib" > "$*_sorted_copy.lib"
-	@-/bin/diff -qsw "$*_sorted.lib" "$*_sorted_copy.lib"
+	@/bin/diff -qsw "$*_sorted.lib" "$*_sorted_copy.lib"
 	@echo "*********************************************************************"
 
 %.clean :
