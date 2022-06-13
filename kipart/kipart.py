@@ -303,7 +303,7 @@ def pins_bbox(unit_pins, center_symbol):
 
     # Compute the height of the column of pins.
     height = count_pin_slots(unit_pins) * PIN_SPACING
-    height = 2*math.ceil(old_div(float(height/2), PIN_SPACING)) * PIN_SPACING
+    height = 2*math.ceil(float(height/2) / PIN_SPACING) * PIN_SPACING
 
     if not center_symbol:
         return [[XO, YO + PIN_SPACING], [XO + width, YO - height]]
@@ -389,17 +389,33 @@ def draw_pins(unit_num, unit_pins, bbox, transform, side, push, fuzzy_match, cen
     # will be the offset needed to center the pins on the side of the symbol.
     Y = 1  # Index for Y coordinate.
     pins_bb = pins_bbox(unit_pins, center_symbol)
-    height_offset = abs(bbox[0][Y] - bbox[1][Y]) - abs(pins_bb[0][Y] - pins_bb[1][Y])
-    push = min(max(0.0, push), 1.0)
-    if side in ("right", "top"):
-        push = 1.0 - push
-    height_offset *= push
-    height_offset -= height_offset % PIN_SPACING # Keep stuff on the PIN_SPACING grid.
-
+    if center_symbol:
+        height_offset = abs(bbox[0][Y] - bbox[1][Y]) - abs(pins_bb[0][Y] - pins_bb[1][Y])
+        push = min(max(0.0, push), 1.0)
+#        if side in ("right", "left"):
+#            push = 1.0 - push
+        height_offset *= push
+        height_offset -= height_offset % PIN_SPACING # Keep stuff on the PIN_SPACING grid.
+    else:
+        height_offset = abs(bbox[0][Y] - bbox[1][Y]) - abs(pins_bb[0][Y] - pins_bb[1][Y])
+        push = min(max(0.0, push), 1.0)
+        if side in ("right", "top"):
+            push = 1.0 - push
+        height_offset *= push
+        height_offset -= height_offset % PIN_SPACING # Keep stuff on the PIN_SPACING grid.
     if center_symbol:
         # Start drawing pins from the pins_bbox
-        x = pins_bbox[0][0]
-        y = pins_bbox[0][1] - height_offset
+        x = pins_bb[0][0]
+        y = pins_bb[0][1] + height_offset
+        if side == "right":
+            y -= PIN_SPACING*1.5
+        elif side == "left":
+            y -= PIN_SPACING*1.5
+        elif side == "bottom":
+            x -= PIN_SPACING*1
+            y -= PIN_SPACING*1.5
+        elif side == "top":
+            y -= PIN_SPACING*1.5
     else:
         # Start drawing pins from the origin.
         x = XO
@@ -734,6 +750,18 @@ def draw_symbol(
             # Also translate the point on each side that defines the box around the symbol.
             box_pt[side] = transform[side] * box_pt[side]
 
+        if center_symbol:
+            bbox_translate_x = -(int(box_pt["left"][X]) + int(box_pt["right"][X]))/2
+            bbox_translate_y = -(int(box_pt["top"][Y]) + int(box_pt["bottom"][Y]))/2
+            for side in all_sides:
+                translate_x = 0
+                translate_y = 0
+                transform[side] = (
+                    Affine.translation(bbox_translate_x + translate_x, bbox_translate_y+translate_y) * transform[side]
+                )
+                # Also translate the point on each side that defines the box around the symbol.
+                box_pt[side] = Affine.translation(bbox_translate_x, bbox_translate_y) * box_pt[side]
+
         # Draw the transformed pins for each side of the symbol.
         for side in all_sides:
             side_pins = unit[side]
@@ -917,7 +945,7 @@ def call_kipart(args, part_reader, part_data_file, file_name, file_type, parts_l
         fuzzy_match=args.fuzzy_match,
         bundle=args.bundle,
         annotation_style=args.annotation_style,
-        center_symbol=args.center_symbol,
+        center_symbol=args.center,
         debug_level=args.debug,
     )
 
@@ -1012,7 +1040,6 @@ def main():
         action="store_true",
         help="Bundle multiple, identically-named power and ground pins each into a single schematic pin.",
     )
-    parser.add_argument(
     parser.add_argument(
         "--annotation_style",
         nargs="?",
