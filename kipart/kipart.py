@@ -70,7 +70,7 @@ PIN_SPACER_PREFIX = "*"
 # Settings for box drawn around pins in a unit.
 DEFAULT_BOX_LINE_WIDTH = 0
 
-# Mapping from understandable schematic symbol box fill-type name 
+# Mapping from understandable schematic symbol box fill-type name
 # to the fill-type indicator used in the KiCad part library.
 BOX_FILLS = {"no_fill": "N", "fg_fill": "F", "bg_fill": "f"}
 DEFAULT_BOX_FILL = "bg_fill"
@@ -234,7 +234,7 @@ END_DRAW = "ENDDRAW\n"
 BOX = "S {x0} {y0} {x1} {y1} {unit_num} 1 {line_width} {fill}\n"
 PIN = "X {name} {num} {x} {y} {length} {orientation} {num_sz} {name_sz} {unit_num} 1 {pin_type} {pin_style}\n"
 
-    
+
 def annotate_pins(unit_pins, annotation_style):
     """Annotate pin names to indicate special information."""
     for name, pins in unit_pins:
@@ -248,7 +248,7 @@ def annotate_pins(unit_pins, annotation_style):
             if annotation_style == "count":
                 name_suffix = "[{}]".format(len(pins))
             elif annotation_style == "range":
-                name_suffix = "[{}:0]".format(len(pins)-1)
+                name_suffix = "[{}:0]".format(len(pins) - 1)
         for pin in pins:
             pin.name += name_suffix
 
@@ -302,10 +302,8 @@ def pins_bbox(unit_pins):
     width = math.ceil(float(width) / PIN_SPACING) * PIN_SPACING
 
     # Compute the height of the column of pins.
-    # height = count_pin_slots(unit_pins) * PIN_SPACING
-    # height = 2*math.ceil(float(height/2) / PIN_SPACING) * PIN_SPACING
     height = count_pin_slots(unit_pins)
-    height = 2*math.ceil(0.5 * height) * PIN_SPACING
+    height = 2 * math.ceil(0.5 * height) * PIN_SPACING
 
     return [[XO, YO + PIN_SPACING], [XO + width, YO - height]]
 
@@ -393,7 +391,7 @@ def draw_pins(unit_num, unit_pins, bbox, transform, side, push, fuzzy_match):
     if side in ("right", "top"):
         push = 1.0 - push
     height_offset *= push
-    height_offset -= height_offset % PIN_SPACING # Keep stuff on the PIN_SPACING grid.
+    height_offset -= height_offset % PIN_SPACING  # Keep stuff on the PIN_SPACING grid.
 
     # Start drawing pins from the origin.
     x = XO
@@ -450,12 +448,12 @@ def draw_pins(unit_num, unit_pins, bbox, transform, side, push, fuzzy_match):
 
             # Make tweaks to subsequent bundled pins:
             # make them invisible
-            pin_style = 'N' + pin_style.lstrip('N')
+            pin_style = "N" + pin_style.lstrip("N")
             # power pins become passive pins
-            if pin_type in 'wW':
-                pin_type = 'P'
+            if pin_type in "wW":
+                pin_type = "P"
             # NC pins should be shifted off-grid into the symbol to avoid shorts
-            if pin_type == 'N':
+            if pin_type == "N":
                 (draw_x, draw_y) = transform * (x + index, y + 1)
 
         # Move to the next pin placement location on this unit.
@@ -479,25 +477,29 @@ def zero_pad_nums(s):
 def str_to_num_alpha_tuple(s):
     # Split a string of alphas and digits into a tuple of alpha/digit strings.
     try:
-        seq = re.split(r'(?<=\D)(?=\d)|(?<=\d)(?=\D)', s)
+        seq = re.split(r"(?<=\D)(?=\d)|(?<=\d)(?=\D)", s)
     except ValueError:
-        return (zero_pad_nums(s), )
+        return (zero_pad_nums(s),)
     return tuple(zero_pad_nums(_) for _ in seq)
 
 
 def num_key(pin):
     """Generate a key from a pin's number so they are sorted by position on the package."""
-    return str_to_num_alpha_tuple(pin[1][0].num) + str_to_num_alpha_tuple(pin[1][0].name)
+    return str_to_num_alpha_tuple(pin[1][0].num) + str_to_num_alpha_tuple(
+        pin[1][0].name
+    )
 
 
 def name_key(pin):
-    "Generate a key from a pin's name so they are sorted more logically."""
-    return str_to_num_alpha_tuple(pin[1][0].name) + str_to_num_alpha_tuple(pin[1][0].num)
+    "Generate a key from a pin's name so they are sorted more logically." ""
+    return str_to_num_alpha_tuple(pin[1][0].name) + str_to_num_alpha_tuple(
+        pin[1][0].num
+    )
 
 
 def row_key(pin):
     """Generate a key from the order the pins were entered into the CSV file."""
-    return (pin[1][0].index, )
+    return (pin[1][0].index,)
 
 
 def draw_symbol(
@@ -741,18 +743,22 @@ def draw_symbol(
 
         if center_symbol:
             # If centering, compute the translation to move the symbol box center to the origin.
-            bbox_translate_x = -(int(box_pt["right"][X]) + int(box_pt["left"][X]))/2
-            bbox_translate_y = -(int(box_pt["bottom"][Y]) + int(box_pt["top"][Y]))/2
+            bbox_translate_x = -(int(box_pt["right"][X]) + int(box_pt["left"][X])) / 2
+            bbox_translate_y = -(int(box_pt["bottom"][Y]) + int(box_pt["top"][Y])) / 2
 
             # Add the translation to all the affine transforms of the sides of pins.
             for side in all_sides:
                 transform[side] = (
-                    Affine.translation(bbox_translate_x, bbox_translate_y) * transform[side]
+                    Affine.translation(bbox_translate_x, bbox_translate_y)
+                    * transform[side]
                 )
-            
+
             # Also translate the point on each side that defines the box around the symbol.
             for side in all_sides:
-                box_pt[side] = Affine.translation(bbox_translate_x, bbox_translate_y) * box_pt[side]
+                box_pt[side] = (
+                    Affine.translation(bbox_translate_x, bbox_translate_y)
+                    * box_pt[side]
+                )
 
         # Draw the transformed pins for each side of the symbol.
         for side in all_sides:
@@ -770,7 +776,13 @@ def draw_symbol(
             )
             # Draw the transformed pins for this side of the symbol.
             part_defn += draw_pins(
-                unit_num, sorted_side_pins, bbox[side], transform[side], side, push, fuzzy_match
+                unit_num,
+                sorted_side_pins,
+                bbox[side],
+                transform[side],
+                side,
+                push,
+                fuzzy_match,
             )
 
         # Create the box around the unit's pins.
@@ -1009,7 +1021,7 @@ def main():
         "--push",
         type=float,
         default=0.5,
-        help="Push pins left/up (0.0), center (0.5), or right/down(1.0) on the sides of the schematic symbol box."
+        help="Push pins left/up (0.0), center (0.5), or right/down(1.0) on the sides of the schematic symbol box.",
     )
     parser.add_argument(
         "-o",
