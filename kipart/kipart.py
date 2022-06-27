@@ -77,27 +77,27 @@ DEFAULT_BOX_FILL = "bg_fill"
 
 # Part reference.
 REF_SIZE = 60  # Font size.
-REF_Y_OFFSET = 250
+REF_Y_OFFSET = 0
 
 # Part number.
 PART_NUM_SIZE = 60  # Font size.
-PART_NUM_Y_OFFSET = 150
+PART_NUM_Y_OFFSET = -100
 
 # Part footprint
 PART_FOOTPRINT_SIZE = 60  # Font size.
-PART_FOOTPRINT_Y_OFFSET = 50
+PART_FOOTPRINT_Y_OFFSET = -200
 
 # Part manufacturer number.
 PART_MPN_SIZE = 60  # Font size.
-PART_MPN_Y_OFFSET = -50
+PART_MPN_Y_OFFSET = -300
 
 # Part datasheet.
 PART_DATASHEET_SIZE = 60  # Font size.
-PART_DATASHEET_Y_OFFSET = -150
+PART_DATASHEET_Y_OFFSET = -400
 
 # Part description.
 PART_DESC_SIZE = 60  # Font size.
-PART_DESC_Y_OFFSET = -250
+PART_DESC_Y_OFFSET = -500
 
 # Mapping from understandable pin orientation name to the orientation
 # indicator used in the KiCad part library. This mapping looks backward,
@@ -234,7 +234,7 @@ END_DRAW = "ENDDRAW\n"
 BOX = "S {x0} {y0} {x1} {y1} {unit_num} 1 {line_width} {fill}\n"
 PIN = "X {name} {num} {x} {y} {length} {orientation} {num_sz} {name_sz} {unit_num} 1 {pin_type} {pin_style}\n"
 
-
+    
 def annotate_pins(unit_pins, annotation_style):
     """Annotate pin names to indicate special information."""
     for name, pins in unit_pins:
@@ -282,7 +282,7 @@ def count_pin_slots(unit_pins):
     return num_slots
 
 
-def pins_bbox(unit_pins, center_symbol):
+def pins_bbox(unit_pins):
     """Return the bounding box of a column of pins and their names."""
 
     if len(unit_pins) == 0:
@@ -302,13 +302,12 @@ def pins_bbox(unit_pins, center_symbol):
     width = math.ceil(float(width) / PIN_SPACING) * PIN_SPACING
 
     # Compute the height of the column of pins.
-    height = count_pin_slots(unit_pins) * PIN_SPACING
-    height = 2*math.ceil(float(height/2) / PIN_SPACING) * PIN_SPACING
+    # height = count_pin_slots(unit_pins) * PIN_SPACING
+    # height = 2*math.ceil(float(height/2) / PIN_SPACING) * PIN_SPACING
+    height = count_pin_slots(unit_pins)
+    height = 2*math.ceil(0.5 * height) * PIN_SPACING
 
-    if not center_symbol:
-        return [[XO, YO + PIN_SPACING], [XO + width, YO - height]]
-    else:
-        return [[-width/2, height/2 + PIN_SPACING], [width/2, -height/2]]
+    return [[XO, YO + PIN_SPACING], [XO + width, YO - height]]
 
 
 def balance_bboxes(bboxes):
@@ -378,7 +377,7 @@ def balance_bboxes(bboxes):
             bboxes["bottom"][1][Y] = bal_bbox[1][Y]
 
 
-def draw_pins(unit_num, unit_pins, bbox, transform, side, push, fuzzy_match, center_symbol):
+def draw_pins(unit_num, unit_pins, bbox, transform, side, push, fuzzy_match):
     """Draw a column of pins rotated/translated by the transform matrix."""
 
     # String to add pin definitions to.
@@ -388,38 +387,17 @@ def draw_pins(unit_num, unit_pins, bbox, transform, side, push, fuzzy_match, cen
     # bounding box (which should be at least as large). Half the difference
     # will be the offset needed to center the pins on the side of the symbol.
     Y = 1  # Index for Y coordinate.
-    pins_bb = pins_bbox(unit_pins, center_symbol)
-    if center_symbol:
-        height_offset = abs(bbox[0][Y] - bbox[1][Y]) - abs(pins_bb[0][Y] - pins_bb[1][Y])
-        push = min(max(0.0, push), 1.0)
-#        if side in ("right", "left"):
-#            push = 1.0 - push
-        height_offset *= push
-        height_offset -= height_offset % PIN_SPACING # Keep stuff on the PIN_SPACING grid.
-    else:
-        height_offset = abs(bbox[0][Y] - bbox[1][Y]) - abs(pins_bb[0][Y] - pins_bb[1][Y])
-        push = min(max(0.0, push), 1.0)
-        if side in ("right", "top"):
-            push = 1.0 - push
-        height_offset *= push
-        height_offset -= height_offset % PIN_SPACING # Keep stuff on the PIN_SPACING grid.
-    if center_symbol:
-        # Start drawing pins from the pins_bbox
-        x = pins_bb[0][0]
-        y = pins_bb[0][1] + height_offset
-        if side == "right":
-            y -= PIN_SPACING*1.5
-        elif side == "left":
-            y -= PIN_SPACING*1.5
-        elif side == "bottom":
-            x -= PIN_SPACING*1
-            y -= PIN_SPACING*1.5
-        elif side == "top":
-            y -= PIN_SPACING*1.5
-    else:
-        # Start drawing pins from the origin.
-        x = XO
-        y = YO - height_offset
+    pins_bb = pins_bbox(unit_pins)
+    height_offset = abs(bbox[0][Y] - bbox[1][Y]) - abs(pins_bb[0][Y] - pins_bb[1][Y])
+    push = min(max(0.0, push), 1.0)
+    if side in ("right", "top"):
+        push = 1.0 - push
+    height_offset *= push
+    height_offset -= height_offset % PIN_SPACING # Keep stuff on the PIN_SPACING grid.
+
+    # Start drawing pins from the origin.
+    x = XO
+    y = YO - height_offset
 
     for name, pins in unit_pins:
 
@@ -480,7 +458,6 @@ def draw_pins(unit_num, unit_pins, bbox, transform, side, push, fuzzy_match, cen
             if pin_type == 'N':
                 (draw_x, draw_y) = transform * (x + index, y + 1)
 
-
         # Move to the next pin placement location on this unit.
         y -= PIN_SPACING
 
@@ -498,6 +475,7 @@ def zero_pad_nums(s):
     except TypeError:
         return s  # The input is probably not a string, so just return it unchanged.
 
+
 def str_to_num_alpha_tuple(s):
     # Split a string of alphas and digits into a tuple of alpha/digit strings.
     try:
@@ -506,13 +484,16 @@ def str_to_num_alpha_tuple(s):
         return (zero_pad_nums(s), )
     return tuple(zero_pad_nums(_) for _ in seq)
 
+
 def num_key(pin):
     """Generate a key from a pin's number so they are sorted by position on the package."""
     return str_to_num_alpha_tuple(pin[1][0].num) + str_to_num_alpha_tuple(pin[1][0].name)
 
+
 def name_key(pin):
     "Generate a key from a pin's name so they are sorted more logically."""
     return str_to_num_alpha_tuple(pin[1][0].name) + str_to_num_alpha_tuple(pin[1][0].num)
+
 
 def row_key(pin):
     """Generate a key from the order the pins were entered into the CSV file."""
@@ -548,16 +529,24 @@ def draw_symbol(
         num_units=len(pin_data),
     )
 
-    # Determine if there are pins across the top of the symbol.
-    # If so, right-justify the reference, part number, etc. so they don't
-    # run into the top pins. If not, stick with left-justification.
-    text_justification = "L"
-    horiz_offset = PIN_LENGTH
-    for unit in list(pin_data.values()):
-        if "top" in list(unit.keys()):
-            text_justification = "R"
-            horiz_offset = PIN_LENGTH - 50
-            break
+    if center_symbol:
+        # Origin is in the center of the symbol.
+        text_justification = "C"
+        horiz_offset = 0
+        vert_offset = 50
+    else:
+        # Origin is on the top-most pin on the left side.
+        # Determine if there are pins across the top of the symbol.
+        # If so, right-justify the reference, part number, etc. so they don't
+        # run into the top pins. If not, stick with left-justification.
+        text_justification = "L"
+        horiz_offset = PIN_LENGTH
+        vert_offset = 250
+        for unit in list(pin_data.values()):
+            if "top" in list(unit.keys()):
+                text_justification = "R"
+                horiz_offset = PIN_LENGTH - 50
+                break
 
     # Create the field that stores the part reference.
     if not part_ref_prefix:
@@ -565,7 +554,7 @@ def draw_symbol(
     part_defn += REF_FIELD.format(
         ref_prefix=part_ref_prefix,
         x=XO + horiz_offset,
-        y=YO + REF_Y_OFFSET,
+        y=YO + REF_Y_OFFSET + vert_offset,
         text_justification=text_justification,
         font_size=REF_SIZE,
     )
@@ -576,7 +565,7 @@ def draw_symbol(
     part_defn += PARTNUM_FIELD.format(
         num=part_num,
         x=XO + horiz_offset,
-        y=YO + PART_NUM_Y_OFFSET,
+        y=YO + PART_NUM_Y_OFFSET + vert_offset,
         text_justification=text_justification,
         font_size=PART_NUM_SIZE,
     )
@@ -587,7 +576,7 @@ def draw_symbol(
     part_defn += FOOTPRINT_FIELD.format(
         footprint=part_footprint,
         x=XO + horiz_offset,
-        y=YO + PART_FOOTPRINT_Y_OFFSET,
+        y=YO + PART_FOOTPRINT_Y_OFFSET + vert_offset,
         text_justification=text_justification,
         font_size=PART_FOOTPRINT_SIZE,
     )
@@ -598,7 +587,7 @@ def draw_symbol(
     part_defn += DATASHEET_FIELD.format(
         datasheet=part_datasheet,
         x=XO + horiz_offset,
-        y=YO + PART_DATASHEET_Y_OFFSET,
+        y=YO + PART_DATASHEET_Y_OFFSET + vert_offset,
         text_justification=text_justification,
         font_size=PART_DATASHEET_SIZE,
     )
@@ -608,7 +597,7 @@ def draw_symbol(
         part_defn += MPN_FIELD.format(
             manf_num=part_manf_num,
             x=XO + horiz_offset,
-            y=YO + PART_MPN_Y_OFFSET,
+            y=YO + PART_MPN_Y_OFFSET + vert_offset,
             text_justification=text_justification,
             font_size=PART_MPN_SIZE,
         )
@@ -618,7 +607,7 @@ def draw_symbol(
         part_defn += DESC_FIELD.format(
             desc=part_desc,
             x=XO + horiz_offset,
-            y=YO + PART_DESC_Y_OFFSET,
+            y=YO + PART_DESC_Y_OFFSET + vert_offset,
             text_justification=text_justification,
             font_size=PART_DESC_SIZE,
         )
@@ -657,7 +646,7 @@ def draw_symbol(
         # Determine the actual bounding box for each side.
         bbox = {}
         for side, side_pins in list(unit.items()):
-            bbox[side] = pins_bbox(list(side_pins.items()), center_symbol)
+            bbox[side] = pins_bbox(list(side_pins.items()))
 
         # Adjust the sizes of the bboxes to make the unit look more symmetrical.
         balance_bboxes(bbox)
@@ -751,15 +740,18 @@ def draw_symbol(
             box_pt[side] = transform[side] * box_pt[side]
 
         if center_symbol:
-            bbox_translate_x = -(int(box_pt["left"][X]) + int(box_pt["right"][X]))/2
-            bbox_translate_y = -(int(box_pt["top"][Y]) + int(box_pt["bottom"][Y]))/2
+            # If centering, compute the translation to move the symbol box center to the origin.
+            bbox_translate_x = -(int(box_pt["right"][X]) + int(box_pt["left"][X]))/2
+            bbox_translate_y = -(int(box_pt["bottom"][Y]) + int(box_pt["top"][Y]))/2
+
+            # Add the translation to all the affine transforms of the sides of pins.
             for side in all_sides:
-                translate_x = 0
-                translate_y = 0
                 transform[side] = (
-                    Affine.translation(bbox_translate_x + translate_x, bbox_translate_y+translate_y) * transform[side]
+                    Affine.translation(bbox_translate_x, bbox_translate_y) * transform[side]
                 )
-                # Also translate the point on each side that defines the box around the symbol.
+            
+            # Also translate the point on each side that defines the box around the symbol.
+            for side in all_sides:
                 box_pt[side] = Affine.translation(bbox_translate_x, bbox_translate_y) * box_pt[side]
 
         # Draw the transformed pins for each side of the symbol.
@@ -777,10 +769,9 @@ def draw_symbol(
                 list(side_pins.items()), key=pin_key_func, reverse=side_reverse
             )
             # Draw the transformed pins for this side of the symbol.
-            part_tmp = draw_pins(
-                unit_num, sorted_side_pins, bbox[side], transform[side], side, push, fuzzy_match, center_symbol
+            part_defn += draw_pins(
+                unit_num, sorted_side_pins, bbox[side], transform[side], side, push, fuzzy_match
             )
-            part_defn += part_tmp
 
         # Create the box around the unit's pins.
         part_defn += BOX.format(
