@@ -302,9 +302,9 @@ def pins_bbox(unit_pins):
     width = math.ceil(float(width) / PIN_SPACING) * PIN_SPACING
 
     # Compute the height of the column of pins.
-    height = count_pin_slots(unit_pins)
-    height = 2 * math.ceil(0.5 * height) * PIN_SPACING
+    height = count_pin_slots(unit_pins) * PIN_SPACING
 
+    # Return the bounding box including a spacer on each end.
     return [[XO, YO + PIN_SPACING], [XO + width, YO - height]]
 
 
