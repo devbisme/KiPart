@@ -32,22 +32,22 @@ from .kipart import *
 
 def generic_reader(part_data_file, part_data_file_name, part_data_file_type):
     """Extract pin data from a CSV/text/Excel file and return a dictionary of pin data.
-       The file contains one or more groups of rows formatted as follows:
-           A row with a part info fields containing the part number, prefix, footprint id, etc.
-           Zero or more blank rows.
-           A row containing the column headers:
-               'Pin', 'Unit', 'Type', 'Style', 'Side', and 'Name'.
-               (Only 'Pin' and 'Name' are required. The order of
-               the columns is not important.)
-           Each succeeding row should contain:
-               The 'Pin' column should contain the pin number.
-               The 'Unit' column specifies the bank or unit number for the pin.
-               The 'Type' column specifies the pin type (input, output,...).
-               The 'Style' column specifies the pin's schematic style.
-               The 'Side' column specifies the side of the symbol the pin is on.
-               The 'Name' column contains the pin name.
-           A blank row terminates the pin data for the part and begins
-           a new group of rows for another part.
+    The file contains one or more groups of rows formatted as follows:
+        A row with a part info fields containing the part number, prefix, footprint id, etc.
+        Zero or more blank rows.
+        A row containing the column headers:
+            'Pin', 'Unit', 'Type', 'Style', 'Side', and 'Name'.
+            (Only 'Pin' and 'Name' are required. The order of
+            the columns is not important.)
+        Each succeeding row should contain:
+            The 'Pin' column should contain the pin number.
+            The 'Unit' column specifies the bank or unit number for the pin.
+            The 'Type' column specifies the pin type (input, output,...).
+            The 'Style' column specifies the pin's schematic style.
+            The 'Side' column specifies the side of the symbol the pin is on.
+            The 'Name' column contains the pin name.
+        A blank row terminates the pin data for the part and begins
+        a new group of rows for another part.
     """
 
     # If part data file is Excel, convert it to CSV.

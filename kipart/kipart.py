@@ -307,7 +307,7 @@ def pins_bbox(unit_pins):
 
 def find_bbox_bbox(*bboxes):
     """Find the bounding box for a set of bounding boxes."""
-    
+
     X, Y = 0, 1
 
     bb = [[0, 0], [0, 0]]
@@ -385,7 +385,7 @@ def balance_bboxes(bboxes):
 
 def calc_scrunch(bboxes):
     """Return the "scrunch" for compressing the left/right sides under the top/bottom."""
-    
+
     X, Y = 0, 1
 
     # Calculate how much the left/right sides can be "scrunched in" so they
