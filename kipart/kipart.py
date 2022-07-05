@@ -34,7 +34,7 @@ import sys
 import zipfile
 from builtins import str
 from collections import OrderedDict
-from copy import copy
+from copy import copy, deepcopy
 from pprint import pprint
 
 from affine import Affine
@@ -288,15 +288,12 @@ def pins_bbox(unit_pins):
     if len(unit_pins) == 0:
         return [[XO, YO], [XO, YO]]  # No pins, so no bounding box.
 
-    width = 0
-    for name, pins in unit_pins:
+    # Find the length of the longest pin name.
+    width = max((len(up[1][0].name) for up in unit_pins))
 
-        # Update the maximum observed width of a pin name. This is used later to
-        # size the width of the box surrounding the pin names for this unit.
-        width = max(width, len(pins[0].name) * PIN_NAME_SIZE)
-
-    # Add the separation space before and after the pin name.
-    width += PIN_LENGTH + 2 * PIN_NAME_OFFSET
+    # Compute bbox width adding the separation space before and after the pin name.
+    # (The space after the pin name keeps pin names on opposing sides from colliding.)
+    width = width * PIN_NAME_SIZE + PIN_LENGTH + 2 * PIN_NAME_OFFSET
 
     # Make bounding box an integer number of pin spaces so pin connections are always on the grid.
     width = math.ceil(float(width) / PIN_SPACING) * PIN_SPACING
@@ -304,27 +301,38 @@ def pins_bbox(unit_pins):
     # Compute the height of the column of pins.
     height = count_pin_slots(unit_pins) * PIN_SPACING
 
-    # Return the bounding box including a spacer on each end.
+    # Return the bounding box including a spacer on each end of the column.
     return [[XO, YO + PIN_SPACING], [XO + width, YO - height]]
 
 
-def balance_bboxes(bboxes):
-    """Make the symbol more balanced by adjusting the bounding boxes of the pins on each side."""
-    X = 0
-    Y = 1
+def find_bbox_bbox(*bboxes):
+    """Find the bounding box for a set of bounding boxes."""
+    
+    X, Y = 0, 1
 
-    def find_bbox_bbox(*bboxes):
-        """Find the bounding box for a set of bounding boxes."""
-        bb = [[0, 0], [0, 0]]
-        for bbox in bboxes:
-            bb[0][X] = min(bb[0][X], bbox[0][X])
-            bb[1][X] = max(bb[1][X], bbox[1][X])
-            bb[0][Y] = max(bb[0][Y], bbox[0][Y])
-            bb[1][Y] = min(bb[1][Y], bbox[1][Y])
-        return bb
+    bb = [[0, 0], [0, 0]]
+    for bbox in bboxes:
+        bb[0][X] = min(bb[0][X], bbox[0][X])
+        bb[1][X] = max(bb[1][X], bbox[1][X])
+        bb[0][Y] = max(bb[0][Y], bbox[0][Y])
+        bb[1][Y] = min(bb[1][Y], bbox[1][Y])
+    return bb
+
+
+def balance_bboxes(bboxes):
+    """
+    Make the symbol more balanced by adjusting the bounding boxes of the pins on each side.
+    """
+
+    X, Y = 0, 1
+
+    non_empty_sides = []
+    for side, bbox in bboxes.items():
+        if bbox[0][X] != bbox[1][X] and bbox[0][Y] != bbox[1][Y]:
+            non_empty_sides.append(side)
 
     # Determine the number of sides of the symbol with pins.
-    num_sides = len(bboxes)
+    num_sides = len(non_empty_sides)
 
     if num_sides == 4:
         # If the symbol has pins on all four sides, then check to see if there
@@ -335,44 +343,60 @@ def balance_bboxes(bboxes):
         lr_hgt = abs(lr_bbox[0][Y] - lr_bbox[1][Y])
         tb_bbox = find_bbox_bbox(bboxes["top"], bboxes["bottom"])
         tb_hgt = abs(tb_bbox[0][Y] - tb_bbox[1][Y])
-        if 0.75 <= float(lr_hgt) / float(tb_hgt) <= 1 / 0.75:
+        if 0.75 * tb_hgt <= lr_hgt <= 1.33 * tb_hgt:
             bal_bbox = find_bbox_bbox(*list(bboxes.values()))
             for side in bboxes:
-                bboxes[side] = copy(bal_bbox)
+                bboxes[side] = deepcopy(bal_bbox)
         else:
-            bboxes["left"] = copy(lr_bbox)
-            bboxes["right"] = copy(lr_bbox)
-            bboxes["top"] = copy(tb_bbox)
-            bboxes["bottom"] = copy(tb_bbox)
+            bboxes["left"] = deepcopy(lr_bbox)
+            bboxes["right"] = deepcopy(lr_bbox)
+            bboxes["top"] = deepcopy(tb_bbox)
+            bboxes["bottom"] = deepcopy(tb_bbox)
     elif num_sides == 3:
-        # If the symbol only has pins on threee sides, then equalize the
+        # If the symbol only has pins on three sides, then equalize the
         # bounding boxes for the pins on opposite sides and leave the
         # bounding box on the other side unchanged.
-        if "left" not in bboxes or "right" not in bboxes:
+        if "top" in non_empty_sides and "bottom" in non_empty_sides:
             # Top & bottom side pins, but the left or right side is empty.
             bal_bbox = find_bbox_bbox(bboxes["top"], bboxes["bottom"])
-            bboxes["top"] = copy(bal_bbox)
-            bboxes["bottom"] = copy(bal_bbox)
-        elif "top" not in bboxes or "bottom" not in bboxes:
+            bboxes["top"] = deepcopy(bal_bbox)
+            bboxes["bottom"] = deepcopy(bal_bbox)
+        elif "left" in non_empty_sides and "right" in non_empty_sides:
             # Left & right side pins, but the top or bottom side is empty.
             bal_bbox = find_bbox_bbox(bboxes["left"], bboxes["right"])
-            bboxes["left"] = copy(bal_bbox)
-            bboxes["right"] = copy(bal_bbox)
+            bboxes["left"] = deepcopy(bal_bbox)
+            bboxes["right"] = deepcopy(bal_bbox)
     elif num_sides == 2:
         # If the symbol only has pins on two opposing sides, then equalize the
         # height of the bounding boxes for each side. Leave the width unchanged.
-        if "left" in bboxes and "right" in bboxes:
+        if "left" in non_empty_sides and "right" in non_empty_sides:
             bal_bbox = find_bbox_bbox(bboxes["left"], bboxes["right"])
             bboxes["left"][0][Y] = bal_bbox[0][Y]
             bboxes["left"][1][Y] = bal_bbox[1][Y]
             bboxes["right"][0][Y] = bal_bbox[0][Y]
             bboxes["right"][1][Y] = bal_bbox[1][Y]
-        elif "top" in bboxes and "bottom" in bboxes:
+        elif "top" in non_empty_sides and "bottom" in non_empty_sides:
             bal_bbox = find_bbox_bbox(bboxes["top"], bboxes["bottom"])
             bboxes["top"][0][Y] = bal_bbox[0][Y]
             bboxes["top"][1][Y] = bal_bbox[1][Y]
             bboxes["bottom"][0][Y] = bal_bbox[0][Y]
             bboxes["bottom"][1][Y] = bal_bbox[1][Y]
+
+
+def calc_scrunch(bboxes):
+    """Return the "scrunch" for compressing the left/right sides under the top/bottom."""
+    
+    X, Y = 0, 1
+
+    # Calculate how much the left/right sides can be "scrunched in" so they
+    # reside underneath the top/bottom rows.
+    lr_bbox = find_bbox_bbox(bboxes["left"], bboxes["right"])
+    tb_bbox = find_bbox_bbox(bboxes["top"], bboxes["bottom"])
+    tb_width = abs(tb_bbox[0][Y] - tb_bbox[1][Y])
+    lr_width = abs(lr_bbox[0][X] - lr_bbox[1][X]) - PIN_LENGTH
+    scrunch = min(tb_width / 2, lr_width)
+
+    return scrunch
 
 
 def draw_pins(unit_num, unit_pins, bbox, transform, side, push, fuzzy_match):
@@ -518,6 +542,7 @@ def draw_symbol(
     push,
     annotation_style,
     center_symbol,
+    scrunch,
 ):
     """Add a symbol for a part to the library."""
 
@@ -646,12 +671,14 @@ def draw_symbol(
             annotate_pins(list(side_pins.items()), annotation_style)
 
         # Determine the actual bounding box for each side.
-        bbox = {}
         for side, side_pins in list(unit.items()):
             bbox[side] = pins_bbox(list(side_pins.items()))
 
         # Adjust the sizes of the bboxes to make the unit look more symmetrical.
         balance_bboxes(bbox)
+
+        # Calculate the amount to move the left/right sides to move them under the top/bottom rows.
+        scrunch_offset = calc_scrunch(bbox) if scrunch else 0
 
         # Determine some important points for each side of pins.
         for side in unit:
@@ -698,17 +725,12 @@ def draw_symbol(
         #        +--------+
         #
 
-        # Create zero-sized bounding boxes for any sides of the unit without pins.
-        # This makes it simpler to do the width/height calculation that follows.
-        for side in all_sides:
-            if side not in bbox:
-                bbox[side] = [(XO, YO), (XO, YO)]
-
         # This is the width and height of the box in the middle of the pins on each side.
         box_width = max(
             abs(bbox["top"][0][Y] - bbox["top"][1][Y]),
             abs(bbox["bottom"][0][Y] - bbox["bottom"][1][Y]),
         )
+        box_width -= 2 * scrunch_offset
         box_height = max(
             abs(bbox["left"][0][Y] - bbox["left"][1][Y]),
             abs(bbox["right"][0][Y] - bbox["right"][1][Y]),
@@ -731,9 +753,10 @@ def draw_symbol(
             elif side == "bottom":
                 # Translate AL to AB
                 translate_y -= box_height
+                translate_x -= scrunch_offset
             elif side == "top":
                 # Translate AL to AT
-                translate_x += box_width
+                translate_x += box_width + scrunch_offset
             # Create the complete transformation matrix = rotation followed by translation.
             transform[side] = (
                 Affine.translation(translate_x, translate_y) * transform[side]
@@ -859,6 +882,7 @@ def kipart(
     bundle=False,
     annotation_style="count",
     center_symbol=False,
+    scrunch=False,
     debug_level=0,
 ):
     """Read part pin data from a CSV/text/Excel file and write or append it to a library file."""
@@ -901,6 +925,7 @@ def kipart(
             push=push,
             annotation_style=annotation_style,
             center_symbol=center_symbol,
+            scrunch=scrunch,
         )
 
 
@@ -949,6 +974,7 @@ def call_kipart(args, part_reader, part_data_file, file_name, file_type, parts_l
         bundle=args.bundle,
         annotation_style=args.annotation_style,
         center_symbol=args.center,
+        scrunch=args.scrunch,
         debug_level=args.debug,
     )
 
@@ -1056,6 +1082,11 @@ def main():
         "--center",
         action="store_true",
         help="Place symbol origin in the center of the symbol.",
+    )
+    parser.add_argument(
+        "--scrunch",
+        action="store_true",
+        help="Compress pins of left/right columns underneath top/bottom rows of pins.",
     )
     parser.add_argument(
         "-a",
