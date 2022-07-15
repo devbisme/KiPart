@@ -68,7 +68,7 @@ SINGLE_PIN_SUFFIX = ""
 PIN_SPACER_PREFIX = "*"
 
 # Settings for box drawn around pins in a unit.
-DEFAULT_BOX_LINE_WIDTH = 0
+DEFAULT_BOX_LINE_WIDTH = 10
 
 # Mapping from understandable schematic symbol box fill-type name
 # to the fill-type indicator used in the KiCad part library.
@@ -76,27 +76,27 @@ BOX_FILLS = {"no_fill": "N", "fg_fill": "F", "bg_fill": "f"}
 DEFAULT_BOX_FILL = "bg_fill"
 
 # Part reference.
-REF_SIZE = 60  # Font size.
+REF_SIZE = 50  # Font size.
 REF_Y_OFFSET = 0
 
 # Part number.
-PART_NUM_SIZE = 60  # Font size.
+PART_NUM_SIZE = 50  # Font size.
 PART_NUM_Y_OFFSET = -100
 
 # Part footprint
-PART_FOOTPRINT_SIZE = 60  # Font size.
+PART_FOOTPRINT_SIZE = 50  # Font size.
 PART_FOOTPRINT_Y_OFFSET = -200
 
 # Part manufacturer number.
-PART_MPN_SIZE = 60  # Font size.
+PART_MPN_SIZE = 50  # Font size.
 PART_MPN_Y_OFFSET = -300
 
 # Part datasheet.
-PART_DATASHEET_SIZE = 60  # Font size.
+PART_DATASHEET_SIZE = 50  # Font size.
 PART_DATASHEET_Y_OFFSET = -400
 
 # Part description.
-PART_DESC_SIZE = 60  # Font size.
+PART_DESC_SIZE = 50  # Font size.
 PART_DESC_Y_OFFSET = -500
 
 # Mapping from understandable pin orientation name to the orientation
