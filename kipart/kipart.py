@@ -59,7 +59,7 @@ PIN_LENGTH = 200
 PIN_SPACING = 100
 PIN_NUM_SIZE = 50  # Font size for pin numbers.
 PIN_NAME_SIZE = 50  # Font size for pin names.
-PIN_NAME_OFFSET = 40  # Separation between pin and pin name.
+PIN_NAME_OFFSET = 20  # Separation between pin and pin name.
 PIN_ORIENTATION = "left"
 PIN_STYLE = "line"
 SHOW_PIN_NUMBER = True  # Show pin numbers when True.
@@ -446,7 +446,7 @@ def draw_pins(unit_num, unit_pins, bbox, transform, side, push, fuzzy_match):
 
         # Create all the pins with a particular name. If there are more than one,
         # pin numbers are hidden, and everything after the first are hidden.
-        num_size = PIN_NUM_SIZE if len(pins) == 1 else 0
+        # num_size = PIN_NUM_SIZE if len(pins) == 1 else 0
         for index, pin in enumerate(pins):
 
             pin_num = str(pin.num)
@@ -463,7 +463,8 @@ def draw_pins(unit_num, unit_pins, bbox, transform, side, push, fuzzy_match):
                 y=int(draw_y),
                 length=PIN_LENGTH,
                 orientation=pin_side,
-                num_sz=num_size,
+                num_sz=PIN_NUM_SIZE,
+                # num_sz=num_size,
                 name_sz=PIN_NAME_SIZE,
                 unit_num=unit_num,
                 pin_type=pin_type,
@@ -768,6 +769,11 @@ def draw_symbol(
             # If centering, compute the translation to move the symbol box center to the origin.
             bbox_translate_x = -(int(box_pt["right"][X]) + int(box_pt["left"][X])) / 2
             bbox_translate_y = -(int(box_pt["bottom"][Y]) + int(box_pt["top"][Y])) / 2
+
+            # Force the translation to a multiple of the pin spacing so the pins don't
+            # go off grid.
+            bbox_translate_x = round(bbox_translate_x / PIN_SPACING) * PIN_SPACING
+            bbox_translate_y = round(bbox_translate_y / PIN_SPACING) * PIN_SPACING
 
             # Add the translation to all the affine transforms of the sides of pins.
             for side in all_sides:
