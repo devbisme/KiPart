@@ -8,8 +8,8 @@ KiPart
 KiPart is mainly intended to be used as a script::
 
     usage: kipart [-h] [-v] [-r [{xilinx6v,xilinxultra,xilinx6s,stm32cube,lattice,generic,xilinx7}]] [-s [{row,num,name}]] [--reverse]
-                [--side [{left,right,top,bottom}]] [--fill [{no_fill,fg_fill,bg_fill}]] [--box_line_width BOX_LINE_WIDTH] [--push PUSH] [-o [file.lib]]
-                [-f] [-b] [--annotation_style [{none,count,range}]] [-a] [-w] [-d [LEVEL]]
+                [--side [{left,right,top,bottom}]] [--fill [{no_fill,fg_fill,bg_fill}]] [--box_line_width BOX_LINE_WIDTH] [--push PUSH]
+                [-o [file.lib]] [-f] [-b] [--annotation_style [{none,count,range}]] [-c] [--scrunch] [-a] [-w] [-d [LEVEL]]
                 file.[csv|txt|xlsx|zip] [file.[csv|txt|xlsx|zip] ...]
 
     Generate single & multi-unit schematic symbols for KiCad from a CSV file.
@@ -39,6 +39,8 @@ KiPart is mainly intended to be used as a script::
     -b, --bundle          Bundle multiple, identically-named power and ground pins each into a single schematic pin.
     --annotation_style [{none,count,range}]
                             Selects suffix appended to bundled pin names: none (), count ([n]), range ([n:0]).
+    -c, --center          Place symbol origin in the center of the symbol.
+    --scrunch             Compress pins of left/right columns underneath top/bottom rows of pins.
     -a, --append, --add   Add parts to an existing part library. Overwrite existing parts only if used in conjunction with -w.
     -w, --overwrite       Allow overwriting of an existing part library.
     -d [LEVEL], --debug [LEVEL]
@@ -149,11 +151,11 @@ If a part with the same name already exists, the new part will only overwrite it
 if the ``-w`` flag is also used.
 Any existing parts in the library that are not overwritten are retained.
 
-Specifying the ``--fill`` option will determine how schematic boxes are filled:
+Specifying the ``--fill`` option will determine how symbol boxes are filled:
 
 * ``no_fill``: Default. Schematic symbols are created with no filled boxes.
-* ``fg_fill``: Schematic boxes will be foreground filled
-* ``bg_fill``: Schematic boxes will be background filled. (This is the default.)
+* ``fg_fill``: Symbol boxes will be foreground filled
+* ``bg_fill``: Symbol boxes will be background filled. (This is the default.)
 
 The ``--box_line_width`` option sets the linewidth of the schematic symbol
 box in units of mils. The default setting is zero.
@@ -163,6 +165,13 @@ schematic symbol box. A value of 0.0 pushes them to the upper-most or left-most
 position on the left/right or top/bottom sides. A value of 1.0 pushes them to
 the bottom-most or right-most position on the left-right or top-bottom sides.
 A value of 0.5 (the default) centers them.
+
+The ``--scrunch`` option will compress a three- or four-sided schematic symbol by
+moving the left and right columns of pins closer together so that their pin labels
+are shadowed by the pins on the top and bottom rows.
+
+By default, the first pin of a schematic symbol is placed at the origin.
+The ``-c`` option causes the centroid of the symbol to be placed at the origin.
 
 Examples
 ^^^^^^^^^^^^
