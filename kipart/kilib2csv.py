@@ -36,6 +36,7 @@ from builtins import open
 
 from future import standard_library
 from pyparsing import *
+from kiutils.symbol import SymbolLib
 
 from .common import issue
 from .pckg_info import __version__
@@ -44,12 +45,39 @@ from .py_2_3 import *
 standard_library.install_aliases()
 
 
-THIS_MODULE = locals()
-
-
-def _parse_lib_kicad(text):
+def _parse_lib_V6(lib_filename):
     """
-    Return a pyparsing object storing the contents of a KiCad symbol library.
+    Return an object storing the contents of a KiCad V6 symbol library.
+    """
+
+    def asdict(lst, attr):
+        """Return a dictionary indexed by a given attribute of the list elements."""
+        return {getattr(item, attr): item for item in lst}
+
+    symbol_lib = SymbolLib.from_file(lib_filename)
+    symbols = asdict(symbol_lib.symbols, "id")
+    for name, symbol in symbols.items():
+        symbol.name = name
+        symbol.properties = asdict(symbol.properties, "key")
+        symbol.ref_id = symbol.properties["Reference"].value
+        symbol.units = asdict(symbol.units, "id")
+        symbol.pins = []
+        for id, unit in symbol.units.items():
+            for pin in unit.pins:
+                pin.unit = id
+                # pin.name = pin.name,
+                pin.num = pin.number
+                pin.type = pin.electricalType
+                pin.orientation = pin.position.angle
+                pin.style = pin.graphicalStyle
+                symbol.pins.append(pin)
+    symbol_lib.parts = symbols.values()
+    return symbol_lib
+
+
+def _parse_lib_V5(lib_filename):
+    """
+    Return a pyparsing object storing the contents of a KiCad V5 symbol library.
     """
 
     # Basic parser elements.
@@ -122,6 +150,9 @@ def _parse_lib_kicad(text):
 
     # ---------------------- End of parser -------------------------
 
+    with open(lib_filename, "r") as f:
+        text = f.read()
+
     # Remove all comments from the text to be parsed but leave the lines blank.
     # (Don't delete the lines or else it becomes hard to find the line in the file
     # that made the parser fail.)
@@ -141,47 +172,14 @@ def _parse_lib_kicad(text):
     return lib.parseString(text)
 
 
-def _parse_lib(src, tool="kicad"):
-    """
-    Return a pyparsing object storing the contents of a schematic symbol library.
-
-    Args:
-        src: Either a text string, or a filename, or a file object that stores
-            the netlist.
-
-    Returns:
-        A pyparsing object that stores the library contents.
-
-    Exception:
-        PyparsingException.
-    """
-
-    try:
-        text = src.read()
-    except Exception:
-        try:
-            text = open(src, "r").read()
-        except Exception:
-            text = src
-
-    if not isinstance(text, basestring):
-        raise Exception("What is this shit you're handing me? [{}]\n".format(src))
-
-    try:
-        # Use the tool name to find the function for loading the library.
-        func_name = "_parse_lib_{}".format(tool)
-        parse_func = THIS_MODULE[func_name]
-        return parse_func(text)
-    except KeyError:
-        # OK, that didn't work so well...
-        logger.error("Unsupported ECAD tool library: {}".format(tool))
-        raise Exception
-
-
 def _gen_csv(parsed_lib):
     """Return multi-line CSV string for the parts in a parsed schematic library."""
 
+    # Determine if parsing was done for KiCad V5 or V6 symbol library.
+    is_v5 = isinstance(parsed_lib, ParseResults)
+
     type_tbl = {
+        # KiCad V5
         "I": "in",
         "O": "out",
         "B": "bidir",
@@ -193,9 +191,34 @@ def _gen_csv(parsed_lib):
         "C": "open_collector",
         "E": "open_emitter",
         "N": "NC",
+        # KiCad V6
+        "input": "in",
+        "output": "out",
+        "bidirectional": "bidir",
+        "tri_state": "tri",
+        "passive": "passive",
+        "free": "free",
+        "unspecified": "unspecified",
+        "power_in": "pwr",
+        "power_out": "pwr_out",
+        "open_collector": "open_collector",
+        "open_emitter": "open_emitter",
+        "no_connect": "NC",
     }
-    orientation_tbl = {"R": "left", "L": "right", "U": "bottom", "D": "top"}
+    orientation_tbl = {
+        # KiCad V5
+        "R": "left",
+        "L": "right",
+        "U": "bottom",
+        "D": "top",
+        # KiCad V6
+        0: "left",
+        180: "right",
+        90: "bottom",
+        270: "top",
+    }
     style_tbl = {
+        # KiCad V5
         "": "",
         "I": "inv",
         "C": "clk",
@@ -205,6 +228,16 @@ def _gen_csv(parsed_lib):
         "V": "output_low",
         "F": "falling_clk",
         "X": "non_logic",
+        # KiCad V6
+        "line": "",
+        "inverted": "inv",
+        "clock": "clk",
+        "inverted_clock": "inv_clk",
+        "input_low": "input_low",
+        "clock_low": "clk_low",
+        "output_low": "output_low",
+        "edge_clock_high": "falling_clk",
+        "non_logic": "non_logic",
     }
 
     csv = ""
@@ -235,15 +268,24 @@ def _gen_csv(parsed_lib):
 
         for p in sorted(part.pins, key=num_key):
             # Replace commas in pin numbers, names and units so it doesn't screw-up the CSV file.
-            p["num"] = re.sub(",", ";", p.num)
-            p["name"] = re.sub(",", ";", p.name)
-            p["unit"] = re.sub(",", ";", p.unit)
+            if is_v5:
+                # Assigning to attributes doesn't work with pyparsing object used by V5.
+                p["num"] = re.sub(",", ";", p.num)
+                p["name"] = re.sub(",", ";", p.name)
+                p["unit"] = re.sub(",", ";", p.unit)
+            else:
+                p.num = re.sub(",", ";", p.num)
+                p.name = re.sub(",", ";", p.name)
+                p.unit = re.sub(",", ";", p.unit)
 
             is_hidden = ""
-
-            if p.style.find("N") != -1:
-                p["style"] = p.style.replace("N", "")
-                is_hidden = "Y"
+            if is_v5:
+                if p.style.find("N") != -1:
+                    p["style"] = p.style.replace("N", "")
+                    is_hidden = "Y"
+            else:
+                if p.hide:
+                    is_hidden = "Y"
 
             csv += (
                 ",".join(
@@ -337,11 +379,13 @@ def main():
 
         file_ext = os.path.splitext(input_file)[-1]  # Get input file extension.
 
-        if file_ext == ".lib":
-            # Process .lib input file.
-            with open(input_file, "r") as lib:
-                parsed_lib = _parse_lib(lib)
-                csv += _gen_csv(parsed_lib)
+        if input_file.endswith(".lib"):
+            parsed_lib = _parse_lib_V5(input_file)
+            csv += _gen_csv(parsed_lib)
+
+        elif input_file.endswith(".kicad_sym"):
+            parsed_lib = _parse_lib_V6(input_file)
+            csv += _gen_csv(parsed_lib)
 
         else:
             # Skip unrecognized files.

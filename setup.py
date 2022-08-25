@@ -5,7 +5,7 @@ import sys
 
 import setuptools
 
-__version__ = "1.1.0"
+__version__ = "1.2.0"
 __author__ = "Dave Vandenbout"
 __email__ = "devb@xess.com"
 
@@ -25,7 +25,13 @@ with open("README.rst") as readme_file:
 with open("HISTORY.rst") as history_file:
     history = history_file.read().replace(".. :changelog:", "")
 
-requirements = ["affine >= 1.2.0", "future >= 0.15.0", "pyparsing", "openpyxl"]
+requirements = [
+    "affine >= 1.2.0",
+    "future >= 0.15.0",
+    "pyparsing",
+    "openpyxl",
+    "kiutils",
+]
 
 test_requirements = []  # TODO: put package test requirements here
 

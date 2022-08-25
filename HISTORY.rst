@@ -3,6 +3,12 @@
 History
 -------
 
+1.2.0 (2022-08-25)
+__________________
+
+* Added ability to process KiCad V6 symbol libraries to kilib2csv.
+
+
 1.1.0 (2022-07-21)
 __________________
 
