@@ -30,7 +30,7 @@ requirements = [
     "future >= 0.15.0",
     "pyparsing",
     "openpyxl",
-    "kiutils",
+    "sexpdata",
 ]
 
 test_requirements = []  # TODO: put package test requirements here

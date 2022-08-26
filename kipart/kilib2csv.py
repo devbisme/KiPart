@@ -36,43 +36,13 @@ from builtins import open
 
 from future import standard_library
 from pyparsing import *
-from kiutils.symbol import SymbolLib
+import sexpdata as sx
 
 from .common import issue
 from .pckg_info import __version__
 from .py_2_3 import *
 
 standard_library.install_aliases()
-
-
-def _parse_lib_V6(lib_filename):
-    """
-    Return an object storing the contents of a KiCad V6 symbol library.
-    """
-
-    def asdict(lst, attr):
-        """Return a dictionary indexed by a given attribute of the list elements."""
-        return {getattr(item, attr): item for item in lst}
-
-    symbol_lib = SymbolLib.from_file(lib_filename)
-    symbols = asdict(symbol_lib.symbols, "id")
-    for name, symbol in symbols.items():
-        symbol.name = name
-        symbol.properties = asdict(symbol.properties, "key")
-        symbol.ref_id = symbol.properties["Reference"].value
-        symbol.units = asdict(symbol.units, "id")
-        symbol.pins = []
-        for id, unit in symbol.units.items():
-            for pin in unit.pins:
-                pin.unit = id
-                # pin.name = pin.name,
-                pin.num = pin.number
-                pin.type = pin.electricalType
-                pin.orientation = pin.position.angle
-                pin.style = pin.graphicalStyle
-                symbol.pins.append(pin)
-    symbol_lib.parts = symbols.values()
-    return symbol_lib
 
 
 def _parse_lib_V5(lib_filename):
@@ -170,6 +140,83 @@ def _parse_lib_V5(lib_filename):
 
     # Return the parsed text.
     return lib.parseString(text)
+
+
+def _parse_lib_V6(lib_filename):
+    """
+    Return an object storing the contents of a KiCad V6 symbol library.
+    """
+
+    # Create some classes so the parsed V6 library can be handled like the
+    # PyParsing object that is generated from a V5 library.
+    class SymbolLib:
+        def __init__(self):
+            self.parts = []
+
+        def append(self, part):
+            self.parts.append(part)
+
+    class Part:
+        def __init__(self, name, ref_id, pins):
+            self.name = name
+            self.ref_id = ref_id
+            self.pins = pins[:]
+
+    class Pin:
+        def __init__(self, unit_id="", name="", number="", type="", style="", orientation=0, hide=False):
+            self.unit = unit_id
+            self.name = name
+            self.num = number
+            self.type = type
+            self.style = style
+            self.orientation = orientation
+            self.hide = hide
+
+    # Convert the S-expression in the library into a nested array.
+    lib = sx.load(open(lib_filename, "r"))
+
+    # Skip over the 'kicad_symbol_lib' label and extract symbols into a dictionary with
+    # symbol names as keys.
+    symbols = {item[1]: item[2:] for item in lib[1:] if item[0].value().lower()=='symbol'}
+
+    # Process each symbol to get the pin data.
+    symbol_lib = SymbolLib()
+    for sym_name, sym_data in symbols.items():
+
+        # Get symbol properties, primarily to get the reference id.
+        properties = {item[1]:item[2] for item in sym_data if item[0].value().lower()=='property'}
+        assert sym_name == properties['Value']
+
+        # Get the units in the symbol.
+        units = {item[1]:item[2:] for item in sym_data if item[0].value().lower()=='symbol'}
+
+        # Get the pins from each unit and place them in a master list of pins for the entire symbol.
+        pins = []
+        for unit_id, unit_data in units.items():
+            unit_pins = [item[1:] for item in unit_data if item[0].value().lower()=='pin']
+            for pin_data in unit_pins:
+                pin = Pin()
+                pin.unit = unit_id
+                pin.type = pin_data[0].value().lower()
+                pin.style = pin_data[1].value().lower()
+                pin.hide = False
+                for data in pin_data[2:]:
+                    if not isinstance(data, list):
+                        if data.value().lower()=='hide':
+                            pin.hide = True
+                        continue
+                    else:
+                        label = data[0].value().lower()
+                        if label=='at':
+                            pin.orientation = data[3]
+                        elif label=='name':
+                            pin.name = data[1]
+                        elif label=='number':
+                            pin.num = data[1]
+                pins.append(pin)
+        symbol_lib.append(Part(properties['Value'], properties['Reference'], pins))
+
+    return symbol_lib
 
 
 def _gen_csv(parsed_lib):

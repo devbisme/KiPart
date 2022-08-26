@@ -9,6 +9,16 @@ tests: $(tests:=.tst)
 
 FLAGS= -s num --box_line_width 12 --fill no_fill
 
+kilib2csv:
+	@kilib2csv -w -o v6.csv 4xxx.kicad_sym
+	@kipart -w v6.csv
+	@kilib2csv -w -o v5.csv v6.lib
+	@# Cut out unit fields since V5 & V6 are different.
+	@cut -d , -f 1-4,6- v5.csv > v5_no_units.csv
+	@cut -d , -f 1-4,6- v6.csv > v6_no_units.csv
+	@/bin/diff -s v5_no_units.csv v6_no_units.csv
+	@echo "*********************************************************************"
+
 randomtest1:
 	@python random_csv.py > randomtest.csv
 	@kipart $(FLAGS) randomtest.csv -o randomtest.lib -w
@@ -84,4 +94,4 @@ stm32_test.lib: stm32_test.csv
 	@echo "*********************************************************************"
 
 %.clean :
-	@rm -f $*.lib "$*_sorted.lib" "$*_sorted_copy.lib" xlsx_to_csv_file.csv
+	@rm -f $*.lib "$*_sorted.lib" "$*_sorted_copy.lib" xlsx_to_csv_file.csv v[56]*.*
