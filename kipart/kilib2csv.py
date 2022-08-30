@@ -187,15 +187,26 @@ def _parse_lib_V6(lib_filename):
     symbol_lib = SymbolLib()
     for sym_name, sym_data in symbols.items():
 
+        properties = {}
+        pins = []
+
+        # See if this symbol extends a previous parent symbol.
+        for item in sym_data:
+            if item[0].value().lower()=='extends':
+                # Get the properties and pins from the parent symbol.
+                parent_symbol = symbol_lib[item[1]]
+                properties['Value'] = parent_symbol.name
+                properties['Reference'] = parent_symbol.ref_id
+                pins.extend(parent_symbol.pins)
+
         # Get symbol properties, primarily to get the reference id.
-        properties = {item[1]:item[2] for item in sym_data if item[0].value().lower()=='property'}
+        properties.update({item[1]:item[2] for item in sym_data if item[0].value().lower()=='property'})
         assert sym_name == properties['Value']
 
         # Get the units in the symbol.
         units = {item[1]:item[2:] for item in sym_data if item[0].value().lower()=='symbol'}
 
         # Get the pins from each unit and place them in a master list of pins for the entire symbol.
-        pins = []
         for unit_id, unit_data in units.items():
             unit_pins = [item[1:] for item in unit_data if item[0].value().lower()=='pin']
             for pin_data in unit_pins:
@@ -218,6 +229,7 @@ def _parse_lib_V6(lib_filename):
                         elif label=='number':
                             pin.num = data[1]
                 pins.append(pin)
+
         symbol_lib.append(Part(properties['Value'], properties['Reference'], pins))
 
     return symbol_lib
