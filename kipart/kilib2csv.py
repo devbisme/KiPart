@@ -149,12 +149,16 @@ def _parse_lib_V6(lib_filename):
 
     # Create some classes so the parsed V6 library can be handled like the
     # PyParsing object that is generated from a V5 library.
-    class SymbolLib:
-        def __init__(self):
-            self.parts = []
+    class SymbolLib(dict):
+        def __init__(self, *args, **kwargs):
+            super().__init__(self, *args, **kwargs)
 
         def append(self, part):
-            self.parts.append(part)
+            self[part.name] = part
+
+        @property
+        def parts(self):
+            return self.values()
 
     class Part:
         def __init__(self, name, ref_id, pins):
