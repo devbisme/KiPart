@@ -577,10 +577,8 @@ def draw_symbol(
                 break
 
     # Create the field that stores the part reference.
-    if not part_ref_prefix:
-        part_ref_prefix = "U"
     part_defn += REF_FIELD.format(
-        ref_prefix=part_ref_prefix,
+        ref_prefix=part_ref_prefix or "U",
         x=XO + horiz_offset,
         y=YO + REF_Y_OFFSET + vert_offset,
         text_justification=text_justification,
@@ -588,10 +586,8 @@ def draw_symbol(
     )
 
     # Create the field that stores the part number.
-    if not part_num:
-        part_num = ""
     part_defn += PARTNUM_FIELD.format(
-        num=part_num,
+        num=part_num or "",
         x=XO + horiz_offset,
         y=YO + PART_NUM_Y_OFFSET + vert_offset,
         text_justification=text_justification,
@@ -599,10 +595,8 @@ def draw_symbol(
     )
 
     # Create the field that stores the part footprint.
-    if not part_footprint:
-        part_footprint = ""
     part_defn += FOOTPRINT_FIELD.format(
-        footprint=part_footprint,
+        footprint=part_footprint or "",
         x=XO + horiz_offset,
         y=YO + PART_FOOTPRINT_Y_OFFSET + vert_offset,
         text_justification=text_justification,
@@ -610,10 +604,8 @@ def draw_symbol(
     )
 
     # Create the field that stores the datasheet link.
-    if not part_datasheet:
-        part_datasheet = ""
     part_defn += DATASHEET_FIELD.format(
-        datasheet=part_datasheet,
+        datasheet=part_datasheet or "",
         x=XO + horiz_offset,
         y=YO + PART_DATASHEET_Y_OFFSET + vert_offset,
         text_justification=text_justification,
