@@ -55,7 +55,11 @@ XO = 0
 YO = 0
 
 # Pin settings.
-PIN_LENGTH = 200
+MIN_PIN_LENGTH = 200  # Minimum length of pins
+PIN_LENGTH_BASE = 0  # Whitespace length of pins
+PIN_LENGTH_PER_CHAR = 50  # Additional pin length per pin number character
+PIN_LENGTH_STYLE_MOD = 100  # Additional pin length for pin styles that encroach
+PIN_LENGTH_STYLES = {'CL', 'F', 'I', 'IC', 'L', 'V'}  # Pin styles that encroach
 PIN_SPACING = 100
 PIN_NUM_SIZE = 50  # Font size for pin numbers.
 PIN_NAME_SIZE = 50  # Font size for pin names.
@@ -282,7 +286,7 @@ def count_pin_slots(unit_pins):
     return num_slots
 
 
-def pins_bbox(unit_pins):
+def pins_bbox(unit_pins, pin_length):
     """Return the bounding box of a column of pins and their names."""
 
     if len(unit_pins) == 0:
@@ -293,7 +297,7 @@ def pins_bbox(unit_pins):
 
     # Compute bbox width adding the separation space before and after the pin name.
     # (The space after the pin name keeps pin names on opposing sides from colliding.)
-    width = width * PIN_NAME_SIZE + PIN_LENGTH + 2 * PIN_NAME_OFFSET
+    width = width * PIN_NAME_SIZE + pin_length + 2 * PIN_NAME_OFFSET
 
     # Make bounding box an integer number of pin spaces so pin connections are always on the grid.
     width = math.ceil(float(width) / PIN_SPACING) * PIN_SPACING
@@ -383,7 +387,7 @@ def balance_bboxes(bboxes):
             bboxes["bottom"][1][Y] = bal_bbox[1][Y]
 
 
-def calc_scrunch(bboxes):
+def calc_scrunch(bboxes, pin_length):
     """Return the "scrunch" for compressing the left/right sides under the top/bottom."""
 
     X, Y = 0, 1
@@ -393,13 +397,13 @@ def calc_scrunch(bboxes):
     lr_bbox = find_bbox_bbox(bboxes["left"], bboxes["right"])
     tb_bbox = find_bbox_bbox(bboxes["top"], bboxes["bottom"])
     tb_width = abs(tb_bbox[0][Y] - tb_bbox[1][Y])
-    lr_width = abs(lr_bbox[0][X] - lr_bbox[1][X]) - PIN_LENGTH
+    lr_width = abs(lr_bbox[0][X] - lr_bbox[1][X]) - pin_length
     scrunch = min(tb_width / 2, lr_width)
 
     return scrunch
 
 
-def draw_pins(unit_num, unit_pins, bbox, transform, side, push, fuzzy_match):
+def draw_pins(unit_num, unit_pins, bbox, transform, side, push, fuzzy_match, pin_length):
     """Draw a column of pins rotated/translated by the transform matrix."""
 
     # String to add pin definitions to.
@@ -409,7 +413,7 @@ def draw_pins(unit_num, unit_pins, bbox, transform, side, push, fuzzy_match):
     # bounding box (which should be at least as large). Half the difference
     # will be the offset needed to center the pins on the side of the symbol.
     Y = 1  # Index for Y coordinate.
-    pins_bb = pins_bbox(unit_pins)
+    pins_bb = pins_bbox(unit_pins, pin_length)
     height_offset = abs(bbox[0][Y] - bbox[1][Y]) - abs(pins_bb[0][Y] - pins_bb[1][Y])
     push = min(max(0.0, push), 1.0)
     if side in ("right", "top"):
@@ -457,7 +461,7 @@ def draw_pins(unit_num, unit_pins, bbox, transform, side, push, fuzzy_match):
                 num=pin_num,
                 x=int(draw_x),
                 y=int(draw_y),
-                length=PIN_LENGTH,
+                length=pin_length,
                 orientation=pin_side,
                 num_sz=num_size,
                 name_sz=PIN_NAME_SIZE,
@@ -552,6 +556,9 @@ def draw_symbol(
         num_units=len(pin_data),
     )
 
+    # Determine the maximum length of pin
+    pin_length = calculate_pin_length(pin_data, fuzzy_match)
+
     if center_symbol:
         # Origin is in the center of the symbol.
         text_justification = "C"
@@ -563,12 +570,12 @@ def draw_symbol(
         # If so, right-justify the reference, part number, etc. so they don't
         # run into the top pins. If not, stick with left-justification.
         text_justification = "L"
-        horiz_offset = PIN_LENGTH
+        horiz_offset = pin_length
         vert_offset = 250
         for unit in list(pin_data.values()):
             if "top" in list(unit.keys()):
                 text_justification = "R"
-                horiz_offset = PIN_LENGTH - 50
+                horiz_offset = pin_length - 50
                 break
 
     # Create the field that stores the part reference.
@@ -650,8 +657,8 @@ def draw_symbol(
         # Initialize data structures that store info for each side of a schematic symbol unit.
         all_sides = ["left", "right", "top", "bottom"]
         bbox = {side: [(XO, YO), (XO, YO)] for side in all_sides}
-        box_pt = {side: [XO + PIN_LENGTH, YO + PIN_SPACING] for side in all_sides}
-        anchor_pt = {side: [XO + PIN_LENGTH, YO + PIN_SPACING] for side in all_sides}
+        box_pt = {side: [XO + pin_length, YO + PIN_SPACING] for side in all_sides}
+        anchor_pt = {side: [XO + pin_length, YO + PIN_SPACING] for side in all_sides}
         transform = {}
 
         # Annotate the pins for each side of the symbol.
@@ -660,13 +667,13 @@ def draw_symbol(
 
         # Determine the actual bounding box for each side.
         for side, side_pins in list(unit.items()):
-            bbox[side] = pins_bbox(list(side_pins.items()))
+            bbox[side] = pins_bbox(list(side_pins.items()), pin_length)
 
         # Adjust the sizes of the bboxes to make the unit look more symmetrical.
         balance_bboxes(bbox)
 
         # Calculate the amount to move the left/right sides to move them under the top/bottom rows.
-        scrunch_offset = calc_scrunch(bbox) if scrunch else 0
+        scrunch_offset = calc_scrunch(bbox, pin_length) if scrunch else 0
 
         # Determine some important points for each side of pins.
         for side in unit:
@@ -685,7 +692,7 @@ def draw_symbol(
                 max(bbox[side][0][Y], bbox[side][1][Y]),
             ]
             box_pt[side] = [
-                min(bbox[side][0][X], bbox[side][1][X]) + PIN_LENGTH,
+                min(bbox[side][0][X], bbox[side][1][X]) + pin_length,
                 max(bbox[side][0][Y], bbox[side][1][Y]),
             ]
 
@@ -799,6 +806,7 @@ def draw_symbol(
                 side,
                 push,
                 fuzzy_match,
+                pin_length,
             )
 
         # Create the box around the unit's pins.
@@ -820,6 +828,20 @@ def draw_symbol(
 
     # Return complete part symbol definition.
     return part_defn
+
+
+def calculate_pin_length(pin_data, fuzzy_match):
+    pin_length = 0
+    for unit in pin_data.values():
+        for side in unit.values():
+            for pins in side.values():
+                for p in pins:
+                    style = find_closest_match(p.style, PIN_STYLES, fuzzy_match)
+                    pin_num, _ = get_pin_num_and_spacer(p)
+                    pin_length = max(pin_length,
+                            PIN_LENGTH_PER_CHAR * len(pin_num) +
+                            PIN_LENGTH_STYLE_MOD * (style in PIN_LENGTH_STYLES))
+    return max(PIN_LENGTH_BASE + pin_length, MIN_PIN_LENGTH)
 
 
 def can_bundle(pin, fuzzy_match):
