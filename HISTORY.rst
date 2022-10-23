@@ -3,6 +3,12 @@
 History
 -------
 
+1.3.0 (2022-10-23)
+__________________
+
+* Multiple asterisks can be prepended to pin numbers to create more than one blank pin location.
+
+
 1.2.0 (2022-08-25)
 __________________
 
