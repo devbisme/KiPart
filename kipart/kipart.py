@@ -257,8 +257,8 @@ def get_pin_num_and_spacer(pin):
     pin_num = str(pin.num)
     pin_spacer = 0
     # spacer pins have pin numbers starting with a special prefix char.
-    if pin_num.startswith(PIN_SPACER_PREFIX):
-        pin_spacer = 1
+    while pin_num.startswith(PIN_SPACER_PREFIX):
+        pin_spacer += 1
         pin_num = pin_num[1:]  # Remove the spacer prefix.
     return pin_num, pin_spacer
 
@@ -449,11 +449,7 @@ def draw_pins(unit_num, unit_pins, bbox, transform, side, push, fuzzy_match):
         num_size = PIN_NUM_SIZE if pin_type != "N" else 0
         for index, pin in enumerate(pins):
 
-            pin_num = str(pin.num)
-
-            # Remove any spacer prefix on the pin numbers.
-            if pin_num.startswith(PIN_SPACER_PREFIX):
-                pin_num = pin_num[1:]
+            pin_num, _ = get_pin_num_and_spacer(pin)
 
             # Create a pin using the pin data.
             pin_defn += PIN.format(
