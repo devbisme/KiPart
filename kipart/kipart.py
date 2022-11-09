@@ -546,96 +546,8 @@ def draw_symbol(
 ):
     """Add a symbol for a part to the library."""
 
-    # Start the part definition with the header.
-    part_defn = START_DEF.format(
-        name=part_num,
-        ref=part_ref_prefix,
-        pin_name_offset=PIN_NAME_OFFSET,
-        show_pin_number=SHOW_PIN_NUMBER and "Y" or "N",
-        show_pin_name=SHOW_PIN_NAME and "Y" or "N",
-        num_units=len(pin_data),
-    )
-
     # Determine the maximum length of pin
     pin_length = calculate_pin_length(pin_data, fuzzy_match)
-
-    if center_symbol:
-        # Origin is in the center of the symbol.
-        text_justification = "C"
-        horiz_offset = 0
-        vert_offset = 50
-    else:
-        # Origin is on the top-most pin on the left side.
-        # Determine if there are pins across the top of the symbol.
-        # If so, right-justify the reference, part number, etc. so they don't
-        # run into the top pins. If not, stick with left-justification.
-        text_justification = "L"
-        horiz_offset = pin_length
-        vert_offset = 250
-        for unit in list(pin_data.values()):
-            if "top" in list(unit.keys()):
-                text_justification = "R"
-                horiz_offset = pin_length - 50
-                break
-
-    # Create the field that stores the part reference.
-    part_defn += REF_FIELD.format(
-        ref_prefix=part_ref_prefix or "U",
-        x=XO + horiz_offset,
-        y=YO + REF_Y_OFFSET + vert_offset,
-        text_justification=text_justification,
-        font_size=REF_SIZE,
-    )
-
-    # Create the field that stores the part number.
-    part_defn += PARTNUM_FIELD.format(
-        num=part_num or "",
-        x=XO + horiz_offset,
-        y=YO + PART_NUM_Y_OFFSET + vert_offset,
-        text_justification=text_justification,
-        font_size=PART_NUM_SIZE,
-    )
-
-    # Create the field that stores the part footprint.
-    part_defn += FOOTPRINT_FIELD.format(
-        footprint=part_footprint or "",
-        x=XO + horiz_offset,
-        y=YO + PART_FOOTPRINT_Y_OFFSET + vert_offset,
-        text_justification=text_justification,
-        font_size=PART_FOOTPRINT_SIZE,
-    )
-
-    # Create the field that stores the datasheet link.
-    part_defn += DATASHEET_FIELD.format(
-        datasheet=part_datasheet or "",
-        x=XO + horiz_offset,
-        y=YO + PART_DATASHEET_Y_OFFSET + vert_offset,
-        text_justification=text_justification,
-        font_size=PART_DATASHEET_SIZE,
-    )
-
-    # Create the field that stores the manufacturer part number.
-    if part_manf_num:
-        part_defn += MPN_FIELD.format(
-            manf_num=part_manf_num,
-            x=XO + horiz_offset,
-            y=YO + PART_MPN_Y_OFFSET + vert_offset,
-            text_justification=text_justification,
-            font_size=PART_MPN_SIZE,
-        )
-
-    # Create the field that stores the datasheet link.
-    if part_desc:
-        part_defn += DESC_FIELD.format(
-            desc=part_desc,
-            x=XO + horiz_offset,
-            y=YO + PART_DESC_Y_OFFSET + vert_offset,
-            text_justification=text_justification,
-            font_size=PART_DESC_SIZE,
-        )
-
-    # Start the section of the part definition that holds the part's units.
-    part_defn += START_DRAW
 
     # Get a reference to the sort-key generation function for pins.
     pin_key_func = getattr(THIS_MODULE, "{}_key".format(sort_type))
@@ -643,23 +555,26 @@ def draw_symbol(
     # This is the sort-key generation function for unit names.
     unit_key_func = lambda x: zero_pad_nums(x[0])
 
-    # Now create the units that make up the part. Unit numbers go from 1
+    # The indices of the X and Y coordinates in a list of point coords.
+    X = 0
+    Y = 1
+
+    # Data for the units, used to draw everything
+    all_sides = ["left", "right", "top", "bottom"]
+    unitdata = {}
+
+    # Analyze the units that make up the part. Unit numbers go from 1
     # up to the number of units in the part. The units are sorted by their
     # names before assigning unit numbers.
     for unit_num, unit in enumerate(
         [p[1] for p in sorted(pin_data.items(), key=unit_key_func)], 1
     ):
-
-        # The indices of the X and Y coordinates in a list of point coords.
-        X = 0
-        Y = 1
-
         # Initialize data structures that store info for each side of a schematic symbol unit.
-        all_sides = ["left", "right", "top", "bottom"]
         bbox = {side: [(XO, YO), (XO, YO)] for side in all_sides}
         box_pt = {side: [XO + pin_length, YO + PIN_SPACING] for side in all_sides}
         anchor_pt = {side: [XO + pin_length, YO + PIN_SPACING] for side in all_sides}
         transform = {}
+        unitdata[unit_num] = ((bbox, box_pt, anchor_pt, transform))
 
         # Annotate the pins for each side of the symbol.
         for side_pins in list(unit.values()):
@@ -782,6 +697,101 @@ def draw_symbol(
                     Affine.translation(bbox_translate_x, bbox_translate_y)
                     * box_pt[side]
                 )
+
+    # Determine the field location
+    if center_symbol:
+        # Origin is in the center of the symbol.
+        text_justification = "C"
+        horiz_offset = 0
+        vert_offset = 50
+    else:
+        # Origin is on the top-most pin on the left side.
+        # Determine if there are pins across the top of the symbol.
+        # If so, right-justify the reference, part number, etc. so they don't
+        # run into the top pins. If not, stick with left-justification.
+        text_justification = "L"
+        horiz_offset = pin_length
+        vert_offset = 250
+        for unit in list(pin_data.values()):
+            if "top" in list(unit.keys()):
+                text_justification = "R"
+                horiz_offset = pin_length - 50
+                break
+
+    # Start the part definition with the header.
+    part_defn = START_DEF.format(
+        name=part_num,
+        ref=part_ref_prefix,
+        pin_name_offset=PIN_NAME_OFFSET,
+        show_pin_number=SHOW_PIN_NUMBER and "Y" or "N",
+        show_pin_name=SHOW_PIN_NAME and "Y" or "N",
+        num_units=len(pin_data),
+    )
+
+    # Create the field that stores the part reference.
+    part_defn += REF_FIELD.format(
+        ref_prefix=part_ref_prefix or "U",
+        x=XO + horiz_offset,
+        y=YO + REF_Y_OFFSET + vert_offset,
+        text_justification=text_justification,
+        font_size=REF_SIZE,
+    )
+
+    # Create the field that stores the part number.
+    part_defn += PARTNUM_FIELD.format(
+        num=part_num or "",
+        x=XO + horiz_offset,
+        y=YO + PART_NUM_Y_OFFSET + vert_offset,
+        text_justification=text_justification,
+        font_size=PART_NUM_SIZE,
+    )
+
+    # Create the field that stores the part footprint.
+    part_defn += FOOTPRINT_FIELD.format(
+        footprint=part_footprint or "",
+        x=XO + horiz_offset,
+        y=YO + PART_FOOTPRINT_Y_OFFSET + vert_offset,
+        text_justification=text_justification,
+        font_size=PART_FOOTPRINT_SIZE,
+    )
+
+    # Create the field that stores the datasheet link.
+    part_defn += DATASHEET_FIELD.format(
+        datasheet=part_datasheet or "",
+        x=XO + horiz_offset,
+        y=YO + PART_DATASHEET_Y_OFFSET + vert_offset,
+        text_justification=text_justification,
+        font_size=PART_DATASHEET_SIZE,
+    )
+
+    # Create the field that stores the manufacturer part number.
+    if part_manf_num:
+        part_defn += MPN_FIELD.format(
+            manf_num=part_manf_num,
+            x=XO + horiz_offset,
+            y=YO + PART_MPN_Y_OFFSET + vert_offset,
+            text_justification=text_justification,
+            font_size=PART_MPN_SIZE,
+        )
+
+    # Create the field that stores the datasheet link.
+    if part_desc:
+        part_defn += DESC_FIELD.format(
+            desc=part_desc,
+            x=XO + horiz_offset,
+            y=YO + PART_DESC_Y_OFFSET + vert_offset,
+            text_justification=text_justification,
+            font_size=PART_DESC_SIZE,
+        )
+
+    # Start the section of the part definition that holds the part's units.
+    part_defn += START_DRAW
+
+    # Now create the units that make up the part.
+    for unit_num, unit in enumerate(
+        [p[1] for p in sorted(pin_data.items(), key=unit_key_func)], 1
+    ):
+        bbox, box_pt, anchor_pt, transform = unitdata[unit_num]
 
         # Draw the transformed pins for each side of the symbol.
         for side in all_sides:
