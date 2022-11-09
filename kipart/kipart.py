@@ -699,24 +699,15 @@ def draw_symbol(
                 )
 
     # Determine the field location
-    if center_symbol:
-        # Origin is in the center of the symbol.
-        text_justification = "C"
-        horiz_offset = 0
-        vert_offset = 50
-    else:
-        # Origin is on the top-most pin on the left side.
-        # Determine if there are pins across the top of the symbol.
-        # If so, right-justify the reference, part number, etc. so they don't
-        # run into the top pins. If not, stick with left-justification.
-        text_justification = "L"
-        horiz_offset = pin_length
-        vert_offset = 250
-        for unit in list(pin_data.values()):
-            if "top" in list(unit.keys()):
-                text_justification = "R"
-                horiz_offset = pin_length - 50
-                break
+    # If there are pins across the top of the symbol, right-justify the
+    # reference, part number, etc. so they don't run into the top pins.
+    # Otherwise, stick with left-justification.
+    text_justification = "L"
+    horiz_offset = int(box_pt["left"][X])
+    vert_offset  = int(box_pt["top"][Y]) + 150
+    if any("top" in unit.keys() for unit in pin_data.values()):
+        text_justification = "R"
+        horiz_offset -= 50
 
     # Start the part definition with the header.
     part_defn = START_DEF.format(
