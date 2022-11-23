@@ -1,9 +1,9 @@
 EESchema-LIBRARY Version 2.3
 DEF example_part U 0 20 Y Y 1 L N
-F0 "U" 150 250 50 H V R CNN
-F1 "example_part" 150 150 50 H V R CNN
-F2 "" 150 50 50 H I R CNN
-F3 "" 150 -150 50 H I R CNN
+F0 "U" 150 650 50 H V R CNN
+F1 "example_part" 150 550 50 H V R CNN
+F2 "" 150 450 50 H I R CNN
+F3 "" 150 250 50 H I R CNN
 DRAW
 X A5 23 0 0 200 R 50 50 1 1 I 
 X C3 88 0 -100 200 R 50 50 1 1 B 
