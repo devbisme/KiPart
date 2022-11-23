@@ -3,6 +3,13 @@
 History
 -------
 
+1.4.0 (2022-11-23)
+__________________
+
+* Pin lengths are scaled to fit the size of the pin numbers.
+* Fixed exceptions caused by malformed input pin data.
+
+
 1.3.0 (2022-10-23)
 __________________
 
