@@ -7,6 +7,7 @@ History
 __________________
 
 * Pin lengths are scaled to fit the size of the pin numbers.
+* Part information is placed consistently regardless of part origin (either pin #1 or center).
 * Fixed exceptions caused by malformed input pin data.
 
 

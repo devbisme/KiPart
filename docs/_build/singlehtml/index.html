@@ -6,7 +6,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
 
-    <title>KiPart 1.3.0 documentation</title>
+    <title>KiPart 1.4.0 documentation</title>
     <link rel="stylesheet" type="text/css" href="_static/pygments.css" />
     <link rel="stylesheet" type="text/css" href="_static/classic.css" />
     
@@ -21,8 +21,8 @@
     <div class="related" role="navigation" aria-label="related navigation">
       <h3>Navigation</h3>
       <ul>
-        <li class="nav-item nav-item-0"><a href="#">KiPart 1.3.0 documentation</a> &#187;</li>
-        <li class="nav-item nav-item-this"><a href="">KiPart 1.3.0 documentation</a></li> 
+        <li class="nav-item nav-item-0"><a href="#">KiPart 1.4.0 documentation</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">KiPart 1.4.0 documentation</a></li> 
       </ul>
     </div>  
 
@@ -533,19 +533,27 @@ feature to the list in README.rst.</p></li>
 <span id="document-history"></span><section id="history">
 <h2>History<a class="headerlink" href="#history" title="Permalink to this headline">¶</a></h2>
 <section id="id1">
-<h3>1.3.0 (2022-10-23)<a class="headerlink" href="#id1" title="Permalink to this headline">¶</a></h3>
+<h3>1.4.0 (2022-11-23)<a class="headerlink" href="#id1" title="Permalink to this headline">¶</a></h3>
+<ul class="simple">
+<li><p>Pin lengths are scaled to fit the size of the pin numbers.</p></li>
+<li><p>Part information is placed consistently regardless of part origin (either pin #1 or center).</p></li>
+<li><p>Fixed exceptions caused by malformed input pin data.</p></li>
+</ul>
+</section>
+<section id="id2">
+<h3>1.3.0 (2022-10-23)<a class="headerlink" href="#id2" title="Permalink to this headline">¶</a></h3>
 <ul class="simple">
 <li><p>Multiple asterisks can be prepended to pin numbers to create more than one blank pin location.</p></li>
 </ul>
 </section>
-<section id="id2">
-<h3>1.2.0 (2022-08-25)<a class="headerlink" href="#id2" title="Permalink to this headline">¶</a></h3>
+<section id="id3">
+<h3>1.2.0 (2022-08-25)<a class="headerlink" href="#id3" title="Permalink to this headline">¶</a></h3>
 <ul class="simple">
 <li><p>Added ability to process KiCad V6 symbol libraries to kilib2csv.</p></li>
 </ul>
 </section>
-<section id="id3">
-<h3>1.1.0 (2022-07-21)<a class="headerlink" href="#id3" title="Permalink to this headline">¶</a></h3>
+<section id="id4">
+<h3>1.1.0 (2022-07-21)<a class="headerlink" href="#id4" title="Permalink to this headline">¶</a></h3>
 <ul class="simple">
 <li><p>No-connect pins were added to the types of pins that can be bundled.</p></li>
 <li><p>Option was added to select the suffix for bundled pins: none, count (<cite>[n]</cite>), or range (<cite>[n:0]</cite>).</p></li>
@@ -554,106 +562,106 @@ feature to the list in README.rst.</p></li>
 <li><p>Changes made to conform to KiCad Library Conventions.</p></li>
 </ul>
 </section>
-<section id="id4">
-<h3>1.0.0 (2021-09-17)<a class="headerlink" href="#id4" title="Permalink to this headline">¶</a></h3>
+<section id="id5">
+<h3>1.0.0 (2021-09-17)<a class="headerlink" href="#id5" title="Permalink to this headline">¶</a></h3>
 <ul class="simple">
 <li><p>Decided this tool has matured to the point it could be called 1.0.0.</p></li>
 </ul>
 </section>
-<section id="id5">
-<h3>0.1.45 (2020-11-18)<a class="headerlink" href="#id5" title="Permalink to this headline">¶</a></h3>
+<section id="id6">
+<h3>0.1.45 (2020-11-18)<a class="headerlink" href="#id6" title="Permalink to this headline">¶</a></h3>
 <ul class="simple">
 <li><p>Added option to set thickness of schematic symbol box.</p></li>
 <li><p>Added option to push pins left/up or right/down on the sides of the schematic symbol box.</p></li>
 <li><p>Removed reference to Lattice Diamond tool since it’s no longer supported.</p></li>
 </ul>
 </section>
-<section id="id6">
-<h3>0.1.44 (2020-07-21)<a class="headerlink" href="#id6" title="Permalink to this headline">¶</a></h3>
+<section id="id7">
+<h3>0.1.44 (2020-07-21)<a class="headerlink" href="#id7" title="Permalink to this headline">¶</a></h3>
 <ul class="simple">
 <li><p>Added “other” category to stm32cube_reader.py to remain compatible with new STM32cube software.</p></li>
 <li><p>KiPart will now use a &lt;name&gt;_reader.py file in the current directory to process part information.</p></li>
 <li><p>Cleaned up tests directory.</p></li>
 </ul>
 </section>
-<section id="id7">
-<h3>0.1.43 (2020-05-25)<a class="headerlink" href="#id7" title="Permalink to this headline">¶</a></h3>
+<section id="id8">
+<h3>0.1.43 (2020-05-25)<a class="headerlink" href="#id8" title="Permalink to this headline">¶</a></h3>
 <ul class="simple">
 <li><p>Fixed missing field label for description in F5.</p></li>
 </ul>
 </section>
-<section id="id8">
-<h3>0.1.42 (2020-04-30)<a class="headerlink" href="#id8" title="Permalink to this headline">¶</a></h3>
+<section id="id9">
+<h3>0.1.42 (2020-04-30)<a class="headerlink" href="#id9" title="Permalink to this headline">¶</a></h3>
 <ul class="simple">
 <li><p>Updated Lattice FPGA pinout reader.</p></li>
 </ul>
 </section>
-<section id="id9">
-<h3>0.1.41 (2020-04-07)<a class="headerlink" href="#id9" title="Permalink to this headline">¶</a></h3>
+<section id="id10">
+<h3>0.1.41 (2020-04-07)<a class="headerlink" href="#id10" title="Permalink to this headline">¶</a></h3>
 <ul class="simple">
 <li><p>Added option to select schematic symbol fill style.</p></li>
 </ul>
 </section>
-<section id="id10">
-<h3>0.1.40 (2020-02-26)<a class="headerlink" href="#id10" title="Permalink to this headline">¶</a></h3>
+<section id="id11">
+<h3>0.1.40 (2020-02-26)<a class="headerlink" href="#id11" title="Permalink to this headline">¶</a></h3>
 <ul class="simple">
 <li><p>Handled differing line terminations between Python 2/3 when converting XLSX to CSV file.</p></li>
 </ul>
 </section>
-<section id="id11">
-<h3>0.1.39 (2020-02-25)<a class="headerlink" href="#id11" title="Permalink to this headline">¶</a></h3>
+<section id="id12">
+<h3>0.1.39 (2020-02-25)<a class="headerlink" href="#id12" title="Permalink to this headline">¶</a></h3>
 <ul class="simple">
 <li><p>Fixed Python 2 str.lower() error requiring conversion of str to unicode.</p></li>
 </ul>
 </section>
-<section id="id12">
-<h3>0.1.38 (2020-02-24)<a class="headerlink" href="#id12" title="Permalink to this headline">¶</a></h3>
+<section id="id13">
+<h3>0.1.38 (2020-02-24)<a class="headerlink" href="#id13" title="Permalink to this headline">¶</a></h3>
 <ul class="simple">
 <li><p>Added missing parameter to stm32cube_reader().</p></li>
 </ul>
 </section>
-<section id="id13">
-<h3>0.1.37 (2020-01-28)<a class="headerlink" href="#id13" title="Permalink to this headline">¶</a></h3>
+<section id="id14">
+<h3>0.1.37 (2020-01-28)<a class="headerlink" href="#id14" title="Permalink to this headline">¶</a></h3>
 <ul class="simple">
 <li><p>Added requirement for openpyxl.</p></li>
 </ul>
 </section>
-<section id="id14">
-<h3>0.1.36 (2019-10-31)<a class="headerlink" href="#id14" title="Permalink to this headline">¶</a></h3>
+<section id="id15">
+<h3>0.1.36 (2019-10-31)<a class="headerlink" href="#id15" title="Permalink to this headline">¶</a></h3>
 <ul class="simple">
 <li><p>KiPart now accepts part data stored in Excel .xlsx files.</p></li>
 <li><p>Added reader for GOWIN FPGA pin tables.</p></li>
 </ul>
 </section>
-<section id="id15">
-<h3>0.1.35 (2019-09-19)<a class="headerlink" href="#id15" title="Permalink to this headline">¶</a></h3>
+<section id="id16">
+<h3>0.1.35 (2019-09-19)<a class="headerlink" href="#id16" title="Permalink to this headline">¶</a></h3>
 <ul class="simple">
 <li><p>Kipart now creates individual .lib files if given multiple .csv files with no global output .lib file specified using the -o option.</p></li>
 <li><p>kilib2csv now creates individual .csv files if given multiple .lib files with no global output .csv file specified using the -o option.</p></li>
 </ul>
 </section>
-<section id="id16">
-<h3>0.1.34 (2019-06-27)<a class="headerlink" href="#id16" title="Permalink to this headline">¶</a></h3>
+<section id="id17">
+<h3>0.1.34 (2019-06-27)<a class="headerlink" href="#id17" title="Permalink to this headline">¶</a></h3>
 <ul class="simple">
 <li><p>All symbols now include F2 (package) and F3 (datasheet) fields.</p></li>
 <li><p>Datasheet link and part description can be entered on the first line of a part description in the CSV file.</p></li>
 </ul>
 </section>
-<section id="id17">
-<h3>0.1.33 (2018-01-03)<a class="headerlink" href="#id17" title="Permalink to this headline">¶</a></h3>
+<section id="id18">
+<h3>0.1.33 (2018-01-03)<a class="headerlink" href="#id18" title="Permalink to this headline">¶</a></h3>
 <ul class="simple">
 <li><p>Fixed error in field syntax for part manufacturer number.</p></li>
 <li><p>No-connect pins can no longer be bundled because it is marked as an ERC error by EESCHEMA.</p></li>
 </ul>
 </section>
-<section id="id18">
-<h3>0.1.32 (2017-12-08)<a class="headerlink" href="#id18" title="Permalink to this headline">¶</a></h3>
+<section id="id19">
+<h3>0.1.32 (2017-12-08)<a class="headerlink" href="#id19" title="Permalink to this headline">¶</a></h3>
 <ul class="simple">
 <li><p>Pins sorted by name or row are now pplaced top-to-bottom on left/right sides and left-to-right on top/bottom sides.</p></li>
 </ul>
 </section>
-<section id="id19">
-<h3>0.1.31 (2017-10-10)<a class="headerlink" href="#id19" title="Permalink to this headline">¶</a></h3>
+<section id="id20">
+<h3>0.1.31 (2017-10-10)<a class="headerlink" href="#id20" title="Permalink to this headline">¶</a></h3>
 <ul class="simple">
 <li><p>Removed *_ in statement that caused an error in Python2.</p></li>
 <li><p>Removed duplicated entries in pin-style table.</p></li>
@@ -661,8 +669,8 @@ feature to the list in README.rst.</p></li>
 <li><p>Parts dictionary changed to OrderedDict so it retains the order parts were entered in. Important for passing random part generation tests.</p></li>
 </ul>
 </section>
-<section id="id20">
-<h3>0.1.30 (2017-10-05)<a class="headerlink" href="#id20" title="Permalink to this headline">¶</a></h3>
+<section id="id21">
+<h3>0.1.30 (2017-10-05)<a class="headerlink" href="#id21" title="Permalink to this headline">¶</a></h3>
 <ul class="simple">
 <li><p>Specifying <code class="docutils literal notranslate"><span class="pre">-a</span></code> option allows new parts to be written to an existing library but prevents overwriting existing parts.
 Using <code class="docutils literal notranslate"><span class="pre">-w</span></code> in conjunction with <code class="docutils literal notranslate"><span class="pre">-a</span></code> allows added parts to overwrite existing parts.</p></li>
@@ -670,95 +678,95 @@ Using <code class="docutils literal notranslate"><span class="pre">-w</span></co
 <li><p>Expanded the lists of mnemonics for pin types and styles.</p></li>
 </ul>
 </section>
-<section id="id21">
-<h3>0.1.29 (2017-07-31)<a class="headerlink" href="#id21" title="Permalink to this headline">¶</a></h3>
+<section id="id22">
+<h3>0.1.29 (2017-07-31)<a class="headerlink" href="#id22" title="Permalink to this headline">¶</a></h3>
 <ul class="simple">
 <li><p>Fixed erroneous library generation when part number is omitted from first line of CSV file.</p></li>
 <li><p>Changed default output library to <code class="docutils literal notranslate"><span class="pre">kipart.lib</span></code> if no output library is specified.</p></li>
 <li><p>Changed default output CSV file of kilib2csv to <code class="docutils literal notranslate"><span class="pre">kipart.csv</span></code> if no output CSV file is specified.</p></li>
 </ul>
 </section>
-<section id="id22">
-<h3>0.1.28 (2017-07-27)<a class="headerlink" href="#id22" title="Permalink to this headline">¶</a></h3>
+<section id="id23">
+<h3>0.1.28 (2017-07-27)<a class="headerlink" href="#id23" title="Permalink to this headline">¶</a></h3>
 <ul class="simple">
 <li><p>Added reader for Lattice FPGA devices (except iCE40). (Thanks, Adrien Descamps!)</p></li>
 </ul>
 </section>
-<section id="id23">
-<h3>0.1.27 (2017-05-24)<a class="headerlink" href="#id23" title="Permalink to this headline">¶</a></h3>
+<section id="id24">
+<h3>0.1.27 (2017-05-24)<a class="headerlink" href="#id24" title="Permalink to this headline">¶</a></h3>
 <ul class="simple">
 <li><p>Fixed issue #11 (blank lines in CSV file were skipped and multiple parts ran together).</p></li>
 </ul>
 </section>
-<section id="id24">
-<h3>0.1.26 (2017-05-21)<a class="headerlink" href="#id24" title="Permalink to this headline">¶</a></h3>
+<section id="id25">
+<h3>0.1.26 (2017-05-21)<a class="headerlink" href="#id25" title="Permalink to this headline">¶</a></h3>
 <ul class="simple">
 <li><p>Fixed issue #18 (crash when symbol side for pin was left blank).</p></li>
 </ul>
 </section>
-<section id="id25">
-<h3>0.1.25 (2017-05-03)<a class="headerlink" href="#id25" title="Permalink to this headline">¶</a></h3>
+<section id="id26">
+<h3>0.1.25 (2017-05-03)<a class="headerlink" href="#id26" title="Permalink to this headline">¶</a></h3>
 <ul class="simple">
 <li><p>Fixed problem caused by pin side designators not being lower-case (e.g., “Left”).</p></li>
 </ul>
 </section>
-<section id="id26">
-<h3>0.1.24 (2016-12-22)<a class="headerlink" href="#id26" title="Permalink to this headline">¶</a></h3>
+<section id="id27">
+<h3>0.1.24 (2016-12-22)<a class="headerlink" href="#id27" title="Permalink to this headline">¶</a></h3>
 <ul class="simple">
 <li><p>Fixed Xilinx reader function to parse leading comments in their FPGA pin files.</p></li>
 </ul>
 </section>
-<section id="id27">
-<h3>0.1.23 (2016-12-13)<a class="headerlink" href="#id27" title="Permalink to this headline">¶</a></h3>
+<section id="id28">
+<h3>0.1.23 (2016-12-13)<a class="headerlink" href="#id28" title="Permalink to this headline">¶</a></h3>
 <ul class="simple">
 <li><p>Added ability to create hidden pins.</p></li>
 </ul>
 </section>
-<section id="id28">
-<h3>0.1.22 (2016-11-29)<a class="headerlink" href="#id28" title="Permalink to this headline">¶</a></h3>
+<section id="id29">
+<h3>0.1.22 (2016-11-29)<a class="headerlink" href="#id29" title="Permalink to this headline">¶</a></h3>
 <ul class="simple">
 <li><p>Fixed readers for Xilinx, STM32, PSoC devices.</p></li>
 <li><p>Pins on multiple sides of a symbol are now distributed in a more attractive manner.</p></li>
 </ul>
 </section>
-<section id="id29">
-<h3>0.1.21 (2016-09-20)<a class="headerlink" href="#id29" title="Permalink to this headline">¶</a></h3>
+<section id="id30">
+<h3>0.1.21 (2016-09-20)<a class="headerlink" href="#id30" title="Permalink to this headline">¶</a></h3>
 <ul class="simple">
 <li><p>Extra stuff on starting line of library no longer kill kilib2csv.</p></li>
 </ul>
 </section>
-<section id="id30">
-<h3>0.1.20 (2016-09-16)<a class="headerlink" href="#id30" title="Permalink to this headline">¶</a></h3>
+<section id="id31">
+<h3>0.1.20 (2016-09-16)<a class="headerlink" href="#id31" title="Permalink to this headline">¶</a></h3>
 <ul class="simple">
 <li><p>Fixed bug where kilib2csv was choking on footprint lists in part definitions.</p></li>
 </ul>
 </section>
-<section id="id31">
-<h3>0.1.19 (2016-09-16)<a class="headerlink" href="#id31" title="Permalink to this headline">¶</a></h3>
+<section id="id32">
+<h3>0.1.19 (2016-09-16)<a class="headerlink" href="#id32" title="Permalink to this headline">¶</a></h3>
 <ul class="simple">
 <li><p>Added utility to test kilib2csv and kipart on randomly-generated CSV part files.</p></li>
 </ul>
 </section>
-<section id="id32">
-<h3>0.1.18 (2016-09-14)<a class="headerlink" href="#id32" title="Permalink to this headline">¶</a></h3>
+<section id="id33">
+<h3>0.1.18 (2016-09-14)<a class="headerlink" href="#id33" title="Permalink to this headline">¶</a></h3>
 <ul class="simple">
 <li><p>kilib2csv utility added to convert KiCad schematic symbol libraries into CSV files suitable for input to KiPart.</p></li>
 </ul>
 </section>
-<section id="id33">
-<h3>0.1.17 (2016-06-15)<a class="headerlink" href="#id33" title="Permalink to this headline">¶</a></h3>
+<section id="id34">
+<h3>0.1.17 (2016-06-15)<a class="headerlink" href="#id34" title="Permalink to this headline">¶</a></h3>
 <ul class="simple">
 <li><p>Use same type of sorting for unit names as for pin names so (for example) unit ‘ADC_12’ comes before unit ‘ADC_2’.</p></li>
 </ul>
 </section>
-<section id="id34">
-<h3>0.1.16 (2016-06-12)<a class="headerlink" href="#id34" title="Permalink to this headline">¶</a></h3>
+<section id="id35">
+<h3>0.1.16 (2016-06-12)<a class="headerlink" href="#id35" title="Permalink to this headline">¶</a></h3>
 <ul class="simple">
 <li><p>Added reader for CSV-formatted pinout files exported from the STM32CubeMx tool. (Thanks, Hasan Yavuz OZDERYA!)</p></li>
 </ul>
 </section>
-<section id="id35">
-<h3>0.1.15 (2016-02-17)<a class="headerlink" href="#id35" title="Permalink to this headline">¶</a></h3>
+<section id="id36">
+<h3>0.1.15 (2016-02-17)<a class="headerlink" href="#id36" title="Permalink to this headline">¶</a></h3>
 <ul class="simple">
 <li><p>Added reader for Xilinx Ultrascale FPGAs.</p></li>
 <li><p>Fixed insertion of spaces between groups of pins when pin number starts with ‘*’.</p></li>
@@ -766,67 +774,67 @@ Using <code class="docutils literal notranslate"><span class="pre">-w</span></co
 <li><p>fix_pin_data() now strips leading/trailing spaces from pin information.</p></li>
 </ul>
 </section>
-<section id="id36">
-<h3>0.1.14 (2016-01-30)<a class="headerlink" href="#id36" title="Permalink to this headline">¶</a></h3>
+<section id="id37">
+<h3>0.1.14 (2016-01-30)<a class="headerlink" href="#id37" title="Permalink to this headline">¶</a></h3>
 <ul class="simple">
 <li><p>Fixed incorrect y-offset of pins for symbols that only have pins along the right side.</p></li>
 </ul>
 </section>
-<section id="id37">
-<h3>0.1.13 (2015-09-09)<a class="headerlink" href="#id37" title="Permalink to this headline">¶</a></h3>
+<section id="id38">
+<h3>0.1.13 (2015-09-09)<a class="headerlink" href="#id38" title="Permalink to this headline">¶</a></h3>
 <ul class="simple">
 <li><p>The number of pins in a bundle is now appended to the pin name instead of an ‘*’.</p></li>
 </ul>
 </section>
-<section id="id38">
-<h3>0.1.12 (2015-09-03)<a class="headerlink" href="#id38" title="Permalink to this headline">¶</a></h3>
+<section id="id39">
+<h3>0.1.12 (2015-09-03)<a class="headerlink" href="#id39" title="Permalink to this headline">¶</a></h3>
 <ul class="simple">
 <li><p>Added capability to insert non-existent “gap” pins that divide groups of pins into sections.</p></li>
 </ul>
 </section>
-<section id="id39">
-<h3>0.1.11 (2015-09-02)<a class="headerlink" href="#id39" title="Permalink to this headline">¶</a></h3>
+<section id="id40">
+<h3>0.1.11 (2015-09-02)<a class="headerlink" href="#id40" title="Permalink to this headline">¶</a></h3>
 <ul class="simple">
 <li><p>future module requirement added to setup.py.</p></li>
 </ul>
 </section>
-<section id="id40">
-<h3>0.1.10 (2015-08-26)<a class="headerlink" href="#id40" title="Permalink to this headline">¶</a></h3>
+<section id="id41">
+<h3>0.1.10 (2015-08-26)<a class="headerlink" href="#id41" title="Permalink to this headline">¶</a></h3>
 <ul class="simple">
 <li><p>Now runs under both Python 2.7 and 3.4.</p></li>
 </ul>
 </section>
-<section id="id41">
-<h3>0.1.9 (2015-08-21)<a class="headerlink" href="#id41" title="Permalink to this headline">¶</a></h3>
+<section id="id42">
+<h3>0.1.9 (2015-08-21)<a class="headerlink" href="#id42" title="Permalink to this headline">¶</a></h3>
 <ul class="simple">
 <li><p>The bundling option now only bundles pins where that operation makes sense:
 power input pins (e.g., VCC and GND) and no-connect pins.</p></li>
 </ul>
 </section>
-<section id="id42">
-<h3>0.1.8 (2015-08-17)<a class="headerlink" href="#id42" title="Permalink to this headline">¶</a></h3>
+<section id="id43">
+<h3>0.1.8 (2015-08-17)<a class="headerlink" href="#id43" title="Permalink to this headline">¶</a></h3>
 <ul class="simple">
 <li><p>Input data from the CSV file is now scanned for errors and fixed before it can cause problems
 in the library file.</p></li>
 </ul>
 </section>
-<section id="id43">
-<h3>0.1.7 (2015-08-14)<a class="headerlink" href="#id43" title="Permalink to this headline">¶</a></h3>
+<section id="id44">
+<h3>0.1.7 (2015-08-14)<a class="headerlink" href="#id44" title="Permalink to this headline">¶</a></h3>
 <ul class="simple">
 <li><p>Added reader functions for Xilinx Virtex-6 and Spartan-6.</p></li>
 <li><p>Broke-out reader functions into separate modules.</p></li>
 <li><p>TXT and CSV files are now acceptable as part data files, but the reader has to be built to handle it.</p></li>
 </ul>
 </section>
-<section id="id44">
-<h3>0.1.6 (2015-08-13)<a class="headerlink" href="#id44" title="Permalink to this headline">¶</a></h3>
+<section id="id45">
+<h3>0.1.6 (2015-08-13)<a class="headerlink" href="#id45" title="Permalink to this headline">¶</a></h3>
 <ul class="simple">
 <li><p>Fuzzy string matching is now used for the column headers.</p></li>
 <li><p>Choice-type options are now case-insensitive.</p></li>
 </ul>
 </section>
-<section id="id45">
-<h3>0.1.5 (2015-07-29)<a class="headerlink" href="#id45" title="Permalink to this headline">¶</a></h3>
+<section id="id46">
+<h3>0.1.5 (2015-07-29)<a class="headerlink" href="#id46" title="Permalink to this headline">¶</a></h3>
 <ul class="simple">
 <li><p>Multiple parts can now be described in a single CSV file.</p></li>
 <li><p>Added function and option for reading Cypress PSoC5LP CSV files.</p></li>
@@ -834,21 +842,21 @@ in the library file.</p></li>
 <li><p>Improved ordering of pins by name.</p></li>
 </ul>
 </section>
-<section id="id46">
-<h3>0.1.4 (2015-07-27)<a class="headerlink" href="#id46" title="Permalink to this headline">¶</a></h3>
+<section id="id47">
+<h3>0.1.4 (2015-07-27)<a class="headerlink" href="#id47" title="Permalink to this headline">¶</a></h3>
 <ul class="simple">
 <li><p>Added option for approximate (fuzzy) matching for pin types, styles and orientations (sides).</p></li>
 </ul>
 </section>
-<section id="id47">
-<h3>0.1.3 (2015-07-26)<a class="headerlink" href="#id47" title="Permalink to this headline">¶</a></h3>
+<section id="id48">
+<h3>0.1.3 (2015-07-26)<a class="headerlink" href="#id48" title="Permalink to this headline">¶</a></h3>
 <ul class="simple">
 <li><p>Multiple pins with the same name are now hidden by reducing their pin number size to zero
 (rather than enabling the hidden flag which can cause problems with power-in pins).</p></li>
 </ul>
 </section>
-<section id="id48">
-<h3>0.1.2 (2015-07-24)<a class="headerlink" href="#id48" title="Permalink to this headline">¶</a></h3>
+<section id="id49">
+<h3>0.1.2 (2015-07-24)<a class="headerlink" href="#id49" title="Permalink to this headline">¶</a></h3>
 <ul class="simple">
 <li><p>Symbols can now have pins on any combination of left, right, top and bottom sides.</p></li>
 <li><p>Added option to append parts to an existing library.</p></li>
@@ -856,8 +864,8 @@ in the library file.</p></li>
 <li><p>Added documentation.</p></li>
 </ul>
 </section>
-<section id="id49">
-<h3>0.1.1 (2015-07-21)<a class="headerlink" href="#id49" title="Permalink to this headline">¶</a></h3>
+<section id="id50">
+<h3>0.1.1 (2015-07-21)<a class="headerlink" href="#id50" title="Permalink to this headline">¶</a></h3>
 <ul class="simple">
 <li><p>Fixed calculation of pin name widths.</p></li>
 <li><p>Made CSV row order the default for arranging pins on the schematic symbol.</p></li>
@@ -865,8 +873,8 @@ in the library file.</p></li>
 <li><p>Spaces are now stripped between fields in a CSV file.</p></li>
 </ul>
 </section>
-<section id="id50">
-<h3>0.1.0 (2015-07-20)<a class="headerlink" href="#id50" title="Permalink to this headline">¶</a></h3>
+<section id="id51">
+<h3>0.1.0 (2015-07-20)<a class="headerlink" href="#id51" title="Permalink to this headline">¶</a></h3>
 <ul class="simple">
 <li><p>First release on PyPI.</p></li>
 </ul>
@@ -916,56 +924,57 @@ in the library file.</p></li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="index.html#document-history">History</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="index.html#id1">1.3.0 (2022-10-23)</a></li>
-<li class="toctree-l2"><a class="reference internal" href="index.html#id2">1.2.0 (2022-08-25)</a></li>
-<li class="toctree-l2"><a class="reference internal" href="index.html#id3">1.1.0 (2022-07-21)</a></li>
-<li class="toctree-l2"><a class="reference internal" href="index.html#id4">1.0.0 (2021-09-17)</a></li>
-<li class="toctree-l2"><a class="reference internal" href="index.html#id5">0.1.45 (2020-11-18)</a></li>
-<li class="toctree-l2"><a class="reference internal" href="index.html#id6">0.1.44 (2020-07-21)</a></li>
-<li class="toctree-l2"><a class="reference internal" href="index.html#id7">0.1.43 (2020-05-25)</a></li>
-<li class="toctree-l2"><a class="reference internal" href="index.html#id8">0.1.42 (2020-04-30)</a></li>
-<li class="toctree-l2"><a class="reference internal" href="index.html#id9">0.1.41 (2020-04-07)</a></li>
-<li class="toctree-l2"><a class="reference internal" href="index.html#id10">0.1.40 (2020-02-26)</a></li>
-<li class="toctree-l2"><a class="reference internal" href="index.html#id11">0.1.39 (2020-02-25)</a></li>
-<li class="toctree-l2"><a class="reference internal" href="index.html#id12">0.1.38 (2020-02-24)</a></li>
-<li class="toctree-l2"><a class="reference internal" href="index.html#id13">0.1.37 (2020-01-28)</a></li>
-<li class="toctree-l2"><a class="reference internal" href="index.html#id14">0.1.36 (2019-10-31)</a></li>
-<li class="toctree-l2"><a class="reference internal" href="index.html#id15">0.1.35 (2019-09-19)</a></li>
-<li class="toctree-l2"><a class="reference internal" href="index.html#id16">0.1.34 (2019-06-27)</a></li>
-<li class="toctree-l2"><a class="reference internal" href="index.html#id17">0.1.33 (2018-01-03)</a></li>
-<li class="toctree-l2"><a class="reference internal" href="index.html#id18">0.1.32 (2017-12-08)</a></li>
-<li class="toctree-l2"><a class="reference internal" href="index.html#id19">0.1.31 (2017-10-10)</a></li>
-<li class="toctree-l2"><a class="reference internal" href="index.html#id20">0.1.30 (2017-10-05)</a></li>
-<li class="toctree-l2"><a class="reference internal" href="index.html#id21">0.1.29 (2017-07-31)</a></li>
-<li class="toctree-l2"><a class="reference internal" href="index.html#id22">0.1.28 (2017-07-27)</a></li>
-<li class="toctree-l2"><a class="reference internal" href="index.html#id23">0.1.27 (2017-05-24)</a></li>
-<li class="toctree-l2"><a class="reference internal" href="index.html#id24">0.1.26 (2017-05-21)</a></li>
-<li class="toctree-l2"><a class="reference internal" href="index.html#id25">0.1.25 (2017-05-03)</a></li>
-<li class="toctree-l2"><a class="reference internal" href="index.html#id26">0.1.24 (2016-12-22)</a></li>
-<li class="toctree-l2"><a class="reference internal" href="index.html#id27">0.1.23 (2016-12-13)</a></li>
-<li class="toctree-l2"><a class="reference internal" href="index.html#id28">0.1.22 (2016-11-29)</a></li>
-<li class="toctree-l2"><a class="reference internal" href="index.html#id29">0.1.21 (2016-09-20)</a></li>
-<li class="toctree-l2"><a class="reference internal" href="index.html#id30">0.1.20 (2016-09-16)</a></li>
-<li class="toctree-l2"><a class="reference internal" href="index.html#id31">0.1.19 (2016-09-16)</a></li>
-<li class="toctree-l2"><a class="reference internal" href="index.html#id32">0.1.18 (2016-09-14)</a></li>
-<li class="toctree-l2"><a class="reference internal" href="index.html#id33">0.1.17 (2016-06-15)</a></li>
-<li class="toctree-l2"><a class="reference internal" href="index.html#id34">0.1.16 (2016-06-12)</a></li>
-<li class="toctree-l2"><a class="reference internal" href="index.html#id35">0.1.15 (2016-02-17)</a></li>
-<li class="toctree-l2"><a class="reference internal" href="index.html#id36">0.1.14 (2016-01-30)</a></li>
-<li class="toctree-l2"><a class="reference internal" href="index.html#id37">0.1.13 (2015-09-09)</a></li>
-<li class="toctree-l2"><a class="reference internal" href="index.html#id38">0.1.12 (2015-09-03)</a></li>
-<li class="toctree-l2"><a class="reference internal" href="index.html#id39">0.1.11 (2015-09-02)</a></li>
-<li class="toctree-l2"><a class="reference internal" href="index.html#id40">0.1.10 (2015-08-26)</a></li>
-<li class="toctree-l2"><a class="reference internal" href="index.html#id41">0.1.9 (2015-08-21)</a></li>
-<li class="toctree-l2"><a class="reference internal" href="index.html#id42">0.1.8 (2015-08-17)</a></li>
-<li class="toctree-l2"><a class="reference internal" href="index.html#id43">0.1.7 (2015-08-14)</a></li>
-<li class="toctree-l2"><a class="reference internal" href="index.html#id44">0.1.6 (2015-08-13)</a></li>
-<li class="toctree-l2"><a class="reference internal" href="index.html#id45">0.1.5 (2015-07-29)</a></li>
-<li class="toctree-l2"><a class="reference internal" href="index.html#id46">0.1.4 (2015-07-27)</a></li>
-<li class="toctree-l2"><a class="reference internal" href="index.html#id47">0.1.3 (2015-07-26)</a></li>
-<li class="toctree-l2"><a class="reference internal" href="index.html#id48">0.1.2 (2015-07-24)</a></li>
-<li class="toctree-l2"><a class="reference internal" href="index.html#id49">0.1.1 (2015-07-21)</a></li>
-<li class="toctree-l2"><a class="reference internal" href="index.html#id50">0.1.0 (2015-07-20)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="index.html#id1">1.4.0 (2022-11-23)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="index.html#id2">1.3.0 (2022-10-23)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="index.html#id3">1.2.0 (2022-08-25)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="index.html#id4">1.1.0 (2022-07-21)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="index.html#id5">1.0.0 (2021-09-17)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="index.html#id6">0.1.45 (2020-11-18)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="index.html#id7">0.1.44 (2020-07-21)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="index.html#id8">0.1.43 (2020-05-25)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="index.html#id9">0.1.42 (2020-04-30)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="index.html#id10">0.1.41 (2020-04-07)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="index.html#id11">0.1.40 (2020-02-26)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="index.html#id12">0.1.39 (2020-02-25)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="index.html#id13">0.1.38 (2020-02-24)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="index.html#id14">0.1.37 (2020-01-28)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="index.html#id15">0.1.36 (2019-10-31)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="index.html#id16">0.1.35 (2019-09-19)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="index.html#id17">0.1.34 (2019-06-27)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="index.html#id18">0.1.33 (2018-01-03)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="index.html#id19">0.1.32 (2017-12-08)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="index.html#id20">0.1.31 (2017-10-10)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="index.html#id21">0.1.30 (2017-10-05)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="index.html#id22">0.1.29 (2017-07-31)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="index.html#id23">0.1.28 (2017-07-27)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="index.html#id24">0.1.27 (2017-05-24)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="index.html#id25">0.1.26 (2017-05-21)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="index.html#id26">0.1.25 (2017-05-03)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="index.html#id27">0.1.24 (2016-12-22)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="index.html#id28">0.1.23 (2016-12-13)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="index.html#id29">0.1.22 (2016-11-29)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="index.html#id30">0.1.21 (2016-09-20)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="index.html#id31">0.1.20 (2016-09-16)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="index.html#id32">0.1.19 (2016-09-16)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="index.html#id33">0.1.18 (2016-09-14)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="index.html#id34">0.1.17 (2016-06-15)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="index.html#id35">0.1.16 (2016-06-12)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="index.html#id36">0.1.15 (2016-02-17)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="index.html#id37">0.1.14 (2016-01-30)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="index.html#id38">0.1.13 (2015-09-09)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="index.html#id39">0.1.12 (2015-09-03)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="index.html#id40">0.1.11 (2015-09-02)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="index.html#id41">0.1.10 (2015-08-26)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="index.html#id42">0.1.9 (2015-08-21)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="index.html#id43">0.1.8 (2015-08-17)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="index.html#id44">0.1.7 (2015-08-14)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="index.html#id45">0.1.6 (2015-08-13)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="index.html#id46">0.1.5 (2015-07-29)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="index.html#id47">0.1.4 (2015-07-27)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="index.html#id48">0.1.3 (2015-07-26)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="index.html#id49">0.1.2 (2015-07-24)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="index.html#id50">0.1.1 (2015-07-21)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="index.html#id51">0.1.0 (2015-07-20)</a></li>
 </ul>
 </li>
 </ul>
@@ -978,8 +987,8 @@ in the library file.</p></li>
     <div class="related" role="navigation" aria-label="related navigation">
       <h3>Navigation</h3>
       <ul>
-        <li class="nav-item nav-item-0"><a href="#">KiPart 1.3.0 documentation</a> &#187;</li>
-        <li class="nav-item nav-item-this"><a href="">KiPart 1.3.0 documentation</a></li> 
+        <li class="nav-item nav-item-0"><a href="#">KiPart 1.4.0 documentation</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">KiPart 1.4.0 documentation</a></li> 
       </ul>
     </div>
     <div class="footer" role="contentinfo">
