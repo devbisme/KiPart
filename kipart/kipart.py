@@ -412,6 +412,7 @@ def draw_pins(unit_num, unit_pins, bbox, transform, side, push, fuzzy_match, pin
     # Find the actual height of the column of pins and subtract it from the
     # bounding box (which should be at least as large). Half the difference
     # will be the offset needed to center the pins on the side of the symbol.
+    X = 0  # Index for X coordinate.
     Y = 1  # Index for Y coordinate.
     pins_bb = pins_bbox(unit_pins, pin_length)
     height_offset = abs(bbox[0][Y] - bbox[1][Y]) - abs(pins_bb[0][Y] - pins_bb[1][Y])
@@ -420,6 +421,9 @@ def draw_pins(unit_num, unit_pins, bbox, transform, side, push, fuzzy_match, pin
         push = 1.0 - push
     height_offset *= push
     height_offset -= height_offset % PIN_SPACING  # Keep stuff on the PIN_SPACING grid.
+
+    # For NC pins, don't offset outside the range of the body
+    max_nc_offset = abs(bbox[0][X] - bbox[1][X])
 
     # Start drawing pins from the origin.
     x = XO
@@ -478,7 +482,8 @@ def draw_pins(unit_num, unit_pins, bbox, transform, side, push, fuzzy_match, pin
                 pin_type = "P"
             # NC pins should be shifted off-grid into the symbol to avoid shorts
             if pin_type == "N":
-                (draw_x, draw_y) = transform * (x + index, y + 1)
+                (draw_x, draw_y) = transform * (x + index % max_nc_offset,
+                                                y + 1 + index // max_nc_offset)
 
         # Move to the next pin placement location on this unit.
         y -= PIN_SPACING
