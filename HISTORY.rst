@@ -3,6 +3,12 @@
 History
 -------
 
+1.4.1 (2023-01-04)
+__________________
+
+* Swapped test on -a and -w flags so appending with overwrite doesn't erase all the existing parts.
+
+
 1.4.0 (2022-11-23)
 __________________
 
