@@ -1156,17 +1156,19 @@ def main():
 
     for input_file in args.input_files:
 
-        # No explicit output lib file, so each individual input file will generate its own .lib file.
         if check_file_exists or not args.output:
+
+            # Output to the specified lib file or to a lib file generated from the input file name.
             output_file = args.output or os.path.splitext(input_file)[0] + ".lib"
+
             if os.path.isfile(output_file):
                 # The output lib file already exists.
-                if args.overwrite:
-                    # Overwriting an existing file, so ignore the existing parts.
-                    parts_lib = OrderedDict()
-                elif args.append:
+                if args.append:
                     # Appending to an existing file, so read in existing parts.
                     parts_lib = read_lib_file(output_file)
+                elif args.overwrite:
+                    # Overwriting an existing file, so ignore the existing parts.
+                    parts_lib = OrderedDict()
                 else:
                     print(
                         "Output file {} already exists! Use the --overwrite option to replace it or the --append option to append to it.".format(
