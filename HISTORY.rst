@@ -3,7 +3,7 @@
 History
 -------
 
-1.4.1 (2023-01-04)
+1.4.1 (2023-01-05)
 __________________
 
 * Swapped test on -a and -w flags so appending with overwrite doesn't erase all the existing parts.
