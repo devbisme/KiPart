@@ -136,5 +136,6 @@ def xilinx6v_reader(part_data_file, part_data_file_name, part_data_file_type=".t
         # Place all the like-named pins into a list under their common name.
         # We'll unbundle them later, if necessary.
         pin_data[pin.unit][pin.side][pin.name].append(pin)
-
-    yield part_num, "U", "", "", "", part_num, pin_data  # Return the dictionary of pins extracted from the TXT file.
+        
+    part_custom_fields = None # just a placeholder in case wish to implement
+    yield part_num, "U", "", "", "", part_num, pin_data, part_custom_fields # Return the dictionary of pins extracted from the TXT file.
