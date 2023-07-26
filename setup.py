@@ -5,7 +5,7 @@ import sys
 
 import setuptools
 
-__version__ = "1.4.1"
+__version__ = "1.4.2"
 __author__ = "Dave Vandenbout"
 __email__ = "devb@xess.com"
 
@@ -27,10 +27,11 @@ with open("HISTORY.rst") as history_file:
 
 requirements = [
     "affine >= 1.2.0",
-    "future >= 0.15.0",
+    "future",
+    # "future >= 0.15.0",
     "pyparsing",
     "openpyxl",
-    "sexpdata",
+    "sexpdata == 1.0.0",
 ]
 
 test_requirements = []  # TODO: put package test requirements here
