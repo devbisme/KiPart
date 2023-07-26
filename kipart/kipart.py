@@ -103,6 +103,15 @@ PART_DATASHEET_Y_OFFSET = -400
 PART_DESC_SIZE = 50  # Font size.
 PART_DESC_Y_OFFSET = -500
 
+
+# Part custom fields
+PART_CUSTFIELD_SIZE = 25
+PART_CUSTFIELD_Y_OFFSET = -550
+PART_CUSTFIELD_Y_INCREMENT = -50
+
+
+
+
 # Mapping from understandable pin orientation name to the orientation
 # indicator used in the KiCad part library. This mapping looks backward,
 # but if pins are placed on the left side of the symbol, you actually
@@ -232,6 +241,9 @@ FOOTPRINT_FIELD = 'F2 "{footprint}" {x} {y} {font_size} H I {text_justification}
 DATASHEET_FIELD = 'F3 "{datasheet}" {x} {y} {font_size} H I {text_justification} CNN\n'
 MPN_FIELD = 'F4 "{manf_num}" {x} {y} {font_size} H I {text_justification} CNN "manf#"\n'
 DESC_FIELD = 'F5 "{desc}" {x} {y} {font_size} H I {text_justification} CNN "desc"\n'
+PARTCUSTOM_FIELD_STARTFIELDID=6
+PARTCUSTOM_FIELD = 'F{fieldid} "{customcontents}" {x} {y} {font_size} H I {text_justification} CNN "{customfieldname}"\n'
+
 
 START_DRAW = "DRAW\n"
 END_DRAW = "ENDDRAW\n"
@@ -534,6 +546,7 @@ def draw_symbol(
     part_datasheet,
     part_desc,
     pin_data,
+    part_customfields,
     sort_type,
     reverse,
     fuzzy_match,
@@ -774,6 +787,32 @@ def draw_symbol(
             text_justification=text_justification,
             font_size=PART_DESC_SIZE,
         )
+        
+    
+    if part_customfields and len(part_customfields):
+        curFieldId = PARTCUSTOM_FIELD_STARTFIELDID
+        curYOffest = PART_CUSTFIELD_Y_OFFSET
+        for field in part_customfields:
+            fieldname = field[0]
+            fieldvalue = field[1]
+            if fieldname is None or not len(fieldname):
+                continue 
+            
+            if fieldvalue is None:
+                fieldvalue = ''
+            part_defn += PARTCUSTOM_FIELD.format(
+                fieldid=curFieldId,
+                customcontents=fieldvalue,
+                customfieldname=fieldname,
+                
+                x=XO + horiz_offset,
+                y=YO +  curYOffest + vert_offset,
+                text_justification=text_justification,
+                font_size=PART_DESC_SIZE,
+                
+            )
+            curYOffest += PART_CUSTFIELD_Y_INCREMENT
+            curFieldId += 1
 
     # Start the section of the part definition that holds the part's units.
     part_defn += START_DRAW
@@ -915,6 +954,7 @@ def kipart(
         part_datasheet,
         part_desc,
         pin_data,
+        part_customfields
     ) in part_reader(part_data_file, part_data_file_name, part_data_file_type):
 
         # Handle retaining/overwriting parts that are already in the library.
@@ -936,6 +976,7 @@ def kipart(
             part_datasheet=part_datasheet,
             part_desc=part_desc,
             pin_data=pin_data,
+            part_customfields=part_customfields,
             sort_type=sort_type,
             reverse=reverse,
             fuzzy_match=fuzzy_match,

@@ -76,6 +76,7 @@ def generic_reader(part_data_file, part_data_file_name, part_data_file_type):
             part_manf_num,
             part_datasheet,
             part_desc,
+            part_cust_fields,
         ) = get_part_info(csv_reader)
         if part_num is None:
             break
@@ -126,7 +127,7 @@ def generic_reader(part_data_file, part_data_file_name, part_data_file_type):
             # Place all the like-named pins into a list under their common name.
             # We'll unbundle them later, if necessary.
             pin_data[pin.unit][pin.side.lower()][pin.name].append(pin)
-
-        yield part_num, part_ref_prefix, part_footprint, part_manf_num, part_datasheet, part_desc, pin_data  # Return the dictionary of pins extracted from the CSV file.
-
+        
+        yield part_num, part_ref_prefix, part_footprint, part_manf_num, part_datasheet, part_desc, pin_data, part_cust_fields  # Return the dictionary of pins extracted from the CSV file.
+        
     part_data_file.close()

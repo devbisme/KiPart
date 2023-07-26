@@ -174,7 +174,9 @@ def lattice_reader(part_data_file, part_data_file_name, part_data_file_type=".cs
                 pin.num = row[p]
                 pin_data[p][pin.unit][pin.side][pin.name].append(copy.copy(pin))
 
+    part_custom_fields = None # just a placeholder in case wish to implement
+    
     for p in package:
         yield part_num + "_" + p, "U", "", part_num, "", "", pin_data[
             p
-        ]  # Return the dictionary of pins for the package p
+        ],  part_custom_fields # Return the dictionary of pins for the package p

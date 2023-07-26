@@ -80,6 +80,30 @@ def get_nonblank_row(csv_reader):
     return []
 
 
+
+def parse_part_customfields(customfieldsstr):
+    """ allows you to have a cell in the csv with multiple arbitrary entries.
+        Distinct entries seperated by ";" or newline.
+        Key=Value pairs seperated by "=" or tab.
+        
+        So an entry could be
+        Booya=base;
+        Funky=Fresh
+        Sloppy=Joe
+        which would create 3 custom fields (Booya, Funky and Sloppy)
+    """
+    pairsFound = []
+    for custfpair in re.split(r'\r\n|\r|\n|;|\|', customfieldsstr):
+        if custfpair is None or not len(custfpair):
+            continue
+        mtchs = re.search(r'([^=\t]+)(=|\t)([^=\t]+)', custfpair)
+        if mtchs is None:
+            continue 
+        
+        pairsFound.append([mtchs[1], mtchs[3]])
+        
+    return pairsFound
+
 def get_part_info(csv_reader):
     """Get the part number, ref prefix, footprint, MPN, datasheet link, and description from a row of the CSV file."""
 
@@ -91,12 +115,17 @@ def get_part_info(csv_reader):
         part_manf_num,
         part_datasheet,
         part_desc,
-    ) = list(get_nonblank_row(csv_reader) + [None] * 6)[:6]
+        custom_fields,
+    ) = list(get_nonblank_row(csv_reader) + [None] * 7)[:7]
 
     # Put in the default part reference identifier if it isn't present.
     if part_ref_prefix in (None, "", " "):
         part_ref_prefix = "U"
-
+    
+    part_customfields = []
+    if custom_fields is not None and len(custom_fields):
+        part_customfields = parse_part_customfields(custom_fields)
+ 
     # Check to see if the row with the part identifier is missing.
     if part_num and part_num.lower() in list(COLUMN_NAMES.keys()):
         issue("Row with part number is missing in CSV file.", "error")
@@ -108,6 +137,7 @@ def get_part_info(csv_reader):
         part_manf_num,
         part_datasheet,
         part_desc,
+        part_customfields,
     )
 
 
