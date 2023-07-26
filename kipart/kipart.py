@@ -849,6 +849,9 @@ def can_bundle(pin, fuzzy_match):
     """Return true if the pin type can be bundled.
     Currently support bundling power input, power output, and NC pins.
     """
+    # Don't bundle spacers that accidentally have pin types assigned
+    if str(pin.num).lstrip(PIN_SPACER_PREFIX) == "":
+        return False
     return (
         find_closest_match(name=pin.type, name_dict=PIN_TYPES, fuzzy_match=fuzzy_match)
         in "wWN"
