@@ -55,7 +55,7 @@ def xilinxultra_reader(part_data_file, part_data_file_name, part_data_file_type=
     try:
         while True:
             line = csv_file.readline()
-            if re.match("^,*$", line):
+            if re.match(r"^,*$", line):
                 # Stop searching for part number as soon as a blank line is seen.
                 break
             elif line.startswith('"#') or line.startswith("#"):
@@ -65,7 +65,7 @@ def xilinxultra_reader(part_data_file, part_data_file_name, part_data_file_type=
                     part_num = device.group(1)
             else:
                 # Look for the part number on a line of the file.
-                _, part_num, date, time, _ = re.split("\s+", line)
+                _, part_num, date, time, _ = re.split(r"\s+", line)
     except Exception:
         return  # No part was found.
 

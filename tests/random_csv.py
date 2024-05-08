@@ -45,10 +45,10 @@ THIS_MODULE = locals()
 def gen_random_part_csv():
     def random_name(len=20):
         chars = string.printable[:94]
-        chars = re.sub('"', "", chars)
-        chars = re.sub("'", "", chars)
-        chars = re.sub(",", "", chars)
-        chars = re.sub("\|", "", chars)
+        chars = re.sub(r'"', "", chars)
+        chars = re.sub(r"'", "", chars)
+        chars = re.sub(r",", "", chars)
+        chars = re.sub(r"\|", "", chars)
         return "".join(choice(chars) for _ in range(randint(1, len)))
 
     def zero_pad_nums(s):

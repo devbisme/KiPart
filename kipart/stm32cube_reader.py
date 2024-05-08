@@ -68,7 +68,7 @@ def parse_portpin(name):
     returns a tuple in the form of ('port_name', port_number).
     Otherwise returns `None`.
     """
-    m = re.search("P([A-Z])(\d+)", name)
+    m = re.search(r"P([A-Z])(\d+)", name)
     if m:
         port_name, port_number = m.groups()
         return (port_name, int(port_number))

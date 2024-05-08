@@ -115,7 +115,7 @@ def find_closest_match(name, name_dict, fuzzy_match, threshold=0.0):
     """Approximate matching subroutine"""
 
     # Scrub non-alphanumerics from name and lowercase it.
-    scrubber = re.compile("[\W.]+")
+    scrubber = re.compile(r"[\W.]+")
     name = scrubber.sub("", name).lower()
 
     # Return regular dictionary lookup if fuzzy matching is not enabled.
@@ -158,8 +158,8 @@ def fix_pin_data(pin_data, part_num):
 
     try:
         fixed_pin_data = pin_data.strip()  # Remove leading/trailing spaces.
-        if re.search("\s", fixed_pin_data) is not None:
-            fixed_pin_data = re.sub("\s", "_", fixed_pin_data)
+        if re.search(r"\s", fixed_pin_data) is not None:
+            fixed_pin_data = re.sub(r"\s", "_", fixed_pin_data)
             issue(
                 "Replaced whitespace with '_' in pin '{pin_data}' of part {part_num}.".format(
                     **locals()

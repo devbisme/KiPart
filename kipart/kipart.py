@@ -117,7 +117,7 @@ PIN_ORIENTATIONS = {
     "top": "D",
     "up": "D",
 }
-scrubber = re.compile("[^\w~#]+")
+scrubber = re.compile(r"[^\w~#]+")
 PIN_ORIENTATIONS = {
     scrubber.sub("", k).lower(): v for k, v in list(PIN_ORIENTATIONS.items())
 }
@@ -953,8 +953,8 @@ def read_lib_file(lib_file):
     with open(lib_file, "r") as lib:
         part_def = ""
         for line in lib:
-            start = re.match("DEF (?P<part_name>\S+)", line)
-            end = re.match("ENDDEF$", line)
+            start = re.match(r"DEF (?P<part_name>\S+)", line)
+            end = re.match(r"ENDDEF$", line)
             if start:
                 part_def = line
                 part_name = start.group("part_name")
