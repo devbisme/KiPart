@@ -126,17 +126,17 @@ def _parse_lib_V5(lib_filename):
     # Remove all comments from the text to be parsed but leave the lines blank.
     # (Don't delete the lines or else it becomes hard to find the line in the file
     # that made the parser fail.)
-    text = re.sub("(^|\n)#.*?(?=\n)", "\n", text)
+    text = re.sub(r"(^|\n)#.*?(?=\n)", "\n", text)
 
     # Terminate all lines with the terminator string.
     # (This makes it easier to handle each line without accidentally getting
     # stuff from the next line.)
-    text = re.sub("\n", " " + terminator_char + "\n", text)
+    text = re.sub(r"\n", " " + terminator_char + "\n", text)
 
     # Remove the terminator from all lines that just have the terminator character on them.
     # (Don't delete the lines or else it becomes hard to find the line in the file
     # that made the parser fail.)
-    text = re.sub("\n *\\" + terminator_char + " *(?=\n)", "\n", text)
+    text = re.sub(r"\n *\\" + terminator_char + " *(?=\n)", "\n", text)
 
     # Return the parsed text.
     return lib.parseString(text)
@@ -333,13 +333,13 @@ def _gen_csv(parsed_lib):
             # Replace commas in pin numbers, names and units so it doesn't screw-up the CSV file.
             if is_v5:
                 # Assigning to attributes doesn't work with pyparsing object used by V5.
-                p["num"] = re.sub(",", ";", p.num)
-                p["name"] = re.sub(",", ";", p.name)
-                p["unit"] = re.sub(",", ";", p.unit)
+                p["num"] = re.sub(r",", ";", p.num)
+                p["name"] = re.sub(r",", ";", p.name)
+                p["unit"] = re.sub(r",", ";", p.unit)
             else:
-                p.num = re.sub(",", ";", p.num)
-                p.name = re.sub(",", ";", p.name)
-                p.unit = re.sub(",", ";", p.unit)
+                p.num = re.sub(r",", ";", p.num)
+                p.name = re.sub(r",", ";", p.name)
+                p.unit = re.sub(r",", ";", p.unit)
 
             is_hidden = ""
             if is_v5:
