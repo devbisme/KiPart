@@ -34,9 +34,9 @@ import sys
 from builtins import open
 from random import choice, randint
 
-from future import standard_library
-
-standard_library.install_aliases()
+if sys.version_info[0] < 3:
+    from future import standard_library
+    standard_library.install_aliases()
 
 
 THIS_MODULE = locals()

@@ -34,7 +34,6 @@ import re
 import sys
 from builtins import open
 
-from future import standard_library
 from pyparsing import *
 import sexpdata as sx
 
@@ -42,7 +41,9 @@ from .common import issue
 from .pckg_info import __version__
 from .py_2_3 import *
 
-standard_library.install_aliases()
+if sys.version_info[0] < 3:
+    from future import standard_library
+    standard_library.install_aliases()
 
 
 def _parse_lib_V5(lib_filename):
