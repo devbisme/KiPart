@@ -27,7 +27,7 @@ with open("HISTORY.rst") as history_file:
 
 requirements = [
     "affine >= 1.2.0",
-    "future",
+    "future; python_version<'3'",
     # "future >= 0.15.0",
     "pyparsing",
     "openpyxl",
