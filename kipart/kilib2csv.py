@@ -24,7 +24,7 @@ import os
 import sys
 from common import extract_parts_from_sexpr, symbol_sexpr_to_csv_rows
 
-__version__ = "1.0"
+from .pckg_info import __version__
 
 def library_to_csv(input_file, output_file=None, overwrite=False):
     """
