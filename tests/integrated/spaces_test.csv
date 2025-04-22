@@ -1,0 +1,15 @@
+example_part,,,,
+,,,,
+Pin,    Type,           Name,Side
+23,input,          A5,left
+90,output,         B1/ Q1,left
+88,bidirectional,  C3,left
+56,tristate,       D22,left
+84,tristate,       D3,left
+16,power_in,       VCC,left
+5,power_in,       GND,left
+29,power_in,       VCC,left
+98,power_in,       GND,left
+99,power_in,       VCC,left
+183 io, io crap1,right
+59,power_in,       GND,left
