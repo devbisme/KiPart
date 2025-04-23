@@ -23,7 +23,7 @@ import os
 import sys
 from common import open_input_file, read_symbol_rows, generate_symbol, indent_sexpr
 
-from .pckg_info import __version__
+from pckg_info import __version__
 
 def generate_library(input_file, sort_by='row', reverse=False, default_side='left', output_file=None, overwrite=False):
     """

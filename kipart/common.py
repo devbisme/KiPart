@@ -149,24 +149,23 @@ def extract_parts_from_sexpr(sexpr_lines):
     """
     # Join lines into a single string for parsing
     sexpr_str = '\n'.join(sexpr_lines)
-    
+
     # Parse S-expression using sexpdata for a structured representation
     parsed = loads(sexpr_str)
-    
+
     parts = {}
-    
+
     # Verify the root is a kicad_symbol_lib
     if not isinstance(parsed, list) or parsed[0] != Symbol('kicad_symbol_lib'):
         return parts
-    
+
     # Extract symbol nodes from the library
     for node in parsed[1:]:
         if isinstance(node, list) and node[0] == Symbol('symbol') and isinstance(node[1], str):
             part_name = node[1]
-            # Convert symbol node back to a string for compatibility with downstream functions
-            part_sexpr = dumps(node, str_as='symbol')
+            part_sexpr = dumps(node, str_as='string')
             parts[part_name] = part_sexpr
-    
+
     return parts
 
 def symbol_sexpr_to_csv_rows(sexpr):
@@ -340,18 +339,19 @@ def open_input_file(input_file):
     """
     _, ext = os.path.splitext(input_file)
     ext = ext.lower()
-    
+
     # Use csv module for CSV files, pandas for Excel files
     if ext in ['.csv']:
         with open(input_file, newline='') as f:
             reader = csv.reader(f)
             rows = list(reader)
     elif ext in ['.xlsx', '.xls']:
-        df = pd.read_excel(input_file, sheet_name=0, dtype=str)
+        # Use header=None so the first row is treated as data.
+        df = pd.read_excel(input_file, sheet_name=0, dtype=str, header=None)
         rows = df.fillna('').values.tolist()
     else:
         raise ValueError(f"Unsupported file extension: {ext}. Use .csv, .xlsx, or .xls")
-    
+
     return rows
 
 def read_symbol_rows(rows):
