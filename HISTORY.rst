@@ -3,6 +3,12 @@
 History
 -------
 
+2.0.0 (2025-05-01)
+__________________
+
+* Complete rewrite to support modern KiCad symbol libraries based on S-expressions.
+
+
 1.4.2 (2023-07-26)
 __________________
 

@@ -48,7 +48,8 @@ pin,name,type,side
     
     # Test successful run
     result = subprocess.run(
-        ["python", "../../kipart/kipart.py", str(csv_path), "-o", str(output_path)],
+        # ["python", "../../kipart/kipart.py", str(csv_path), "-o", str(output_path)],
+        ["kipart", str(csv_path), "-o", str(output_path)],
         capture_output=True, text=True
     )
     assert result.returncode == 0
@@ -57,7 +58,8 @@ pin,name,type,side
 
     # Test invalid input
     result = subprocess.run(
-        ["python", "../../kipart/kipart.py", str(tmp_path / "invalid.txt")],
+        # ["python", "../../kipart/kipart.py", str(tmp_path / "invalid.txt")],
+        ["kipart", str(tmp_path / "invalid.txt")],
         capture_output=True, text=True
     )
     assert result.returncode == 0  # Script continues after error

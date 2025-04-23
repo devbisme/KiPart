@@ -110,7 +110,7 @@ def test_kilib2csv_cli(tmp_path):
     
     # Test successful run
     result = subprocess.run(
-        ["python", "../../kipart/kilib2csv.py", str(kicad_sym_path), "-o", str(output_path)],
+        ["kilib2csv", str(kicad_sym_path), "-o", str(output_path)],
         capture_output=True, text=True
     )
     assert result.returncode == 0
@@ -119,7 +119,7 @@ def test_kilib2csv_cli(tmp_path):
 
     # Test invalid input
     result = subprocess.run(
-        ["python", "../../kipart/kilib2csv.py", str(tmp_path / "invalid.txt")],
+        ["kilib2csv", str(tmp_path / "invalid.txt")],
         capture_output=True, text=True
     )
     assert result.returncode == 0  # Script continues after error

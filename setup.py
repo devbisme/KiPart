@@ -26,9 +26,7 @@ with open("HISTORY.rst") as history_file:
     history = history_file.read().replace(".. :changelog:", "")
 
 requirements = [
-    "affine >= 1.2.0",
-    "future",
-    # "future >= 0.15.0",
+    "pandas",
     "pyparsing",
     "openpyxl",
     "sexpdata == 1.0.0",
@@ -71,7 +69,6 @@ setup(
         "License :: OSI Approved :: MIT License",
         "Natural Language :: English",
         "Operating System :: OS Independent",
-        "Programming Language :: Python :: 2.7",
         "Programming Language :: Python :: 3",
         "Topic :: Scientific/Engineering :: Electronic Design Automation (EDA)",
     ],
