@@ -27,7 +27,6 @@ with open("HISTORY.rst") as history_file:
 
 requirements = [
     "pandas",
-    "pyparsing",
     "openpyxl",
     "sexpdata == 1.0.0",
 ]
