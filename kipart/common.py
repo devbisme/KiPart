@@ -7,7 +7,7 @@ parsing S-expressions into CSV-compatible data. Used by `kipart.py` for library
 generation and `kilib2csv.py` for library parsing.
 
 Dependencies:
-- sexpdata: For parsing and manipulating S-expressions.
+- simp_sexp: For parsing and manipulating S-expressions.
 - pandas: For reading Excel files (requires openpyxl for .xlsx support).
 - Standard library: csv, math, os, sys, re.
 """
@@ -29,7 +29,7 @@ import pandas as pd
 import os
 import sys
 import re
-from sexpdata import loads, Symbol, dumps
+from simp_sexp import Sexp
 
 # Constants for layout calculations
 FONT_SIZE = 1.27  # Default font size for pin names and numbers
@@ -138,7 +138,7 @@ def extract_parts_from_sexpr(sexpr_lines):
     """
     Extract individual symbol definitions from a KiCad symbol library S-expression.
 
-    Uses `sexpdata` to parse the library into a nested structure, avoiding manual
+    Uses `simp_sexp` to parse the library into a nested structure, avoiding manual
     parenthesis counting for robustness.
 
     Args:
@@ -150,20 +150,20 @@ def extract_parts_from_sexpr(sexpr_lines):
     # Join lines into a single string for parsing
     sexpr_str = '\n'.join(sexpr_lines)
 
-    # Parse S-expression using sexpdata for a structured representation
-    parsed = loads(sexpr_str)
+    # Parse S-expression using simp_sexp for a structured representation
+    parsed = Sexp(sexpr_str)
 
     parts = {}
 
     # Verify the root is a kicad_symbol_lib
-    if not isinstance(parsed, list) or parsed[0] != Symbol('kicad_symbol_lib'):
+    if not parsed or parsed[0] != 'kicad_symbol_lib':
         return parts
 
     # Extract symbol nodes from the library
     for node in parsed[1:]:
-        if isinstance(node, list) and node[0] == Symbol('symbol') and isinstance(node[1], str):
+        if isinstance(node, list) and node[0] == 'symbol' and len(node) > 1 and isinstance(node[1], str):
             part_name = node[1]
-            part_sexpr = dumps(node, str_as='string')
+            part_sexpr = str(node)
             parts[part_name] = part_sexpr
 
     return parts
@@ -172,7 +172,7 @@ def symbol_sexpr_to_csv_rows(sexpr):
     """
     Convert a KiCad symbol S-expression into CSV rows.
 
-    Parses the S-expression using `sexpdata` to extract symbol name, properties, and
+    Parses the S-expression using `simp_sexp` to extract symbol name, properties, and
     pin details, including a header row for pin data columns.
 
     Args:
@@ -189,15 +189,15 @@ def symbol_sexpr_to_csv_rows(sexpr):
     if isinstance(sexpr, list):
         sexpr = '\n'.join(sexpr)
     
-    # Parse S-expression using sexpdata
-    parsed = loads(sexpr)
+    # Parse S-expression using simp_sexp
+    parsed = Sexp(sexpr)
     
     rows = []
     symbol_name = None
     properties = []
     units = []
     
-    # Regular expressions retained for potential future validation, though unused with sexpdata
+    # Regular expressions retained for potential future validation, though unused with simp_sexp
     rect_start_pattern = re.compile(r'^\s*\(start\s+([-\d.]+)\s+([-\d.]+)\)\s*$')
     rect_end_pattern = re.compile(r'^\s*\(end\s+([-\d.]+)\s+([-\d.]+)\)\s*$')
     at_pattern = re.compile(r'^\s*\(at\s+([-\d.]+)\s+([-\d.]+)\s+(\d+)\)\s*$')
@@ -212,7 +212,7 @@ def symbol_sexpr_to_csv_rows(sexpr):
         Returns:
             tuple: (symbol_name, properties, units)
         """
-        if not isinstance(node, list) or node[0] != Symbol('symbol') or not isinstance(node[1], str):
+        if not isinstance(node, list) or node[0] != 'symbol' or len(node) < 2 or not isinstance(node[1], str):
             return None, [], []
         
         name = node[1]
@@ -222,12 +222,12 @@ def symbol_sexpr_to_csv_rows(sexpr):
         
         # Extract properties and unit symbols from the node
         for subnode in node[2:]:
-            if isinstance(subnode, list) and subnode[0] == Symbol('property'):
-                if len(subnode) >= 3:
+            if isinstance(subnode, list):
+                if subnode[0] == 'property' and len(subnode) >= 3:
                     props.append((subnode[1], subnode[2]))
-            elif isinstance(subnode, list) and subnode[0] == Symbol('symbol'):
-                unit_id += 1
-                unit_list.append({'id': str(unit_id), 'data': subnode})
+                elif subnode[0] == 'symbol':
+                    unit_id += 1
+                    unit_list.append({'id': str(unit_id), 'data': subnode})
         
         return name, props, unit_list
     
@@ -248,40 +248,46 @@ def symbol_sexpr_to_csv_rows(sexpr):
         
         # Extract rectangle coordinates and pin details
         for subnode in unit_node[2:]:
-            if isinstance(subnode, list) and subnode[0] == Symbol('rectangle'):
-                for item in subnode[1:]:
-                    if isinstance(item, list) and item[0] == Symbol('start'):
-                        unit_data['x_min'] = float(item[1])
-                        unit_data['y_max'] = float(item[2])
-                    elif isinstance(item, list) and item[0] == Symbol('end'):
-                        unit_data['x_max'] = float(item[1])
-                        unit_data['y_min'] = float(item[2])
-            elif isinstance(subnode, list) and subnode[0] == Symbol('pin'):
-                pin_data = {
-                    'type': subnode[1].value() if isinstance(subnode[1], Symbol) else subnode[1],
-                    'style': subnode[2].value() if isinstance(subnode[2], Symbol) else subnode[2],
-                    'number': '',
-                    'name': '',
-                    'x': 0.0,
-                    'y': 0.0,
-                    'orientation': 0,
-                    'hidden': '0'
-                }
-                for item in subnode[3:]:
-                    if isinstance(item, list) and item[0] == Symbol('at'):
-                        pin_data['x'] = float(item[1])
-                        pin_data['y'] = float(item[2])
-                        pin_data['orientation'] = int(item[3])
-                    elif isinstance(item, list) and item[0] == Symbol('name'):
-                        pin_data['name'] = item[1]
-                    elif isinstance(item, list) and item[0] == Symbol('number'):
-                        pin_data['number'] = item[1]
-                    elif isinstance(item, list) and item[0] == Symbol('hide'):
-                        pin_data['hidden'] = '1'
+            if isinstance(subnode, list):
+                if subnode[0] == 'rectangle':
+                    for item in subnode:
+                        if isinstance(item, list):
+                            if item[0] == 'start':
+                                unit_data['x_min'] = float(item[1])
+                                unit_data['y_max'] = float(item[2])
+                            elif item[0] == 'end':
+                                unit_data['x_max'] = float(item[1])
+                                unit_data['y_min'] = float(item[2])
                 
-                # Only include valid pins (non-placeholder)
-                if pin_data['number'] and pin_data['number'] != '*':
-                    unit_data['pins'].append(pin_data)
+                elif subnode[0] == 'pin':
+                    if len(subnode) >= 3:
+                        pin_data = {
+                            'type': subnode[1],
+                            'style': subnode[2],
+                            'number': '',
+                            'name': '',
+                            'x': 0.0,
+                            'y': 0.0,
+                            'orientation': 0,
+                            'hidden': '0'
+                        }
+                        
+                        for item in subnode[3:]:
+                            if isinstance(item, list):
+                                if item[0] == 'at' and len(item) >= 4:
+                                    pin_data['x'] = float(item[1])
+                                    pin_data['y'] = float(item[2])
+                                    pin_data['orientation'] = int(item[3])
+                                elif item[0] == 'name' and len(item) >= 2:
+                                    pin_data['name'] = str(item[1])
+                                elif item[0] == 'number' and len(item) >= 2:
+                                    pin_data['number'] = str(item[1])
+                                elif item[0] == 'hide':
+                                    pin_data['hidden'] = '1'
+                        
+                        # Only include valid pins (non-placeholder)
+                        if pin_data['number'] and pin_data['number'] != '*':
+                            unit_data['pins'].append(pin_data)
         
         units[units.index(unit)] = unit_data
     
