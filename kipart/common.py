@@ -14,13 +14,13 @@ Dependencies:
 
 __all__ = [
     'get_text_bounding_box',
-    'indent_sexpr',
     'parse_mixed_string',
-    'extract_parts_from_sexpr',
-    'symbol_sexpr_to_csv_rows',
+    'extract_symbols_from_lib',
+    'symbol_to_csv_rows',
     'open_input_file',
     'read_symbol_rows',
-    'generate_symbol'
+    'generate_symbol',
+    'add_quotes',
 ]
 
 import csv
@@ -55,46 +55,6 @@ def get_text_bounding_box(text, font_size=FONT_SIZE):
     height = char_height
     return width, height
 
-def indent_sexpr(lines, indent_char='\t', indent_level=0):
-    """
-    Indent S-expression lines based on parenthesis nesting for readability.
-
-    Args:
-        lines (list of str): List of S-expression lines to indent.
-        indent_char (str, optional): Character to use for indentation. Defaults to '\t'.
-        indent_level (int, optional): Initial indentation level. Defaults to 0.
-
-    Returns:
-        list of str: Indented S-expression lines.
-    """
-    result = []
-    current_level = indent_level
-    
-    # Process each line to adjust indentation based on parenthesis
-    for line in lines:
-        stripped_line = line.strip()
-        if not stripped_line:
-            continue
-            
-        # Calculate new indentation level before adding the line
-        new_level = current_level
-        for char in stripped_line:
-            if char == '(':
-                new_level += 1
-            elif char == ')':
-                new_level -= 1
-        
-        # Use reduced level for lines starting with closing parenthesis
-        if stripped_line.startswith(')'):
-            result.append(indent_char * (current_level - 1) + stripped_line)
-        else:
-            result.append(indent_char * current_level + stripped_line)
-        
-        # Update level for the next line
-        current_level = new_level
-    
-    return result
-
 def parse_mixed_string(s):
     """
     Parse a string into a tuple for sorting, handling mixed alphanumeric content.
@@ -107,19 +67,19 @@ def parse_mixed_string(s):
     Returns:
         tuple: Parsed components (strings and integers) for sorting.
     """
-    # Handle placeholder pin number "*"
+    # Handle placeholder pin number "*". Return the largest possible tuple so it will always be sorted last.
     if s == '*':
         return (chr(0x10FFFF), float('inf'))
-    
+
     # Split into alternating alphabetic and numeric parts
     parts = []
     current = ''
     is_numeric = False
-    
+
     # Prepend chr(0) for strings starting with a digit to ensure consistent sorting
     if s and s[0].isdigit():
         parts.append(chr(0))
-    
+
     for char in s:
         if char.isdigit() == is_numeric:
             current += char
@@ -128,13 +88,13 @@ def parse_mixed_string(s):
                 parts.append(int(current) if is_numeric else current)
             current = char
             is_numeric = char.isdigit()
-    
+
     if current:
         parts.append(int(current) if is_numeric else current)
-    
+
     return tuple(parts) if parts else (s,)
 
-def extract_parts_from_sexpr(sexpr_lines):
+def extract_symbols_from_lib(symbol_lib):
     """
     Extract individual symbol definitions from a KiCad symbol library S-expression.
 
@@ -142,41 +102,24 @@ def extract_parts_from_sexpr(sexpr_lines):
     parenthesis counting for robustness.
 
     Args:
-        sexpr_lines (list of str): List of S-expression lines for the symbol library.
+        symbol_lib (str): S-expression string representing a KiCad symbol library.
 
     Returns:
-        dict: Dictionary mapping part names to their complete S-expression strings.
+        list of Sexp: List of Sexp symbols extracted from the S-expression.
     """
-    # Join lines into a single string for parsing
-    sexpr_str = '\n'.join(sexpr_lines)
 
-    # Parse S-expression using simp_sexp for a structured representation
-    parsed = Sexp(sexpr_str)
+    # Parse the library, search for part symbols, and return a list Sexp objects, one for each part.
+    return Sexp(symbol_lib).search("/kicad_symbol_lib/symbol")
 
-    parts = {}
-
-    # Verify the root is a kicad_symbol_lib
-    if not parsed or parsed[0] != 'kicad_symbol_lib':
-        return parts
-
-    # Extract symbol nodes from the library
-    for node in parsed[1:]:
-        if isinstance(node, list) and node[0] == 'symbol' and len(node) > 1 and isinstance(node[1], str):
-            part_name = node[1]
-            part_sexpr = str(node)
-            parts[part_name] = part_sexpr
-
-    return parts
-
-def symbol_sexpr_to_csv_rows(sexpr):
+def symbol_to_csv_rows(symbol):
     """
-    Convert a KiCad symbol S-expression into CSV rows.
+    Convert a Sexp object for a KiCad symbol into CSV rows.
 
-    Parses the S-expression using `simp_sexp` to extract symbol name, properties, and
+    Parses a simp_sexp Sexp to extract symbol name, properties, and
     pin details, including a header row for pin data columns.
 
     Args:
-        sexpr (str or list of str): S-expression for a single symbol.
+        symbol (Sexp): Sexp object for a single symbol.
 
     Returns:
         list of list: CSV rows where each row is a list of strings:
@@ -185,147 +128,39 @@ def symbol_sexpr_to_csv_rows(sexpr):
             - ["pin", "name", "type", "side", "unit", "style", "hidden"] for pin column labels.
             - [pin_number, pin_name, pin_type, pin_side, pin_unit, pin_style, pin_hidden] for each pin.
     """
-    # Convert input to a single string if provided as a list
-    if isinstance(sexpr, list):
-        sexpr = '\n'.join(sexpr)
-    
-    # Parse S-expression using simp_sexp
-    parsed = Sexp(sexpr)
-    
-    rows = []
-    symbol_name = None
-    properties = []
-    units = []
-    
-    # Regular expressions retained for potential future validation, though unused with simp_sexp
-    rect_start_pattern = re.compile(r'^\s*\(start\s+([-\d.]+)\s+([-\d.]+)\)\s*$')
-    rect_end_pattern = re.compile(r'^\s*\(end\s+([-\d.]+)\s+([-\d.]+)\)\s*$')
-    at_pattern = re.compile(r'^\s*\(at\s+([-\d.]+)\s+([-\d.]+)\s+(\d+)\)\s*$')
-    name_pattern = re.compile(r'^\s*\(name\s+"([^"]*)"\s*$')
-    number_pattern = re.compile(r'^\s*\(number\s+"([^"]*)"\s*$')
-    hide_pattern = re.compile(r'^\s*\(hide\s+yes\)\s*$')
-    
-    def process_node(node):
-        """
-        Process a symbol node to extract name, properties, and units.
 
-        Returns:
-            tuple: (symbol_name, properties, units)
-        """
-        if not isinstance(node, list) or node[0] != 'symbol' or len(node) < 2 or not isinstance(node[1], str):
-            return None, [], []
-        
-        name = node[1]
-        props = []
-        unit_list = []
-        unit_id = 0
-        
-        # Extract properties and unit symbols from the node
-        for subnode in node[2:]:
-            if isinstance(subnode, list):
-                if subnode[0] == 'property' and len(subnode) >= 3:
-                    props.append((subnode[1], subnode[2]))
-                elif subnode[0] == 'symbol':
-                    unit_id += 1
-                    unit_list.append({'id': str(unit_id), 'data': subnode})
-        
-        return name, props, unit_list
-    
     # Extract top-level symbol data
-    symbol_name, properties, units = process_node(parsed)
-    
-    # Process units and pins
-    for unit in units:
-        unit_data = {
-            'id': unit['id'],
-            'pins': [],
-            'x_min': None,
-            'x_max': None,
-            'y_min': None,
-            'y_max': None
-        }
-        unit_node = unit['data']
-        
-        # Extract rectangle coordinates and pin details
-        for subnode in unit_node[2:]:
-            if isinstance(subnode, list):
-                if subnode[0] == 'rectangle':
-                    for item in subnode:
-                        if isinstance(item, list):
-                            if item[0] == 'start':
-                                unit_data['x_min'] = float(item[1])
-                                unit_data['y_max'] = float(item[2])
-                            elif item[0] == 'end':
-                                unit_data['x_max'] = float(item[1])
-                                unit_data['y_min'] = float(item[2])
-                
-                elif subnode[0] == 'pin':
-                    if len(subnode) >= 3:
-                        pin_data = {
-                            'type': subnode[1],
-                            'style': subnode[2],
-                            'number': '',
-                            'name': '',
-                            'x': 0.0,
-                            'y': 0.0,
-                            'orientation': 0,
-                            'hidden': '0'
-                        }
-                        
-                        for item in subnode[3:]:
-                            if isinstance(item, list):
-                                if item[0] == 'at' and len(item) >= 4:
-                                    pin_data['x'] = float(item[1])
-                                    pin_data['y'] = float(item[2])
-                                    pin_data['orientation'] = int(item[3])
-                                elif item[0] == 'name' and len(item) >= 2:
-                                    pin_data['name'] = str(item[1])
-                                elif item[0] == 'number' and len(item) >= 2:
-                                    pin_data['number'] = str(item[1])
-                                elif item[0] == 'hide':
-                                    pin_data['hidden'] = '1'
-                        
-                        # Only include valid pins (non-placeholder)
-                        if pin_data['number'] and pin_data['number'] != '*':
-                            unit_data['pins'].append(pin_data)
-        
-        units[units.index(unit)] = unit_data
-    
-    # Generate CSV rows
-    if symbol_name:
-        rows.append([symbol_name, ""])
-    
-    for prop_name, prop_value in properties:
+    symbol_name = symbol.search('/symbol', ignore_case=True)[0][1]
+    properties = symbol.search('/symbol/property', ignore_case=True)
+    units = symbol.search('/symbol/symbol', ignore_case=True)
+
+    # Generate CSV rows starting with symbol name and properties
+    rows = []
+    rows.append([symbol_name, ""])
+    for _, prop_name, prop_value in properties:
         rows.append([prop_name + ':', prop_value])
-    
+
     # Add pin data column labels
     rows.append(["pin", "name", "type", "side", "unit", "style", "hidden"])
-    
-    for unit in units:
-        for pin in unit['pins']:
-            # Determine pin side based on position and orientation relative to rectangle
-            side = 'unknown'
-            if (unit['x_min'] is not None and unit['x_max'] is not None and
-                unit['y_min'] is not None and unit['y_max'] is not None):
-                if pin['orientation'] == 0 and pin['x'] < unit['x_min']:
-                    side = 'left'
-                elif pin['orientation'] == 180 and pin['x'] > unit['x_max']:
-                    side = 'right'
-                elif pin['orientation'] == 270 and pin['y'] > unit['y_max']:
-                    side = 'top'
-                elif pin['orientation'] == 90 and pin['y'] < unit['y_min']:
-                    side = 'bottom'
-            
+
+    # Process units and pins
+    for unit_id, unit in enumerate(units, 1):
+        unit_id = symbol_name + "_" + str(unit_id)
+        pins = unit.search('/symbol/pin', ignore_case=True)
+        for pin in pins:
+            number = pin.search('/pin/number', ignore_case=True)[0][1]
+            name = pin.search('/pin/name', ignore_case=True)[0][1]
+            type_ = pin[1]
+            style = pin[2]
+            orientation = pin.search('/pin/at', ignore_case=True)[0][3]
+            side = {0: 'left', 90: 'bottom', 180: 'right', 270: 'top'}[orientation]
+            # name_hidden = pin.search('/pin/name/effects/hidden', ignore_case=True)[1]
+            # num_hidden = pin.search('/pin/number/effects/hidden', ignore_case=True)[1]
+            hidden = "0"
             rows.append([
-                pin['number'],
-                pin['name'],
-                pin['type'],
-                side,
-                unit['id'],
-                pin['style'],
-                pin['hidden']
+                number, name, type_, side, unit_id, style, hidden
             ])
-    
+
     return rows
 
 def open_input_file(input_file):
@@ -408,7 +243,7 @@ def generate_symbol(symbol_rows, sort_by='row', reverse=False, default_side='lef
     """
     Generate a KiCad symbol S-expression from CSV rows.
 
-    Constructs the S-expression manually for precise control over pin placement and
+    Constructs an Sexp object for the symbol with precise control over pin placement and
     symbol layout, using grid-based positioning.
 
     Args:
@@ -421,7 +256,7 @@ def generate_symbol(symbol_rows, sort_by='row', reverse=False, default_side='lef
                                      Defaults to 'left'.
 
     Returns:
-        list of str: Lines of the KiCad symbol S-expression.
+        Sexp: KiCad symbol as an Sexp object.
 
     Raises:
         ValueError: If the part name is invalid, required columns are missing, or no valid pins are defined.
@@ -548,12 +383,13 @@ def generate_symbol(symbol_rows, sort_by='row', reverse=False, default_side='lef
     y_max = grid_height / 2
     y_min = -grid_height / 2
     
-    # Begin constructing S-expression
-    output = []
-    output.append(f'(symbol "{part_name}"')
-    output.append('(exclude_from_sim no)')
-    output.append('(in_bom yes)')
-    output.append('(on_board yes)')
+    # Begin constructing Sexp object
+    symbol_sexp = Sexp(['symbol', part_name])
+    
+    # Add basic symbol attributes
+    symbol_sexp.append(['exclude_from_sim', 'no'])
+    symbol_sexp.append(['in_bom', 'yes'])
+    symbol_sexp.append(['on_board', 'yes'])
     
     # Define default properties with calculated positions
     properties = [
@@ -569,38 +405,47 @@ def generate_symbol(symbol_rows, sort_by='row', reverse=False, default_side='lef
     for label, value in additional_properties:
         properties.append((label, value, 0, 0, '', True))
     
-    # Generate property S-expressions
+    # Generate property Sexp objects
     for prop in properties:
         name, value, x, y, justify, hide = prop
-        output.append(f'(property "{name}" "{value}"')
-        output.append(f'(at {x} {y} 0)')
-        output.append('(effects')
-        output.append('(font')
-        output.append('(size 1.27 1.27)')
-        output.append(')')
+        prop_sexp = Sexp(['property', name, value])
+        
+        at_sexp = Sexp(['at', x, y, 0])
+        prop_sexp.append(at_sexp)
+        
+        effects_sexp = Sexp(['effects'])
+        font_sexp = Sexp(['font'])
+        font_sexp.append(['size', 1.27, 1.27])
+        effects_sexp.append(font_sexp)
+        
         if justify:
-            output.append(f'(justify {justify})')
+            effects_sexp.append(['justify', justify])
         if hide:
-            output.append('(hide yes)')
-        output.append(')')
-        output.append(')')
+            effects_sexp.append(['hide', 'yes'])
+        
+        prop_sexp.append(effects_sexp)
+        symbol_sexp.append(prop_sexp)
     
-    # Generate unit and pin S-expressions
+    # Generate unit and pin Sexp objects
     for unit, sides in sorted(units.items()):
-        output.append(f'(symbol "{part_name}_{unit}_1"')
+        unit_name = f"{part_name}_{unit}_1"
+        unit_sexp = Sexp(['symbol', unit_name])
         
         # Define unit rectangle
-        output.append('(rectangle')
-        output.append(f'(start {x_min:.2f} {y_max:.2f})')
-        output.append(f'(end {x_max:.2f} {y_min:.2f})')
-        output.append('(stroke')
-        output.append('(width 0.254)')
-        output.append('(type solid)')
-        output.append(')')
-        output.append('(fill')
-        output.append('(type background)')
-        output.append(')')
-        output.append(')')
+        rect_sexp = Sexp(['rectangle'])
+        rect_sexp.append(['start', x_min, y_max])
+        rect_sexp.append(['end', x_max, y_min])
+        
+        stroke_sexp = Sexp(['stroke'])
+        stroke_sexp.append(['width', 0.254])
+        stroke_sexp.append(['type', 'solid'])
+        rect_sexp.append(stroke_sexp)
+        
+        fill_sexp = Sexp(['fill'])
+        fill_sexp.append(['type', 'background'])
+        rect_sexp.append(fill_sexp)
+        
+        unit_sexp.append(rect_sexp)
         
         # Process pins for each side
         for side, pin_list in sides.items():
@@ -615,6 +460,7 @@ def generate_symbol(symbol_rows, sort_by='row', reverse=False, default_side='lef
             count = len([pin for pin in pin_list if pin['number'] != '*'])
             if count == 0:
                 continue
+                
             if side == 'left':
                 total_height = (count - 1) * GRID_SPACING
                 start_y = total_height / 2
@@ -627,28 +473,8 @@ def generate_symbol(symbol_rows, sort_by='row', reverse=False, default_side='lef
                     x = x_min - PIN_LENGTH
                     x = round(x / GRID_SPACING) * GRID_SPACING
                     orientation = 0
-                    output.append(f'(pin {pin["type"]} {pin["style"]}')
-                    output.append(f'(at {x:.2f} {y:.2f} {orientation})')
-                    output.append(f'(length {PIN_LENGTH})')
-                    output.append(f'(name "{pin["name"]}"')
-                    output.append('(effects')
-                    output.append('(font')
-                    output.append('(size 1.27 1.27)')
-                    output.append(')')
-                    if pin['hidden'].lower() in ['1', 'true', 'yes']:
-                        output.append('(hide yes)')
-                    output.append(')')
-                    output.append(')')
-                    output.append(f'(number "{pin["number"]}"')
-                    output.append('(effects')
-                    output.append('(font')
-                    output.append('(size 1.27 1.27)')
-                    output.append(')')
-                    if pin['hidden'].lower() in ['1', 'true', 'yes']:
-                        output.append('(hide yes)')
-                    output.append(')')
-                    output.append(')')
-                    output.append(')')
+                    unit_sexp.append(create_pin_sexp(pin, x, y, orientation, PIN_LENGTH))
+                    
             elif side == 'right':
                 total_height = (count - 1) * GRID_SPACING
                 start_y = -total_height / 2 if sort_by == 'num' else total_height / 2
@@ -661,28 +487,8 @@ def generate_symbol(symbol_rows, sort_by='row', reverse=False, default_side='lef
                     x = x_max + PIN_LENGTH
                     x = round(x / GRID_SPACING) * GRID_SPACING
                     orientation = 180
-                    output.append(f'(pin {pin["type"]} {pin["style"]}')
-                    output.append(f'(at {x:.2f} {y:.2f} {orientation})')
-                    output.append(f'(length {PIN_LENGTH})')
-                    output.append(f'(name "{pin["name"]}"')
-                    output.append('(effects')
-                    output.append('(font')
-                    output.append('(size 1.27 1.27)')
-                    output.append(')')
-                    if pin['hidden'].lower() in ['1', 'true', 'yes']:
-                        output.append('(hide yes)')
-                    output.append(')')
-                    output.append(')')
-                    output.append(f'(number "{pin["number"]}"')
-                    output.append('(effects')
-                    output.append('(font')
-                    output.append('(size 1.27 1.27)')
-                    output.append(')')
-                    if pin['hidden'].lower() in ['1', 'true', 'yes']:
-                        output.append('(hide yes)')
-                    output.append(')')
-                    output.append(')')
-                    output.append(')')
+                    unit_sexp.append(create_pin_sexp(pin, x, y, orientation, PIN_LENGTH))
+                    
             elif side == 'top':
                 total_width = (count - 1) * GRID_SPACING
                 start_x = x_max - total_width / 2 if sort_by == 'num' else x_min + total_width / 2
@@ -695,28 +501,8 @@ def generate_symbol(symbol_rows, sort_by='row', reverse=False, default_side='lef
                     y = y_max + PIN_LENGTH
                     y = round(y / GRID_SPACING) * GRID_SPACING
                     orientation = 270
-                    output.append(f'(pin {pin["type"]} {pin["style"]}')
-                    output.append(f'(at {x:.2f} {y:.2f} {orientation})')
-                    output.append(f'(length {PIN_LENGTH})')
-                    output.append(f'(name "{pin["name"]}"')
-                    output.append('(effects')
-                    output.append('(font')
-                    output.append('(size 1.27 1.27)')
-                    output.append(')')
-                    if pin['hidden'].lower() in ['1', 'true', 'yes']:
-                        output.append('(hide yes)')
-                    output.append(')')
-                    output.append(')')
-                    output.append(f'(number "{pin["number"]}"')
-                    output.append('(effects')
-                    output.append('(font')
-                    output.append('(size 1.27 1.27)')
-                    output.append(')')
-                    if pin['hidden'].lower() in ['1', 'true', 'yes']:
-                        output.append('(hide yes)')
-                    output.append(')')
-                    output.append(')')
-                    output.append(')')
+                    unit_sexp.append(create_pin_sexp(pin, x, y, orientation, PIN_LENGTH))
+                    
             elif side == 'bottom':
                 total_width = (count - 1) * GRID_SPACING
                 start_x = x_min + total_width / 2
@@ -724,37 +510,66 @@ def generate_symbol(symbol_rows, sort_by='row', reverse=False, default_side='lef
                 for idx, pin in enumerate(pin_list):
                     if pin['number'] == '*':
                         continue
-                    x = start_x + idx * GRID_SPACING
+                    x = start_x - idx * GRID_SPACING
                     x = round(x / GRID_SPACING) * GRID_SPACING
                     y = y_min - PIN_LENGTH
                     y = round(y / GRID_SPACING) * GRID_SPACING
                     orientation = 90
-                    output.append(f'(pin {pin["type"]} {pin["style"]}')
-                    output.append(f'(at {x:.2f} {y:.2f} {orientation})')
-                    output.append(f'(length {PIN_LENGTH})')
-                    output.append(f'(name "{pin["name"]}"')
-                    output.append('(effects')
-                    output.append('(font')
-                    output.append('(size 1.27 1.27)')
-                    output.append(')')
-                    if pin['hidden'].lower() in ['1', 'true', 'yes']:
-                        output.append('(hide yes)')
-                    output.append(')')
-                    output.append(')')
-                    output.append(f'(number "{pin["number"]}"')
-                    output.append('(effects')
-                    output.append('(font')
-                    output.append('(size 1.27 1.27)')
-                    output.append(')')
-                    if pin['hidden'].lower() in ['1', 'true', 'yes']:
-                        output.append('(hide yes)')
-                    output.append(')')
-                    output.append(')')
-                    output.append(')')
+                    unit_sexp.append(create_pin_sexp(pin, x, y, orientation, PIN_LENGTH))
         
-        output.append(')')
+        symbol_sexp.append(unit_sexp)
     
-    output.append('(embedded_fonts no)')
-    output.append(')')
+    symbol_sexp.append(['embedded_fonts', 'no'])
     
-    return output
+    return symbol_sexp
+
+def create_pin_sexp(pin, x, y, orientation, pin_length):
+    """Helper function to create a pin S-expression"""
+    pin_sexp = Sexp(['pin', pin['type'], pin['style']])
+    pin_sexp.append(['at', x, y, orientation])
+    pin_sexp.append(['length', pin_length])
+    
+    # Add name sub-expression
+    name_sexp = Sexp(['name', pin['name']])
+    effects_sexp = Sexp(['effects'])
+    font_sexp = Sexp(['font'])
+    font_sexp.append(['size', 1.27, 1.27])
+    effects_sexp.append(font_sexp)
+    if pin['hidden'].lower() in ['1', 'true', 'yes']:
+        effects_sexp.append(['hide', 'yes'])
+    name_sexp.append(effects_sexp)
+    pin_sexp.append(name_sexp)
+    
+    # Add number sub-expression
+    number_sexp = Sexp(['number', pin['number']])
+    effects_sexp = Sexp(['effects'])
+    font_sexp = Sexp(['font'])
+    font_sexp.append(['size', 1.27, 1.27])
+    effects_sexp.append(font_sexp)
+    if pin['hidden'].lower() in ['1', 'true', 'yes']:
+        effects_sexp.append(['hide', 'yes'])
+    number_sexp.append(effects_sexp)
+    pin_sexp.append(number_sexp)
+    
+    return pin_sexp
+
+def add_quotes(sexp):
+    """
+    Add quotes to specific elements in an S-expression.
+    
+    This function adds quotes around the values of specific elements in the
+    given S-expression object. The elements that get quoted are defined in
+    the internal list 'quote_elements'.
+    
+    Args:
+        sexp: An S-expression object that has an 'add_quotes' method.
+        
+    Returns:
+        None. The S-expression is modified in-place.
+    """
+
+    # List of S-expression elements that require quoted values
+    quote_elements = ["generator", "generator_version", "symbol", "extends", "property", "name", "number", "text"]
+    # Apply quoting to each element type in the S-expression
+    for elem in quote_elements:
+        sexp.add_quotes(elem, ignore_case=True)

@@ -1,15 +1,16 @@
 import pytest
 import pandas as pd
 import os
+from simp_sexp import Sexp
 from kipart.common import (
     get_text_bounding_box,
-    indent_sexpr,
     parse_mixed_string,
-    extract_parts_from_sexpr,
-    symbol_sexpr_to_csv_rows,
+    extract_symbols_from_lib,
+    symbol_to_csv_rows,
     open_input_file,
     read_symbol_rows,
-    generate_symbol
+    generate_symbol,
+    add_quotes,
 )
 
 def test_get_text_bounding_box():
@@ -24,27 +25,6 @@ def test_get_text_bounding_box():
     assert width == pytest.approx(3 * 2.0 * 0.6)
     assert height == pytest.approx(2.0)
 
-def test_indent_sexpr():
-    """Test S-expression indentation."""
-    lines = [
-        '(kicad_symbol_lib',
-        '(symbol "part"',
-        '(pin input line',
-        ')',
-        ')',
-        ')'
-    ]
-    expected = [
-        '\t(kicad_symbol_lib',
-        '\t\t(symbol "part"',
-        '\t\t\t(pin input line',
-        '\t\t\t)',
-        '\t\t)',
-        '\t)'
-    ]
-    result = indent_sexpr(lines, indent_char='\t', indent_level=1)
-    assert result == expected
-
 def test_parse_mixed_string():
     """Test mixed alphanumeric string parsing for sorting."""
     # Test numeric and alphanumeric strings
@@ -58,7 +38,7 @@ def test_parse_mixed_string():
     sorted_strings = sorted(strings, key=parse_mixed_string)
     assert sorted_strings == ["10", "A1", "A10", "B2"]
 
-def test_extract_parts_from_sexpr(tmp_path):
+def test_extract_symbols_from_lib(tmp_path):
     """Test extracting parts from a KiCad symbol library."""
     # Create a sample .kicad_sym file
     content = """
@@ -79,21 +59,23 @@ def test_extract_parts_from_sexpr(tmp_path):
         f.write(content)
 
     with open(file_path) as f:
-        parts = extract_parts_from_sexpr(f.readlines())
+        parts = extract_symbols_from_lib(f.read())
 
     assert len(parts) == 2
-    assert "part1" in parts
-    assert "part2" in parts
-    assert "(symbol \"part1\"" in parts["part1"]
-    assert "(symbol \"part2\"" in parts["part2"]
+    assert parts[0][0] == "symbol" and parts[0][1] == "part1"
+    assert parts[1][0] == "symbol" and parts[1][1] == "part2"
+    # assert "part1" in parts
+    # assert "part2" in parts
+    # assert "(symbol \"part1\"" in parts["part1"]
+    # assert "(symbol \"part2\"" in parts["part2"]
 
     # Test invalid S-expression
-    parts = extract_parts_from_sexpr(["(invalid)"])
-    assert parts == {}
+    parts = extract_symbols_from_lib(["(invalid)"])
+    assert parts == []
 
-def test_symbol_sexpr_to_csv_rows():
+def test_symbol_to_csv_rows():
     """Test converting a symbol S-expression to CSV rows."""
-    sexpr = """
+    sexp = """
     (symbol "my_part"
       (property "Reference" "U")
       (property "Value" "my_part")
@@ -122,10 +104,10 @@ def test_symbol_sexpr_to_csv_rows():
         ["Reference:", "U"],
         ["Value:", "my_part"],
         ["pin", "name", "type", "side", "unit", "style", "hidden"],
-        ["1", "P1", "input", "left", "1", "line", "0"],
-        ["2", "P2", "output", "right", "1", "line", "0"]
+        ["1", "P1", "input", "left", "my_part_1", "line", "0"],
+        ["2", "P2", "output", "right", "my_part_1", "line", "0"]
     ]
-    rows = symbol_sexpr_to_csv_rows(sexpr)
+    rows = symbol_to_csv_rows(Sexp(sexp))
     assert rows == expected_rows
 
 def test_open_input_file(tmp_path):
@@ -181,15 +163,15 @@ def test_generate_symbol():
         ["1", "P1", "input", "left"],
         ["2", "P2", "output", "right"]
     ]
-    sexpr = generate_symbol(symbol_rows, sort_by="num")
-    sexpr_str = "\n".join(sexpr)
-    
-    assert '(symbol "my_part"' in sexpr
-    assert '(property "Reference" "U"' in sexpr
-    assert '(pin input line' in sexpr_str
-    assert '(pin output line' in sexpr_str
-    assert '(name "P1"' in sexpr_str
-    assert '(name "P2"' in sexpr_str
+    symbol = generate_symbol(symbol_rows, sort_by="num")
+    add_quotes(symbol)
+    sexp_str = str(symbol)
+    assert '(symbol "my_part"' in sexp_str
+    assert '(property "Reference" "U"' in sexp_str
+    assert '(pin input line' in sexp_str
+    assert '(pin output line' in sexp_str
+    assert '(name "P1"' in sexp_str
+    assert '(name "P2"' in sexp_str
 
     # Test invalid part name
     with pytest.raises(ValueError, match="Invalid part name"):

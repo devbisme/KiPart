@@ -62,5 +62,5 @@ pin,name,type,side
         ["kipart", str(tmp_path / "invalid.txt")],
         capture_output=True, text=True
     )
-    assert result.returncode == 0  # Script continues after error
+    assert result.returncode != 0  # Script continues after error
     assert "Error processing" in result.stdout

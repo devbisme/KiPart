@@ -8,7 +8,7 @@ functions from common.py. It supports creating formatted .kicad_sym files with
 precise pin placement based on grid-based positioning.
 
 Dependencies:
-- common.py: Provides utility functions (open_input_file, read_symbol_rows, generate_symbol, indent_sexpr).
+- common.py: Provides utility functions (open_input_file, read_symbol_rows, generate_symbol).
 - pandas: For reading Excel files (requires openpyxl for .xlsx support).
 - Standard library: argparse, os, sys.
 
@@ -21,9 +21,10 @@ __all__ = ['generate_library']
 import argparse
 import os
 import sys
-from common import open_input_file, read_symbol_rows, generate_symbol, indent_sexpr
+from simp_sexp import Sexp
+from .common import open_input_file, read_symbol_rows, generate_symbol
 
-from pckg_info import __version__
+from .pckg_info import __version__
 
 def generate_library(input_file, sort_by='row', reverse=False, default_side='left', output_file=None, overwrite=False):
     """
@@ -49,37 +50,37 @@ def generate_library(input_file, sort_by='row', reverse=False, default_side='lef
     # Read and group input rows using common utilities
     rows = open_input_file(input_file)
     symbol_data = read_symbol_rows(rows)
-    
+
     # Construct library S-expression
-    output = []
-    output.append('(kicad_symbol_lib')
-    output.append('(version 20241209)')
-    output.append('(generator "kipart")')
-    output.append('(generator_version "1.0")')
-    
+    symbol_lib = Sexp()
+    symbol_lib.append("kicad_symbol_lib")
+    symbol_lib.append(["version", "20241209"])
+    symbol_lib.append(["generator", "kicad_symbol_editor"])
+    symbol_lib.append(["generator_version", "8.0"])
+
     # Generate symbols and add to library
     for symbol_rows in symbol_data:
-        symbol_sexpr = generate_symbol(symbol_rows, sort_by=sort_by, reverse=reverse, default_side=default_side)
-        output.extend(symbol_sexpr)
-    
-    output.append(')')
-    
+        symbol = generate_symbol(symbol_rows, sort_by=sort_by, reverse=reverse, default_side=default_side)
+        symbol_lib.append(symbol)
+
+    # Some elements of the netlist need to be enclosed in quotes.
+    quote_elements = ["generator", "generator_version", "symbol", "extends", "property", "name", "number", "text"]
+    for elem in quote_elements:
+        symbol_lib.add_quotes(elem, ignore_case=True)
+
     # Determine output filename
     if output_file:
         final_output_file = output_file
     else:
         final_output_file = os.path.splitext(input_file)[0] + '.kicad_sym'
-    
+
     # Check for existing file
     if os.path.exists(final_output_file) and not overwrite:
         raise ValueError(f"Output file {final_output_file} already exists. Use --overwrite to allow overwriting.")
-    
-    # Format and write output using common indent_sexpr
-    indented_output = indent_sexpr(output)
-    
+
     with open(final_output_file, 'w') as f:
-        f.write('\n'.join(indented_output))
-    
+        f.write(str(symbol_lib))
+
     return final_output_file
 
 def main():
@@ -131,6 +132,7 @@ def main():
             print(f"Generated {output_file} successfully from {input_file}")
         except Exception as e:
             print(f"Error processing {input_file}: {str(e)}")
+            raise e
             continue
 
 if __name__ == "__main__":

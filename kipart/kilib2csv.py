@@ -8,8 +8,7 @@ functions from common.py. The output CSV contains each part's symbol name, prope
 and pin details, with a blank row between parts.
 
 Dependencies:
-- common.py: Provides utility functions (extract_parts_from_sexpr, symbol_sexpr_to_csv_rows).
-- sexpdata: For parsing and manipulating S-expressions.
+- common.py: Provides utility functions (extract_parts_from_symbol_libr, symbol_sexp_to_csv_rows).
 - Standard library: csv, argparse, os, sys.
 
 Usage:
@@ -22,7 +21,7 @@ import csv
 import argparse
 import os
 import sys
-from common import extract_parts_from_sexpr, symbol_sexpr_to_csv_rows
+from common import extract_symbols_from_lib, symbol_to_csv_rows
 
 from pckg_info import __version__
 
@@ -65,18 +64,20 @@ def library_to_csv(input_file, output_file=None, overwrite=False):
     if os.path.exists(final_output_file) and not overwrite:
         raise ValueError(f"Output file {final_output_file} already exists. Use --overwrite to allow overwriting.")
     
-    # Read and parse the library
+    # Read the symbol library contents
     with open(input_file, 'r') as f:
-        sexpr_lines = f.readlines()
+        symbol_lib = f.read()
     
-    # Extract parts using common utility
-    parts = extract_parts_from_sexpr(sexpr_lines)
+    # Extract parts from the symbol library using common utility
+    parts = extract_symbols_from_lib(symbol_lib)
+
+    # Sort parts by name for consistent output.
+    parts = sorted(parts, key=lambda x: x[1])
     
     # Convert each part to CSV rows and combine with blank rows
     all_rows = []
-    for part_name in sorted(parts.keys()):  # Sort for consistent output
-        part_sexpr = parts[part_name]
-        part_rows = symbol_sexpr_to_csv_rows(part_sexpr)
+    for part in parts:  # Sort for consistent output
+        part_rows = symbol_to_csv_rows(part)
         all_rows.extend(part_rows)
         all_rows.append([])  # Add blank row between parts
     
