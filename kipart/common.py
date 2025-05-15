@@ -154,14 +154,89 @@ def symbol_to_csv_rows(symbol):
             style = pin[2]
             orientation = pin.search('/pin/at', ignore_case=True)[0][3]
             side = {0: 'left', 90: 'bottom', 180: 'right', 270: 'top'}[orientation]
-            # name_hidden = pin.search('/pin/name/effects/hidden', ignore_case=True)[1]
-            # num_hidden = pin.search('/pin/number/effects/hidden', ignore_case=True)[1]
-            hidden = "0"
+            name_hidden = pin.search('/pin/name/effects/hidden', ignore_case=True)
+            if name_hidden:
+                name_hidden = yntf_to_bool(name_hidden[0][1])
+            else:
+                name_hidden = False
+            num_hidden = pin.search('/pin/number/effects/hidden', ignore_case=True)
+            if num_hidden:
+                num_hidden = yntf_to_bool(num_hidden[0][1])
+            else:
+                num_hidden = False
+            hidden = "yes" if name_hidden and num_hidden else "no"
             rows.append([
                 number, name, type_, side, unit_id, style, hidden
             ])
 
     return rows
+
+def yntf_to_bool(value):
+    """
+    Convert a YES-NO-TRUE-FALSE string to a boolean value.
+
+    Args:
+        value (str): String to convert.
+
+    Returns:
+        bool: True if the string is 'yes', 'y', 'true', 't', '1', or 1 (numeric); False otherwise.
+    """
+    value = value.lower()
+    if value in ['yes', 'y', 'true', 't', '1', 1]:
+        return True
+    if value in ['no', 'n', 'false', 'f', '0', 0]:
+        return False
+    raise ValueError(f"Invalid value for YES-NO-TRUE-FALSE string: {value}")
+
+def str_to_type(value):
+    value = value.lower()
+    if value in ("input", "inp", "in", "clk"):
+        return "input"
+    if value in ("output", "out", "outp"):
+        return "output"
+    if value in ("bidirectional", "bidir", "bi", "inout", "io", "iop"):
+        return "bidirectional"
+    if value in ("tri-state", "tri", "tri_state", "tristate"):
+        return "tri_state"
+    if value in ("passive", "pass"):
+        return "passive"
+    if value in ("free",):
+        return "free"
+    if value in ("unspecified", "un", "analog"):
+        return "unspecified"
+    if value in ("power_in", "pwr_in", "pwrin", "power", "pwr", "ground", "gnd"):
+        return "power_in"
+    if value in ("power_out", "pwr_out", "pwrout", "pwr_o"):
+        return "power_out"
+    if value in ("open_collector", "opencollector", "open_coll", "opencoll", "oc"):
+        return "open_collector"
+    if value in ("open_emitter", "openemitter", "open_emit", "openemit", "oe"):
+        return "open_collector"
+    if value in ("no_connect", "noconnect", "no_conn", "noconn", "nc"):
+        return "no_connect"
+    raise ValueError(f"Invalid value for type: {value}")
+
+def str_to_style(value):
+    value = value.lower()
+    if value in ("line", ""):
+        return "line"
+    if value in ("inverted", "inv", "~", "#"):
+        return "inverted"
+    if value in ("clock", "clk", "rising_clk"):
+        return "clock"
+    if value in ("inverted_clock", "inv_clk", "clk_b", "clk_n", "~clk", "#clk"):
+        return "inverted_clock"
+    if value in ("input_low", "inp_low", "in_lw", "in_b", "in_n", "~in", "#in"):
+        return "input_low"
+    if value in ("clock_low", "clk_low", "clk_lw", "clk_b", "clk_n", "~clk", "#clk"):
+        return "inverted_clock"
+    if value in ("output_low", "outp_low", "out_lw", "out_b", "out_n", "~out", "#out"):
+        return "output_low"
+    if value in ("edge_clock_high",):
+        return "edge_clock_high"
+    if value in ("non_logic", "nl", "analog"):
+        return "non_logic"
+    raise ValueError(f"Invalid value for style: {value}")
 
 def open_input_file(input_file):
     """
