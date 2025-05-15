@@ -96,7 +96,7 @@ def parse_mixed_string(s):
 
     return tuple(parts) if parts else (s,)
 
-def yntf_to_bool(value):
+def yntf_to_yesno(value):
     """
     Convert a YES-NO-TRUE-FALSE string to a boolean value.
 
@@ -106,11 +106,12 @@ def yntf_to_bool(value):
     Returns:
         bool: True if the string is 'yes', 'y', 'true', 't', '1', or 1 (numeric); False otherwise.
     """
+    breakpoint()
     value = value.lower()
     if value in ['yes', 'y', 'true', 't', '1', 1]:
-        return True
+        return 'yes'
     if value in ['no', 'n', 'false', 'f', '0', 0]:
-        return False
+        return 'no'
     raise ValueError(f"Invalid value for YES-NO-TRUE-FALSE string: {value}")
 
 def str_to_type(value):
@@ -262,26 +263,16 @@ def read_symbol_rows(rows):
         ValueError: If no valid symbols are found.
     """
     symbols = []
-    current_symbol_rows = None
-    
-    # Group rows by symbols, using blank lines as separators
-    row_idx = 0
-    while row_idx < len(rows):
-        row = rows[row_idx]
+
+    current_symbol_rows = []
+    for row in rows:
         if not row or all(cell.strip() == '' for cell in row):
             if current_symbol_rows:
                 symbols.append(current_symbol_rows)
-                current_symbol_rows = None
-            row_idx += 1
-            continue
-        
-        if not current_symbol_rows:
-            current_symbol_rows = [row]
-            row_idx += 1
+            current_symbol_rows = []
         else:
             current_symbol_rows.append(row)
-            row_idx += 1
-    
+        
     if current_symbol_rows:
         symbols.append(current_symbol_rows)
     
@@ -354,15 +345,15 @@ def symbol_to_csv_rows(symbol):
             side = {0: 'left', 90: 'bottom', 180: 'right', 270: 'top'}[orientation]
             name_hidden = pin.search('/pin/name/effects/hidden', ignore_case=True)
             if name_hidden:
-                name_hidden = yntf_to_bool(name_hidden[0][1])
+                name_hidden = yntf_to_yesno(name_hidden[0][1])
             else:
                 name_hidden = False
             num_hidden = pin.search('/pin/number/effects/hidden', ignore_case=True)
             if num_hidden:
-                num_hidden = yntf_to_bool(num_hidden[0][1])
+                num_hidden = yntf_to_yesno(num_hidden[0][1])
             else:
                 num_hidden = False
-            hidden = "yes" if name_hidden and num_hidden else "no"
+            hidden = "yes" if name_hidden=='yes' and num_hidden=='yes' else "no"
             rows.append([
                 number, name, type_, side, unit_id, style, hidden
             ])
@@ -444,22 +435,22 @@ def generate_symbol(symbol_rows, sort_by='row', reverse=False, default_side='lef
     if not part_name:
         raise ValueError("Invalid part name in symbol rows")
 
-    # Extract properties between part name and header
+    # Extract properties between part name and pin data column names
+    row_idx = 1
     additional_properties = []
-    header_idx = 1
-    while header_idx < len(symbol_rows):
-        row = symbol_rows[header_idx]
-        if len(row) >= 2 and row[0].strip().endswith(':'):
-            label = row[0].strip()[:-1]  # Remove trailing ':'
-            value = row[1].strip() if len(row) > 1 else ''
+    for row in symbol_rows[1:]:
+        if len(row) == 2 and row[0].strip().endswith(':'):
+            row_idx += 1
+            label = row[0].strip()[:-1] # Remove trailing ':'
+            value = row[1].strip()
             additional_properties.append((label, value))
-            header_idx += 1
         else:
+            # End of property rows, break out of the loop
             break
 
     # Process pin data starting after the header
     pins = []
-    header = [col.strip().lower() for col in symbol_rows[header_idx]]
+    header = [col.strip().lower() for col in symbol_rows[row_idx]]
     column_map = {}
     required_columns = ['pin', 'name']
     optional_columns = ['unit', 'side', 'type', 'style', 'hidden']
@@ -476,19 +467,24 @@ def generate_symbol(symbol_rows, sort_by='row', reverse=False, default_side='lef
         except ValueError:
             pass
 
+    # Check to make sure there are no unmatched column names
+    for col in header:
+        if col not in column_map:
+            raise ValueError(f"Unrecognized column '{col}' in header for part {part_name}")
+
+    # Step past the row of column names to get to the pin data
+    row_idx = row_idx + 1
+
     # Collect pin data with defaults for optional fields
-    for idx, row in enumerate(symbol_rows[header_idx + 1:]):
-        if not row or all(cell.strip() == '' for cell in row):
-            break
-        pin_number = row[column_map['pin']].strip()
+    for idx, row in enumerate(symbol_rows[row_idx:]):
         pin_data = {
-            'number': pin_number,
+            'number': row[column_map['pin']].strip(),
             'name': row[column_map['name']].strip(),
             'unit': row[column_map['unit']].strip() if 'unit' in column_map and row[column_map['unit']].strip() else '1',
             'side': row[column_map['side']].strip().lower() if 'side' in column_map and row[column_map['side']].strip() else default_side,
             'type': str_to_type(row[column_map['type']]) if 'type' in column_map and row[column_map['type']].strip() else 'passive',
             'style': str_to_style(row[column_map['style']]) if 'style' in column_map and row[column_map['style']].strip() else 'line',
-            'hidden': row[column_map['hidden']].strip() if 'hidden' in column_map and row[column_map['hidden']].strip() else '0',
+            'hidden': yntf_to_yesno(row[column_map['hidden']].strip()) if 'hidden' in column_map and row[column_map['hidden']].strip() else 'no',
             'row_index': idx  # Store original row index for row sorting
         }
         pins.append(pin_data)
@@ -497,16 +493,16 @@ def generate_symbol(symbol_rows, sort_by='row', reverse=False, default_side='lef
     if not any(pin['number'] != '*' for pin in pins):
         raise ValueError(f"No valid pins defined for part {part_name} (all pins are placeholders)")
 
-    # Group pins by unit and side for layout
+    # Group pins by the unit and side of the unit they're in.
     units = {}
     for pin in pins:
-        unit = pin['unit']
-        if unit not in units:
-            units[unit] = {'left': [], 'right': [], 'top': [], 'bottom': []}
-        if pin['side'] in units[unit]:
-            units[unit][pin['side']].append(pin)
+        unit_id = pin['unit']
+        if unit_id not in units:
+            units[unit_id] = {'left': [], 'right': [], 'top': [], 'bottom': []}
+        if pin['side'] in units[unit_id]:
+            units[unit_id][pin['side']].append(pin)
         else:
-            raise ValueError(f"Invalid side '{pin['side']}' for pin {pin['number']} in part {part_name}")
+            raise ValueError(f"Invalid side '{pin['side']}' for pin {pin['number']} in unit {unit_name} of part {part_name}")
 
     # Calculate symbol dimensions based on pin counts and text sizes
     max_left_count = 0
