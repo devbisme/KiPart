@@ -128,7 +128,7 @@ def str_to_type(value):
     Raises:
         ValueError: If the input string doesn't match any known pin type.
     """
-    value = value.lower()
+    value = value.strip().lower()
     if value in ("input", "inp", "in", "clk"):
         return "input"
     if value in ("output", "out", "outp"):
@@ -170,7 +170,7 @@ def str_to_style(value):
     Raises:
         ValueError: If the input string doesn't match any known pin style.
     """
-    value = value.lower()
+    value = value.strip().lower()
     if value in ("line", ""):
         return "line"
     if value in ("inverted", "inv", "~", "#"):
@@ -443,7 +443,7 @@ def generate_symbol(symbol_rows, sort_by='row', reverse=False, default_side='lef
     part_name = symbol_rows[0][0].strip()
     if not part_name:
         raise ValueError("Invalid part name in symbol rows")
-    
+
     # Extract properties between part name and header
     additional_properties = []
     header_idx = 1
@@ -456,14 +456,14 @@ def generate_symbol(symbol_rows, sort_by='row', reverse=False, default_side='lef
             header_idx += 1
         else:
             break
-    
+
     # Process pin data starting after the header
     pins = []
     header = [col.strip().lower() for col in symbol_rows[header_idx]]
     column_map = {}
     required_columns = ['pin', 'name']
     optional_columns = ['unit', 'side', 'type', 'style', 'hidden']
-    
+
     # Map column names to indices, ensuring required columns exist
     for col in required_columns:
         try:
@@ -475,7 +475,7 @@ def generate_symbol(symbol_rows, sort_by='row', reverse=False, default_side='lef
             column_map[col] = header.index(col)
         except ValueError:
             pass
-    
+
     # Collect pin data with defaults for optional fields
     for idx, row in enumerate(symbol_rows[header_idx + 1:]):
         if not row or all(cell.strip() == '' for cell in row):
@@ -486,17 +486,17 @@ def generate_symbol(symbol_rows, sort_by='row', reverse=False, default_side='lef
             'name': row[column_map['name']].strip(),
             'unit': row[column_map['unit']].strip() if 'unit' in column_map and row[column_map['unit']].strip() else '1',
             'side': row[column_map['side']].strip().lower() if 'side' in column_map and row[column_map['side']].strip() else default_side,
-            'type': row[column_map['type']].strip().lower() if 'type' in column_map and row[column_map['type']].strip() else 'passive',
-            'style': row[column_map['style']].strip() if 'style' in column_map and row[column_map['style']].strip() else 'line',
+            'type': str_to_type(row[column_map['type']]) if 'type' in column_map and row[column_map['type']].strip() else 'passive',
+            'style': str_to_style(row[column_map['style']]) if 'style' in column_map and row[column_map['style']].strip() else 'line',
             'hidden': row[column_map['hidden']].strip() if 'hidden' in column_map and row[column_map['hidden']].strip() else '0',
             'row_index': idx  # Store original row index for row sorting
         }
         pins.append(pin_data)
-    
+
     # Validate that at least one valid pin exists
     if not any(pin['number'] != '*' for pin in pins):
         raise ValueError(f"No valid pins defined for part {part_name} (all pins are placeholders)")
-    
+
     # Group pins by unit and side for layout
     units = {}
     for pin in pins:
@@ -507,7 +507,7 @@ def generate_symbol(symbol_rows, sort_by='row', reverse=False, default_side='lef
             units[unit][pin['side']].append(pin)
         else:
             raise ValueError(f"Invalid side '{pin['side']}' for pin {pin['number']} in part {part_name}")
-    
+
     # Calculate symbol dimensions based on pin counts and text sizes
     max_left_count = 0
     max_right_count = 0
@@ -517,7 +517,7 @@ def generate_symbol(symbol_rows, sort_by='row', reverse=False, default_side='lef
     max_right_text_width = 0
     max_top_text_height = 0
     max_bottom_text_height = 0
-    
+
     for unit, sides in units.items():
         left_count = len(sides['left'])
         right_count = len(sides['right'])
@@ -527,7 +527,7 @@ def generate_symbol(symbol_rows, sort_by='row', reverse=False, default_side='lef
         max_right_count = max(max_right_count, right_count)
         max_top_count = max(max_top_count, top_count)
         max_bottom_count = max(max_bottom_count, bottom_count)
-        
+
         # Calculate text bounding boxes for pin names
         for pin in sides['left']:
             if pin['number'] != '*':
@@ -545,30 +545,30 @@ def generate_symbol(symbol_rows, sort_by='row', reverse=False, default_side='lef
             if pin['number'] != '*':
                 _, h = get_text_bounding_box(pin['name'])
                 max_bottom_text_height = max(max_bottom_text_height, h)
-    
+
     # Calculate symbol layout on a grid
     pin_grid_width = max(max_top_count, max_bottom_count, 4) * GRID_SPACING
     pin_grid_height = max(max_left_count, max_right_count, 3) * GRID_SPACING
-    
+
     total_width = pin_grid_width + 2 * GRID_SPACING
     total_height = pin_grid_height + 2 * GRID_SPACING
-    
+
     grid_width = math.ceil(total_width / GRID_SPACING) * GRID_SPACING
     grid_height = math.ceil(total_height / GRID_SPACING) * GRID_SPACING
-    
+
     x_min = round((max_left_text_width + PIN_LENGTH + TEXT_CLEARANCE + GRID_SPACING) / GRID_SPACING) * GRID_SPACING
     x_max = x_min + pin_grid_width
     y_max = grid_height / 2
     y_min = -grid_height / 2
-    
+
     # Begin constructing Sexp object
     symbol_sexp = Sexp(['symbol', part_name])
-    
+
     # Add basic symbol attributes
     symbol_sexp.append(['exclude_from_sim', 'no'])
     symbol_sexp.append(['in_bom', 'yes'])
     symbol_sexp.append(['on_board', 'yes'])
-    
+
     # Define default properties with calculated positions
     properties = [
         ('Reference', 'U', 3.81, y_max + 3.81, 'right', False),
@@ -578,53 +578,55 @@ def generate_symbol(symbol_rows, sort_by='row', reverse=False, default_side='lef
         ('Description', '', 0, 0, '', True),
         ('ki_locked', '', 0, 0, '', True)
     ]
-    
+
     # Add user-defined properties from input rows
     for label, value in additional_properties:
         properties.append((label, value, 0, 0, '', True))
-    
+
     # Generate property Sexp objects
     for prop in properties:
         name, value, x, y, justify, hide = prop
         prop_sexp = Sexp(['property', name, value])
-        
+
         at_sexp = Sexp(['at', x, y, 0])
         prop_sexp.append(at_sexp)
-        
+
         effects_sexp = Sexp(['effects'])
         font_sexp = Sexp(['font'])
         font_sexp.append(['size', 1.27, 1.27])
         effects_sexp.append(font_sexp)
-        
+
         if justify:
             effects_sexp.append(['justify', justify])
         if hide:
             effects_sexp.append(['hide', 'yes'])
-        
+
         prop_sexp.append(effects_sexp)
         symbol_sexp.append(prop_sexp)
-    
+
     # Generate unit and pin Sexp objects
     for unit, sides in sorted(units.items()):
-        unit_name = f"{part_name}_{unit}_1"
-        unit_sexp = Sexp(['symbol', unit_name])
-        
+        # Convert unit name to a number because that's what KiCad wants.
+        unit_num = list(units.keys()).index(unit) + 1
+        total_unit_name = f"{part_name}_{unit_num}_1"
+        unit_sexp = Sexp(['symbol', total_unit_name])
+
         # Define unit rectangle
         rect_sexp = Sexp(['rectangle'])
         rect_sexp.append(['start', x_min, y_max])
         rect_sexp.append(['end', x_max, y_min])
-        
+
         stroke_sexp = Sexp(['stroke'])
         stroke_sexp.append(['width', 0.254])
         stroke_sexp.append(['type', 'solid'])
         rect_sexp.append(stroke_sexp)
-        
+
         fill_sexp = Sexp(['fill'])
         fill_sexp.append(['type', 'background'])
         rect_sexp.append(fill_sexp)
-        
+
         unit_sexp.append(rect_sexp)
-        
+
         # Process pins for each side
         for side, pin_list in sides.items():
             # Sort pins based on user-specified criteria
@@ -634,11 +636,11 @@ def generate_symbol(symbol_rows, sort_by='row', reverse=False, default_side='lef
                 pin_list.sort(key=lambda p: parse_mixed_string(p['name']) if p['number'] != '*' else (chr(0x10FFFF), float('inf')), reverse=reverse)
             elif sort_by == 'row':
                 pin_list.sort(key=lambda p: p['row_index'], reverse=reverse)
-            
+
             count = len([pin for pin in pin_list if pin['number'] != '*'])
             if count == 0:
                 continue
-                
+
             if side == 'left':
                 total_height = (count - 1) * GRID_SPACING
                 start_y = total_height / 2
@@ -652,7 +654,7 @@ def generate_symbol(symbol_rows, sort_by='row', reverse=False, default_side='lef
                     x = round(x / GRID_SPACING) * GRID_SPACING
                     orientation = 0
                     unit_sexp.append(create_pin_sexp(pin, x, y, orientation, PIN_LENGTH))
-                    
+
             elif side == 'right':
                 total_height = (count - 1) * GRID_SPACING
                 start_y = -total_height / 2 if sort_by == 'num' else total_height / 2
@@ -666,7 +668,7 @@ def generate_symbol(symbol_rows, sort_by='row', reverse=False, default_side='lef
                     x = round(x / GRID_SPACING) * GRID_SPACING
                     orientation = 180
                     unit_sexp.append(create_pin_sexp(pin, x, y, orientation, PIN_LENGTH))
-                    
+
             elif side == 'top':
                 total_width = (count - 1) * GRID_SPACING
                 start_x = x_max - total_width / 2 if sort_by == 'num' else x_min + total_width / 2
@@ -680,7 +682,7 @@ def generate_symbol(symbol_rows, sort_by='row', reverse=False, default_side='lef
                     y = round(y / GRID_SPACING) * GRID_SPACING
                     orientation = 270
                     unit_sexp.append(create_pin_sexp(pin, x, y, orientation, PIN_LENGTH))
-                    
+
             elif side == 'bottom':
                 total_width = (count - 1) * GRID_SPACING
                 start_x = x_min + total_width / 2
@@ -694,9 +696,9 @@ def generate_symbol(symbol_rows, sort_by='row', reverse=False, default_side='lef
                     y = round(y / GRID_SPACING) * GRID_SPACING
                     orientation = 90
                     unit_sexp.append(create_pin_sexp(pin, x, y, orientation, PIN_LENGTH))
-        
+
         symbol_sexp.append(unit_sexp)
-    
+
     symbol_sexp.append(['embedded_fonts', 'no'])
-    
+
     return symbol_sexp
