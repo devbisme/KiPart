@@ -21,9 +21,9 @@ import csv
 import argparse
 import os
 import sys
-from common import extract_symbols_from_lib, symbol_to_csv_rows
+from .common import extract_symbols_from_lib, symbol_to_csv_rows
 
-from pckg_info import __version__
+from .pckg_info import __version__
 
 def library_to_csv(input_file, output_file=None, overwrite=False):
     """
