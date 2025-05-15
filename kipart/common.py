@@ -37,6 +37,8 @@ PIN_LENGTH = 5.08  # Standard pin length in KiCad
 GRID_SPACING = 2.54  # Grid spacing for aligning pins and symbols
 TEXT_CLEARANCE = 0.5  # Clearance between text and symbol boundaries
 
+# ===== Basic Utility Functions =====
+
 def get_text_bounding_box(text, font_size=FONT_SIZE):
     """
     Calculate the bounding box for a text string based on font size.
@@ -93,6 +95,202 @@ def parse_mixed_string(s):
         parts.append(int(current) if is_numeric else current)
 
     return tuple(parts) if parts else (s,)
+
+def yntf_to_bool(value):
+    """
+    Convert a YES-NO-TRUE-FALSE string to a boolean value.
+
+    Args:
+        value (str): String to convert.
+
+    Returns:
+        bool: True if the string is 'yes', 'y', 'true', 't', '1', or 1 (numeric); False otherwise.
+    """
+    value = value.lower()
+    if value in ['yes', 'y', 'true', 't', '1', 1]:
+        return True
+    if value in ['no', 'n', 'false', 'f', '0', 0]:
+        return False
+    raise ValueError(f"Invalid value for YES-NO-TRUE-FALSE string: {value}")
+
+def str_to_type(value):
+    """
+    Convert a string to a standardized pin type.
+    
+    Maps various string representations of pin types to their canonical KiCad equivalents.
+    
+    Args:
+        value (str): The string describing the pin type.
+        
+    Returns:
+        str: Canonical KiCad pin type (input, output, bidirectional, etc.)
+        
+    Raises:
+        ValueError: If the input string doesn't match any known pin type.
+    """
+    value = value.lower()
+    if value in ("input", "inp", "in", "clk"):
+        return "input"
+    if value in ("output", "out", "outp"):
+        return "output"
+    if value in ("bidirectional", "bidir", "bi", "inout", "io", "iop"):
+        return "bidirectional"
+    if value in ("tri-state", "tri", "tri_state", "tristate"):
+        return "tri_state"
+    if value in ("passive", "pass"):
+        return "passive"
+    if value in ("free",):
+        return "free"
+    if value in ("unspecified", "un", "analog"):
+        return "unspecified"
+    if value in ("power_in", "pwr_in", "pwrin", "power", "pwr", "ground", "gnd"):
+        return "power_in"
+    if value in ("power_out", "pwr_out", "pwrout", "pwr_o"):
+        return "power_out"
+    if value in ("open_collector", "opencollector", "open_coll", "opencoll", "oc"):
+        return "open_collector"
+    if value in ("open_emitter", "openemitter", "open_emit", "openemit", "oe"):
+        return "open_collector"
+    if value in ("no_connect", "noconnect", "no_conn", "noconn", "nc"):
+        return "no_connect"
+    raise ValueError(f"Invalid value for type: {value}")
+
+def str_to_style(value):
+    """
+    Convert a string to a standardized pin style.
+    
+    Maps various string representations of pin styles to their canonical KiCad equivalents.
+    
+    Args:
+        value (str): The string describing the pin style.
+        
+    Returns:
+        str: Canonical KiCad pin style (line, inverted, clock, etc.)
+        
+    Raises:
+        ValueError: If the input string doesn't match any known pin style.
+    """
+    value = value.lower()
+    if value in ("line", ""):
+        return "line"
+    if value in ("inverted", "inv", "~", "#"):
+        return "inverted"
+    if value in ("clock", "clk", "rising_clk"):
+        return "clock"
+    if value in ("inverted_clock", "inv_clk", "clk_b", "clk_n", "~clk", "#clk"):
+        return "inverted_clock"
+    if value in ("input_low", "inp_low", "in_lw", "in_b", "in_n", "~in", "#in"):
+        return "input_low"
+    if value in ("clock_low", "clk_low", "clk_lw", "clk_b", "clk_n", "~clk", "#clk"):
+        return "inverted_clock"
+    if value in ("output_low", "outp_low", "out_lw", "out_b", "out_n", "~out", "#out"):
+        return "output_low"
+    if value in ("edge_clock_high",):
+        return "edge_clock_high"
+    if value in ("non_logic", "nl", "analog"):
+        return "non_logic"
+    raise ValueError(f"Invalid value for style: {value}")
+
+def add_quotes(sexp):
+    """
+    Add quotes to specific elements in an S-expression.
+    
+    This function adds quotes around the values of specific elements in the
+    given S-expression object. The elements that get quoted are defined in
+    the internal list 'quote_elements'.
+    
+    Args:
+        sexp: An S-expression object that has an 'add_quotes' method.
+        
+    Returns:
+        None. The S-expression is modified in-place.
+    """
+
+    # List of S-expression elements that require quoted values
+    quote_elements = ["generator", "generator_version", "symbol", "extends", "property", "name", "number", "text"]
+    # Apply quoting to each element type in the S-expression
+    for elem in quote_elements:
+        sexp.add_quotes(elem, ignore_case=True)
+
+# ===== File Handling Functions =====
+
+def open_input_file(input_file):
+    """
+    Read CSV or Excel file into a list of rows.
+
+    Supports .csv, .xlsx, and .xls formats, using `pandas` for Excel files.
+
+    Args:
+        input_file (str): Path to the input file.
+
+    Returns:
+        list of list: Rows from the file, with each row as a list of strings.
+
+    Raises:
+        ValueError: If the file extension is unsupported.
+    """
+    _, ext = os.path.splitext(input_file)
+    ext = ext.lower()
+
+    # Use csv module for CSV files, pandas for Excel files
+    if ext in ['.csv']:
+        with open(input_file, newline='') as f:
+            reader = csv.reader(f)
+            rows = list(reader)
+    elif ext in ['.xlsx', '.xls']:
+        # Use header=None so the first row is treated as data.
+        df = pd.read_excel(input_file, sheet_name=0, dtype=str, header=None)
+        rows = df.fillna('').values.tolist()
+    else:
+        raise ValueError(f"Unsupported file extension: {ext}. Use .csv, .xlsx, or .xls")
+
+    return rows
+
+def read_symbol_rows(rows):
+    """
+    Group CSV rows into symbols based on part names and blank lines.
+
+    Each symbol consists of a part name, optional properties, a header, and pin data.
+
+    Args:
+        rows (list of list): Raw CSV rows from the input file.
+
+    Returns:
+        list of list: List of symbol data, where each item is a list of rows for a symbol.
+
+    Raises:
+        ValueError: If no valid symbols are found.
+    """
+    symbols = []
+    current_symbol_rows = None
+    
+    # Group rows by symbols, using blank lines as separators
+    row_idx = 0
+    while row_idx < len(rows):
+        row = rows[row_idx]
+        if not row or all(cell.strip() == '' for cell in row):
+            if current_symbol_rows:
+                symbols.append(current_symbol_rows)
+                current_symbol_rows = None
+            row_idx += 1
+            continue
+        
+        if not current_symbol_rows:
+            current_symbol_rows = [row]
+            row_idx += 1
+        else:
+            current_symbol_rows.append(row)
+            row_idx += 1
+    
+    if current_symbol_rows:
+        symbols.append(current_symbol_rows)
+    
+    if not symbols:
+        raise ValueError("No valid symbols found in input file")
+    
+    return symbols
+
+# ===== Symbol Parsing Functions =====
 
 def extract_symbols_from_lib(symbol_lib):
     """
@@ -171,148 +369,53 @@ def symbol_to_csv_rows(symbol):
 
     return rows
 
-def yntf_to_bool(value):
+# ===== Symbol Generation Functions =====
+
+def create_pin_sexp(pin, x, y, orientation, pin_length):
     """
-    Convert a YES-NO-TRUE-FALSE string to a boolean value.
-
-    Args:
-        value (str): String to convert.
-
-    Returns:
-        bool: True if the string is 'yes', 'y', 'true', 't', '1', or 1 (numeric); False otherwise.
-    """
-    value = value.lower()
-    if value in ['yes', 'y', 'true', 't', '1', 1]:
-        return True
-    if value in ['no', 'n', 'false', 'f', '0', 0]:
-        return False
-    raise ValueError(f"Invalid value for YES-NO-TRUE-FALSE string: {value}")
-
-def str_to_type(value):
-    value = value.lower()
-    if value in ("input", "inp", "in", "clk"):
-        return "input"
-    if value in ("output", "out", "outp"):
-        return "output"
-    if value in ("bidirectional", "bidir", "bi", "inout", "io", "iop"):
-        return "bidirectional"
-    if value in ("tri-state", "tri", "tri_state", "tristate"):
-        return "tri_state"
-    if value in ("passive", "pass"):
-        return "passive"
-    if value in ("free",):
-        return "free"
-    if value in ("unspecified", "un", "analog"):
-        return "unspecified"
-    if value in ("power_in", "pwr_in", "pwrin", "power", "pwr", "ground", "gnd"):
-        return "power_in"
-    if value in ("power_out", "pwr_out", "pwrout", "pwr_o"):
-        return "power_out"
-    if value in ("open_collector", "opencollector", "open_coll", "opencoll", "oc"):
-        return "open_collector"
-    if value in ("open_emitter", "openemitter", "open_emit", "openemit", "oe"):
-        return "open_collector"
-    if value in ("no_connect", "noconnect", "no_conn", "noconn", "nc"):
-        return "no_connect"
-    raise ValueError(f"Invalid value for type: {value}")
-
-def str_to_style(value):
-    value = value.lower()
-    if value in ("line", ""):
-        return "line"
-    if value in ("inverted", "inv", "~", "#"):
-        return "inverted"
-    if value in ("clock", "clk", "rising_clk"):
-        return "clock"
-    if value in ("inverted_clock", "inv_clk", "clk_b", "clk_n", "~clk", "#clk"):
-        return "inverted_clock"
-    if value in ("input_low", "inp_low", "in_lw", "in_b", "in_n", "~in", "#in"):
-        return "input_low"
-    if value in ("clock_low", "clk_low", "clk_lw", "clk_b", "clk_n", "~clk", "#clk"):
-        return "inverted_clock"
-    if value in ("output_low", "outp_low", "out_lw", "out_b", "out_n", "~out", "#out"):
-        return "output_low"
-    if value in ("edge_clock_high",):
-        return "edge_clock_high"
-    if value in ("non_logic", "nl", "analog"):
-        return "non_logic"
-    raise ValueError(f"Invalid value for style: {value}")
-
-def open_input_file(input_file):
-    """
-    Read CSV or Excel file into a list of rows.
-
-    Supports .csv, .xlsx, and .xls formats, using `pandas` for Excel files.
-
-    Args:
-        input_file (str): Path to the input file.
-
-    Returns:
-        list of list: Rows from the file, with each row as a list of strings.
-
-    Raises:
-        ValueError: If the file extension is unsupported.
-    """
-    _, ext = os.path.splitext(input_file)
-    ext = ext.lower()
-
-    # Use csv module for CSV files, pandas for Excel files
-    if ext in ['.csv']:
-        with open(input_file, newline='') as f:
-            reader = csv.reader(f)
-            rows = list(reader)
-    elif ext in ['.xlsx', '.xls']:
-        # Use header=None so the first row is treated as data.
-        df = pd.read_excel(input_file, sheet_name=0, dtype=str, header=None)
-        rows = df.fillna('').values.tolist()
-    else:
-        raise ValueError(f"Unsupported file extension: {ext}. Use .csv, .xlsx, or .xls")
-
-    return rows
-
-def read_symbol_rows(rows):
-    """
-    Group CSV rows into symbols based on part names and blank lines.
-
-    Each symbol consists of a part name, optional properties, a header, and pin data.
-
-    Args:
-        rows (list of list): Raw CSV rows from the input file.
-
-    Returns:
-        list of list: List of symbol data, where each item is a list of rows for a symbol.
-
-    Raises:
-        ValueError: If no valid symbols are found.
-    """
-    symbols = []
-    current_symbol_rows = None
+    Create a pin S-expression for a KiCad symbol.
     
-    # Group rows by symbols, using blank lines as separators
-    row_idx = 0
-    while row_idx < len(rows):
-        row = rows[row_idx]
-        if not row or all(cell.strip() == '' for cell in row):
-            if current_symbol_rows:
-                symbols.append(current_symbol_rows)
-                current_symbol_rows = None
-            row_idx += 1
-            continue
+    Constructs an S-expression structure for a pin with proper name, number,
+    position, and visual properties.
+    
+    Args:
+        pin (dict): Dictionary containing pin properties:
+                   'type', 'style', 'name', 'number', 'hidden', etc.
+        x (float): X coordinate for the pin connection point.
+        y (float): Y coordinate for the pin connection point.
+        orientation (int): Pin orientation in degrees (0, 90, 180, or 270).
+        pin_length (float): Length of the pin line in mm.
         
-        if not current_symbol_rows:
-            current_symbol_rows = [row]
-            row_idx += 1
-        else:
-            current_symbol_rows.append(row)
-            row_idx += 1
+    Returns:
+        Sexp: S-expression representing a complete pin definition.
+    """
+    pin_sexp = Sexp(['pin', pin['type'], pin['style']])
+    pin_sexp.append(['at', x, y, orientation])
+    pin_sexp.append(['length', pin_length])
     
-    if current_symbol_rows:
-        symbols.append(current_symbol_rows)
+    # Add name sub-expression
+    name_sexp = Sexp(['name', pin['name']])
+    effects_sexp = Sexp(['effects'])
+    font_sexp = Sexp(['font'])
+    font_sexp.append(['size', 1.27, 1.27])
+    effects_sexp.append(font_sexp)
+    if pin['hidden'].lower() in ['1', 'true', 'yes']:
+        effects_sexp.append(['hide', 'yes'])
+    name_sexp.append(effects_sexp)
+    pin_sexp.append(name_sexp)
     
-    if not symbols:
-        raise ValueError("No valid symbols found in input file")
+    # Add number sub-expression
+    number_sexp = Sexp(['number', pin['number']])
+    effects_sexp = Sexp(['effects'])
+    font_sexp = Sexp(['font'])
+    font_sexp.append(['size', 1.27, 1.27])
+    effects_sexp.append(font_sexp)
+    if pin['hidden'].lower() in ['1', 'true', 'yes']:
+        effects_sexp.append(['hide', 'yes'])
+    number_sexp.append(effects_sexp)
+    pin_sexp.append(number_sexp)
     
-    return symbols
+    return pin_sexp
 
 def generate_symbol(symbol_rows, sort_by='row', reverse=False, default_side='left'):
     """
@@ -597,54 +700,3 @@ def generate_symbol(symbol_rows, sort_by='row', reverse=False, default_side='lef
     symbol_sexp.append(['embedded_fonts', 'no'])
     
     return symbol_sexp
-
-def create_pin_sexp(pin, x, y, orientation, pin_length):
-    """Helper function to create a pin S-expression"""
-    pin_sexp = Sexp(['pin', pin['type'], pin['style']])
-    pin_sexp.append(['at', x, y, orientation])
-    pin_sexp.append(['length', pin_length])
-    
-    # Add name sub-expression
-    name_sexp = Sexp(['name', pin['name']])
-    effects_sexp = Sexp(['effects'])
-    font_sexp = Sexp(['font'])
-    font_sexp.append(['size', 1.27, 1.27])
-    effects_sexp.append(font_sexp)
-    if pin['hidden'].lower() in ['1', 'true', 'yes']:
-        effects_sexp.append(['hide', 'yes'])
-    name_sexp.append(effects_sexp)
-    pin_sexp.append(name_sexp)
-    
-    # Add number sub-expression
-    number_sexp = Sexp(['number', pin['number']])
-    effects_sexp = Sexp(['effects'])
-    font_sexp = Sexp(['font'])
-    font_sexp.append(['size', 1.27, 1.27])
-    effects_sexp.append(font_sexp)
-    if pin['hidden'].lower() in ['1', 'true', 'yes']:
-        effects_sexp.append(['hide', 'yes'])
-    number_sexp.append(effects_sexp)
-    pin_sexp.append(number_sexp)
-    
-    return pin_sexp
-
-def add_quotes(sexp):
-    """
-    Add quotes to specific elements in an S-expression.
-    
-    This function adds quotes around the values of specific elements in the
-    given S-expression object. The elements that get quoted are defined in
-    the internal list 'quote_elements'.
-    
-    Args:
-        sexp: An S-expression object that has an 'add_quotes' method.
-        
-    Returns:
-        None. The S-expression is modified in-place.
-    """
-
-    # List of S-expression elements that require quoted values
-    quote_elements = ["generator", "generator_version", "symbol", "extends", "property", "name", "number", "text"]
-    # Apply quoting to each element type in the S-expression
-    for elem in quote_elements:
-        sexp.add_quotes(elem, ignore_case=True)
