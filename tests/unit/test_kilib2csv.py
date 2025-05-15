@@ -58,13 +58,13 @@ def test_library_to_csv(tmp_path):
         ["Reference:", "U"],
         ["Value:", "my_part"],
         ["pin", "name", "type", "side", "unit", "style", "hidden"],
-        ["1", "P1", "input", "left", "1", "line", "0"],
+        ["1", "P1", "input", "left", "my_part_1", "line", "no"],
         [],
         ["part2", ""],
         ["Reference:", "U"],
         ["Value:", "part2"],
         ["pin", "name", "type", "side", "unit", "style", "hidden"],
-        ["1", "OUT", "output", "left", "1", "line", "0"]
+        ["1", "OUT", "output", "left", "part2_1", "line", "no"]
     ]
     with open(output_path) as f:
         reader = csv.reader(f)

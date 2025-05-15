@@ -93,8 +93,8 @@ def test_symbol_to_csv_rows():
         (pin output line
           (at 25.40 0.00 180)
           (length 5.08)
-          (name "P2")
-          (number "2")
+          (name "P2" (effects (hidden yes)))
+          (number "2" (effects (hidden yes)))
         )
       )
     )
@@ -104,8 +104,8 @@ def test_symbol_to_csv_rows():
         ["Reference:", "U"],
         ["Value:", "my_part"],
         ["pin", "name", "type", "side", "unit", "style", "hidden"],
-        ["1", "P1", "input", "left", "my_part_1", "line", "0"],
-        ["2", "P2", "output", "right", "my_part_1", "line", "0"]
+        ["1", "P1", "input", "left", "my_part_1", "line", "no"],
+        ["2", "P2", "output", "right", "my_part_1", "line", "yes"]
     ]
     rows = symbol_to_csv_rows(Sexp(sexp))
     assert rows == expected_rows
