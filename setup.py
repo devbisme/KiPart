@@ -50,8 +50,8 @@ setup(
     packages=setuptools.find_packages(),
     entry_points={
         "console_scripts": [
-            "kipart = kipart.kipart:main",
-            "kilib2csv = kipart.kilib2csv:main",
+            "kipart = kipart.kipart:kipart",
+            "kilib2csv = kipart.kipart:kilib2csv",
         ]
     },
     package_dir={"kipart": "kipart"},
