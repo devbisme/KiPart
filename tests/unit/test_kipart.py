@@ -15,7 +15,7 @@ from kipart.kipart import (
     generate_symbol,
     add_quotes,
     row_file_to_symbol_lib_file,
-    library_to_csv,
+    symbol_lib_file_to_csv_file,
 )
 
 def test_get_text_bounding_box():
@@ -288,7 +288,7 @@ def test_library_to_csv(tmp_path):
         f.write(kicad_sym_content)
     
     output_path = tmp_path / "output.csv"
-    result = library_to_csv(kicad_sym_path, output_file=output_path)
+    result = symbol_lib_file_to_csv_file(kicad_sym_path, csv_file=output_path)
     
     assert os.path.exists(result)
     expected_rows = [
@@ -311,11 +311,11 @@ def test_library_to_csv(tmp_path):
     
     # Test invalid file
     with pytest.raises(FileNotFoundError):
-        library_to_csv(tmp_path / "nonexistent.kicad_sym")
+        symbol_lib_file_to_csv_file(tmp_path / "nonexistent.kicad_sym")
     
     # Test overwrite protection
     with pytest.raises(ValueError, match="Output file.*already exists"):
-        library_to_csv(kicad_sym_path, output_file=output_path, overwrite=False)
+        symbol_lib_file_to_csv_file(kicad_sym_path, csv_file=output_path, overwrite=False)
 
 def test_kilib2csv_cli(tmp_path):
     """Test the kilib2csv.py command-line interface."""
@@ -351,6 +351,8 @@ def test_kilib2csv_cli(tmp_path):
         ["kilib2csv", str(kicad_sym_path), "-o", str(output_path)],
         capture_output=True, text=True
     )
+    print(result.stdout)
+    print(result.stderr)
     assert result.returncode == 0
     assert f"Generated {output_path}" in result.stdout
     assert os.path.exists(output_path)
