@@ -8,7 +8,7 @@ functions from common.py. It supports creating formatted .kicad_sym files with
 precise pin placement based on grid-based positioning.
 
 Dependencies:
-- common.py: Provides utility functions (open_input_file, read_symbol_rows, generate_symbol).
+- common.py: Provides utility functions (open_row_file, read_symbol_rows, generate_symbol).
 - pandas: For reading Excel files (requires openpyxl for .xlsx support).
 - Standard library: argparse, os, sys.
 
@@ -16,17 +16,16 @@ Usage:
 - Run: `python kipart.py input.csv --output output.kicad_sym`
 """
 
-__all__ = ['generate_library']
+__all__ = ['row_file_to_symbol_lib_file']
 
 import argparse
 import os
 import sys
-from simp_sexp import Sexp
-from .common import open_input_file, read_symbol_rows, generate_symbol
+from .common import read_row_file, generate_symbol_lib
 
 from .pckg_info import __version__
 
-def generate_library(input_file, sort_by='row', reverse=False, default_side='left', output_file=None, overwrite=False):
+def row_file_to_symbol_lib_file(row_file, symbol_lib_file=None, sort_by='row', reverse=False, default_side='left', overwrite=False):
     """
     Generate a KiCad symbol library from a CSV or Excel file.
 
@@ -34,11 +33,11 @@ def generate_library(input_file, sort_by='row', reverse=False, default_side='lef
     .kicad_sym file using functions from common.py.
 
     Args:
-        input_file (str): Path to the input CSV or Excel file.
+        row_file (str): Path to the input CSV or Excel file with rows of symbol pin data.
+        symbol_lib_file (str, optional): Output file path. Defaults to input file with .kicad_sym extension.
         sort_by (str, optional): Sort pins by 'row', 'num', or 'name'. Defaults to 'row'.
         reverse (bool, optional): Reverse the sort order. Defaults to False.
         default_side (str, optional): Default pin side. Defaults to 'left'.
-        output_file (str, optional): Output file path. Defaults to input file with .kicad_sym extension.
         overwrite (bool, optional): Allow overwriting existing output file. Defaults to False.
 
     Returns:
@@ -47,41 +46,26 @@ def generate_library(input_file, sort_by='row', reverse=False, default_side='lef
     Raises:
         ValueError: If the input file is invalid, no symbols are found, or output file exists without overwrite.
     """
-    # Read and group input rows using common utilities
-    rows = open_input_file(input_file)
-    symbol_data = read_symbol_rows(rows)
 
-    # Construct library S-expression
-    symbol_lib = Sexp()
-    symbol_lib.append("kicad_symbol_lib")
-    symbol_lib.append(["version", "20241209"])
-    symbol_lib.append(["generator", "kicad_symbol_editor"])
-    symbol_lib.append(["generator_version", "8.0"])
+    # Determine output filename for the symbol library
+    if not symbol_lib_file:
+        symbol_lib_file = os.path.splitext(row_file)[0] + '.kicad_sym'
 
-    # Generate symbols and add to library
-    for symbol_rows in symbol_data:
-        symbol = generate_symbol(symbol_rows, sort_by=sort_by, reverse=reverse, default_side=default_side)
-        symbol_lib.append(symbol)
+    # Check for an existing file
+    if os.path.exists(symbol_lib_file) and not overwrite:
+        raise ValueError(f"Output file {symbol_lib_file} already exists. Use --overwrite to allow overwriting.")
+    
+    # Read rows of symbol pin data from CSV or Excel file.
+    rows = read_row_file(row_file)
 
-    # Some elements of the netlist need to be enclosed in quotes.
-    quote_elements = ["generator", "generator_version", "symbol", "extends", "property", "name", "number", "text"]
-    for elem in quote_elements:
-        symbol_lib.add_quotes(elem, ignore_case=True)
+    # Generate the symbol library from the rows.
+    symbol_lib = generate_symbol_lib(rows, sort_by=sort_by, reverse=reverse, default_side=default_side, alt_pin_delim=None)
 
-    # Determine output filename
-    if output_file:
-        final_output_file = output_file
-    else:
-        final_output_file = os.path.splitext(input_file)[0] + '.kicad_sym'
-
-    # Check for existing file
-    if os.path.exists(final_output_file) and not overwrite:
-        raise ValueError(f"Output file {final_output_file} already exists. Use --overwrite to allow overwriting.")
-
-    with open(final_output_file, 'w') as f:
+    # Store the symbol library as an S-expression in the output file.
+    with open(symbol_lib_file, 'w') as f:
         f.write(str(symbol_lib))
 
-    return final_output_file
+    return symbol_lib_file
 
 def main():
     """
@@ -118,20 +102,20 @@ def main():
         print("Error: --output can only be used with a single input file")
         sys.exit(1)
     
-    # Process each input file
-    for input_file in args.input_files:
+    # Process each input file containing rows of symbol pin data
+    for row_file in args.input_files:
         try:
-            output_file = generate_library(
-                input_file,
+            symbol_lib_file = row_file_to_symbol_lib_file(
+                row_file,
+                symbol_lib_file=args.output,
                 sort_by=args.sort,
                 reverse=args.reverse,
                 default_side=args.side,
-                output_file=args.output,
                 overwrite=args.overwrite
             )
-            print(f"Generated {output_file} successfully from {input_file}")
+            print(f"Generated {symbol_lib_file} successfully from {row_file}")
         except Exception as e:
-            print(f"Error processing {input_file}: {str(e)}")
+            print(f"Error processing {row_file}: {str(e)}")
             raise e
             continue
 
