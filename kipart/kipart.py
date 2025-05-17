@@ -1,29 +1,47 @@
 """
-KiCad Symbol Library Common Utilities
+KiCad Symbol Library Generator and Parser
 
-This module provides utility functions for generating and parsing KiCad symbol
-libraries. It supports creating symbol S-expressions from CSV/Excel data and
-parsing S-expressions into CSV-compatible data. Used by `kipart.py` for library
-generation and `kilib2csv.py` for library parsing.
+This module provides utilities for creating KiCad symbol libraries from tabular data
+(CSV/Excel) and parsing existing libraries back into tabular format. It supports
+bidirectional conversion between KiCad's .kicad_sym format and spreadsheet files.
+
+Main features:
+- Generate KiCad symbols from CSV or Excel files with pin definitions
+- Parse KiCad symbol libraries into CSV format for editing
+- Command-line interfaces for both conversion directions
+- Flexible pin sorting, positioning and configuration options
 
 Dependencies:
-- simp_sexp: For parsing and manipulating S-expressions.
-- pandas: For reading Excel files (requires openpyxl for .xlsx support).
-- Standard library: csv, math, os, sys, re.
+- simp_sexp: For parsing and manipulating S-expressions
+- pandas: For reading Excel files (requires openpyxl for .xlsx support)
+- Standard library: csv, math, os, sys, argparse
 """
 
 __all__ = [
+    # Basic utility functions
+    'gridify',
     'get_text_bounding_box',
     'parse_mixed_string',
-    'extract_symbols_from_lib',
-    'symbol_to_csv_rows',
+    'yntf_to_yesno',
+    'str_to_type',
+    'str_to_style',
+    'str_to_side',
+    'add_quotes',
+    # File handling functions
     'read_row_file',
     'read_symbol_rows',
+    # Symbol parsing functions
+    'extract_symbols_from_lib',
+    'symbol_to_csv_rows',
+    # Symbol generation functions
+    'create_pin_sexp',
     'generate_symbol',
     'generate_symbol_lib',
-    'add_quotes',
     'row_file_to_symbol_lib_file',
+    # Command-line interfaces
     'kipart',
+    'library_to_csv',
+    'kilib2csv',
 ]
 
 import csv
@@ -51,14 +69,18 @@ PIN_OFFSET = SIDE_CLEARANCE + GRID_SPACING/2
 
 def gridify(value, grid_spacing=GRID_SPACING):
     """
-    Round a value to the nearest grid spacing.
+    Round a value up to the nearest grid spacing multiple.
+    
+    Ensures all coordinates and dimensions align with KiCad's grid system,
+    producing cleaner symbols that are easier to connect to other components.
 
     Args:
         value (float): The value to round.
-        grid_spacing (float, optional): The grid spacing to use for rounding. Defaults to GRID_SPACING.
+        grid_spacing (float, optional): The grid spacing to use for rounding. 
+                                       Defaults to GRID_SPACING (2.54 mm).
 
     Returns:
-        float: The rounded value.
+        float: The rounded value (always rounded up to next grid multiple).
     """
     return math.ceil(value / grid_spacing) * grid_spacing
 
@@ -136,15 +158,23 @@ def parse_mixed_string(s):
 
 def yntf_to_yesno(value):
     """
-    Convert a YES-NO-TRUE-FALSE string to a boolean value.
+    Convert a YES-NO-TRUE-FALSE string to KiCad's 'yes'/'no' format.
+    
+    KiCad uses 'yes' and 'no' strings for boolean values in its file format.
+    This function standardizes various input formats to these values.
 
     Args:
-        value (str): String to convert.
+        value (str or int): Value to convert. Can be string representations like
+                          'yes', 'y', 'true', 't', 'no', 'n', 'false', 'f',
+                          or numbers like '1', '0', 1, 0.
 
     Returns:
-        bool: True if the string is 'yes', 'y', 'true', 't', '1', or 1 (numeric); False otherwise.
+        str: 'yes' for truthy values or 'no' for falsy values.
+
+    Raises:
+        ValueError: If the input string doesn't match any known boolean representation.
     """
-    value = value.lower()
+    value = str(value).lower() if not isinstance(value, str) else value.lower()
     if value in ['yes', 'y', 'true', 't', '1', 1]:
         return 'yes'
     if value in ['no', 'n', 'false', 'f', '0', 0]:
@@ -290,18 +320,21 @@ def add_quotes(sexp):
 
 def read_row_file(input_file):
     """
-    Read CSV or Excel file into a list of rows.
+    Read a CSV or Excel file into a list of rows.
 
-    Supports .csv, .xlsx, and .xls formats, using `pandas` for Excel files.
+    Automatically detects the file format by extension and uses the appropriate
+    parser (csv module for CSV, pandas for Excel).
 
     Args:
-        input_file (str): Path to the input file.
+        input_file (str): Path to the input file (.csv, .xlsx, or .xls).
 
     Returns:
         list of list: Rows from the file, with each row as a list of strings.
+        Empty cells are represented as empty strings.
 
     Raises:
         ValueError: If the file extension is unsupported.
+        FileNotFoundError: If the specified file doesn't exist.
     """
     _, ext = os.path.splitext(input_file)
     ext = ext.lower()
@@ -322,9 +355,11 @@ def read_row_file(input_file):
 
 def read_symbol_rows(rows):
     """
-    Group CSV rows into symbols based on part names and blank lines.
+    Group CSV rows into separate symbols based on blank lines.
 
-    Each symbol consists of a part name, optional properties, a header, and pin data.
+    In the input format, symbols are separated by blank lines. Each symbol consists 
+    of a part name in the first row, optional properties in subsequent rows, followed 
+    by a header row for pin data, and then the pin definitions.
 
     Args:
         rows (list of list): Raw CSV rows from the input file.
@@ -333,7 +368,7 @@ def read_symbol_rows(rows):
         list of list: List of symbol data, where each item is a list of rows for a symbol.
 
     Raises:
-        ValueError: If no valid symbols are found.
+        ValueError: If no valid symbols are found in the input data.
     """
     symbols = []
 
@@ -360,14 +395,18 @@ def extract_symbols_from_lib(symbol_lib):
     """
     Extract individual symbol definitions from a KiCad symbol library S-expression.
 
-    Uses `simp_sexp` to parse the library into a nested structure, avoiding manual
-    parenthesis counting for robustness.
+    Parses the library S-expression string into a structured format and extracts 
+    each symbol definition. This allows processing of individual symbols without
+    having to manually parse the S-expression structure.
 
     Args:
-        symbol_lib (str): S-expression string representing a KiCad symbol library.
+        symbol_lib (str or Sexp): S-expression string or object representing a KiCad symbol library.
 
     Returns:
-        list of Sexp: List of Sexp symbols extracted from the S-expression.
+        list of Sexp: List of Sexp objects, one for each symbol in the library.
+
+    Raises:
+        ValueError: If the input is not a valid KiCad symbol library S-expression.
     """
 
     # Parse the library, search for part symbols, and return a list Sexp objects, one for each part.
@@ -437,23 +476,27 @@ def symbol_to_csv_rows(symbol):
 
 def create_pin_sexp(pin, x, y, orientation, pin_length, alt_pin_delim=None):
     """
-    Create a pin S-expression for a KiCad symbol.
+    Create an S-expression for a pin in a KiCad symbol.
     
-    Constructs an S-expression structure for a pin with proper name, number,
-    position, and visual properties.
+    Constructs the complete S-expression structure for a pin with all required
+    attributes including position, orientation, name, number, and visual properties.
     
     Args:
         pin (dict): Dictionary containing pin properties:
-                   'type', 'style', 'name', 'number', 'hidden', etc.
-        x (float): X coordinate for the pin connection point.
-        y (float): Y coordinate for the pin connection point.
-        orientation (int): Pin orientation in degrees (0, 90, 180, or 270).
-        pin_length (float): Length of the pin line in mm.
-        alt_pin_delim (str, optional): Delimiter for splitting pin names
-            into alternatives. Defaults to None (no splitting).
+                   'type': Pin electrical type (e.g., 'input', 'output', 'bidirectional')
+                   'style': Pin visual style (e.g., 'line', 'inverted', 'clock')
+                   'name': Pin name (can include alternatives with delimiter)
+                   'number': Pin number or identifier
+                   'hidden': Whether the pin should be visually hidden
+        x (float): X coordinate for the pin connection point (grid units)
+        y (float): Y coordinate for the pin connection point (grid units)
+        orientation (int): Pin orientation in degrees (0, 90, 180, or 270)
+        pin_length (float): Length of the pin line in grid units
+        alt_pin_delim (str, optional): Delimiter for splitting pin names into
+                                     alternatives. Defaults to None (no splitting).
         
     Returns:
-        Sexp: S-expression representing a complete pin definition.
+        Sexp: S-expression object representing a complete pin definition.
     """
     pin_sexp = Sexp(['pin', pin['type'], pin['style']])
     pin_sexp.append(['at', x, y, orientation])
@@ -492,25 +535,34 @@ def generate_symbol(symbol_rows, sort_by='row', reverse=False, default_side='lef
     """
     Generate a KiCad symbol S-expression from CSV rows.
 
-    Constructs an Sexp object for the symbol with precise control over pin placement and
-    symbol layout, using grid-based positioning.
+    Creates a complete symbol definition with rectangle outline and pins positioned
+    according to the specified parameters. Pins are automatically arranged on the 
+    appropriate sides with proper spacing and alignment.
 
     Args:
-        symbol_rows (list of list): CSV rows for a single symbol, including part name,
-                                   properties, header, and pin data.
-        sort_by (str, optional): Sort pins by 'row' (input order), 'num' (pin number),
-                                 or 'name' (pin name). Defaults to 'row'.
-        reverse (bool, optional): Reverse the sort order. Defaults to False.
+        symbol_rows (list of list): CSV rows for a single symbol, including:
+                                   - First row: [symbol_name, ""]
+                                   - Property rows: [prop_name + ":", prop_value]
+                                   - Header row: ["pin", "name", "type", "side", ...]
+                                   - Pin data rows: [pin_number, pin_name, pin_type, ...]
+        sort_by (str, optional): Method to sort pins:
+                               - 'row': Original order in the CSV (default)
+                               - 'num': By pin number using natural sort
+                               - 'name': By pin name using natural sort
+        reverse (bool, optional): Reverse the pin sort order. Defaults to False.
         default_side (str, optional): Default side for pins without a side specified.
-                                     Defaults to 'left'.
+                                    Valid values: 'left', 'right', 'top', 'bottom'.
+                                    Defaults to 'left'.
         alt_pin_delim (str, optional): Delimiter for splitting pin names into
-                                               alternatives. Defaults to '' (no splitting).
+                                      alternatives. Defaults to None (no splitting).
 
     Returns:
-        Sexp: KiCad symbol as an Sexp object.
+        Sexp: KiCad symbol as an Sexp object, ready to be included in a library.
 
     Raises:
-        ValueError: If the part name is invalid, required columns are missing, or no valid pins are defined.
+        ValueError: If the part name is invalid, required columns are missing,
+                  or no valid pins are defined.
+        KeyError: If a property label doesn't match known KiCad properties.
     """
 
     # Define the origin for the symbol coordinates
@@ -759,26 +811,30 @@ def generate_symbol(symbol_rows, sort_by='row', reverse=False, default_side='lef
 
 def generate_symbol_lib(rows, sort_by='row', reverse=False, default_side='left', alt_pin_delim=None):
     """
-    Generate a complete KiCad symbol library S-expression from CSV or Excel data.
+    Generate a complete KiCad symbol library from CSV or Excel data.
     
-    This function processes rows of data to create multiple symbols and combines them 
-    into a complete KiCad library with appropriate metadata.
+    Processes input rows to create a full symbol library file with multiple
+    symbols and appropriate metadata. Handles errors for individual symbols
+    gracefully, continuing with the next symbol if one fails.
     
     Args:
         rows (list of list): Raw CSV rows containing one or more symbols.
-        sort_by (str, optional): Sort pins by 'row' (input order), 'num' (pin number),
-                                or 'name' (pin name). Defaults to 'row'.
-        reverse (bool, optional): Reverse the sort order. Defaults to False.
+        sort_by (str, optional): Method to sort pins within each symbol:
+                               - 'row': Original order in the CSV (default)
+                               - 'num': By pin number using natural sort
+                               - 'name': By pin name using natural sort
+        reverse (bool, optional): Reverse the pin sort order. Defaults to False.
         default_side (str, optional): Default side for pins without a side specified.
-                                     Defaults to 'left'.
+                                    Valid values: 'left', 'right', 'top', 'bottom'.
+                                    Defaults to 'left'.
         alt_pin_delim (str, optional): Delimiter for splitting pin names into
                                       alternatives. Defaults to None (no splitting).
     
     Returns:
-        Sexp: Complete KiCad symbol library as an Sexp object.
+        Sexp: Complete KiCad symbol library as an Sexp object, ready to write to file.
     
     Raises:
-        ValueError: If no valid symbols are found in the input rows.
+        ValueError: If no valid symbols could be generated from the input data.
     """
 
     # Create the library S-expression container
@@ -818,17 +874,23 @@ def generate_symbol_lib(rows, sort_by='row', reverse=False, default_side='left',
 
 def row_file_to_symbol_lib_file(row_file, symbol_lib_file=None, sort_by='row', reverse=False, default_side='left', alt_pin_delim=None, overwrite=False):
     """
-    Generate a KiCad symbol library from a CSV or Excel file.
+    Convert a CSV or Excel file to a KiCad symbol library file.
 
-    Processes input rows into symbols, generates S-expressions, and writes a formatted
-    .kicad_sym file.
+    This is the main entry point for the CSV-to-KiCad conversion process.
+    It handles file I/O and delegates the symbol generation to other functions.
 
     Args:
-        row_file (str): Path to the input CSV or Excel file with rows of symbol pin data.
-        symbol_lib_file (str, optional): Output file path. Defaults to input file with .kicad_sym extension.
-        sort_by (str, optional): Sort pins by 'row', 'num', or 'name'. Defaults to 'row'.
-        reverse (bool, optional): Reverse the sort order. Defaults to False.
-        default_side (str, optional): Default pin side. Defaults to 'left'.
+        row_file (str): Path to the input CSV or Excel file with symbol data.
+        symbol_lib_file (str, optional): Path for the output .kicad_sym file.
+                                       If None, uses the input filename with .kicad_sym extension.
+        sort_by (str, optional): Method to sort pins within each symbol:
+                               - 'row': Original order in the CSV (default)
+                               - 'num': By pin number using natural sort
+                               - 'name': By pin name using natural sort
+        reverse (bool, optional): Reverse the pin sort order. Defaults to False.
+        default_side (str, optional): Default side for pins without a side specified.
+                                    Valid values: 'left', 'right', 'top', 'bottom'.
+                                    Defaults to 'left'.
         alt_pin_delim (str, optional): Delimiter for splitting pin names into
                                       alternatives. Defaults to None (no splitting).
         overwrite (bool, optional): Allow overwriting existing output file. Defaults to False.
@@ -837,7 +899,9 @@ def row_file_to_symbol_lib_file(row_file, symbol_lib_file=None, sort_by='row', r
         str: Path to the generated .kicad_sym file.
 
     Raises:
-        ValueError: If the input file is invalid, no symbols are found, or output file exists without overwrite.
+        ValueError: If the input file is invalid, no symbols are found, or
+                  output file exists without overwrite permission.
+        FileNotFoundError: If the input file doesn't exist.
     """
 
     # Determine output filename for the symbol library
@@ -860,11 +924,20 @@ def row_file_to_symbol_lib_file(row_file, symbol_lib_file=None, sort_by='row', r
 
     return symbol_lib_file
 
+# ===== Command-Line Interface Functions =====
+
 def kipart():
     """
     Command-line interface for generating KiCad symbol libraries from CSV or Excel files.
 
-    Parses arguments and processes input files, handling errors gracefully.
+    Usage:
+        kipart [-h] [-v] [--reverse] [--side {left,right,top,bottom}] [-o OUTPUT]
+               [-w] [-s {row,num,name}] [-a ALT_DELIMITER] input_files [input_files ...]
+
+    Examples:
+        kipart input.csv                # Generate input.kicad_sym 
+        kipart -o lib.kicad_sym in.xlsx # Generate lib.kicad_sym from in.xlsx
+        kipart -s num --reverse *.csv   # Generate libraries with pins sorted by number (descending)
 
     Args:
         None (uses sys.argv via argparse).
@@ -873,7 +946,8 @@ def kipart():
         None
 
     Exits:
-        1: If invalid arguments are provided (e.g., multiple inputs with --output).
+        0: On successful completion.
+        1: If errors occur during processing.
     """
     parser = argparse.ArgumentParser(description="Convert CSV or Excel files to KiCad symbol libraries")
     parser.add_argument('-v', '--version', action='version', version=f'%(prog)s {__version__}')
@@ -912,7 +986,7 @@ def kipart():
             )
             print(f"Generated {symbol_lib_file} successfully from {row_file}")
         except Exception as e:
-            print(f"Error processing {row_file}: {str(e)}")
+            print(f"Error processing file '{row_file}': {str(e)}")
             error_flag = True
             continue
 
@@ -922,24 +996,24 @@ def kipart():
 
 def library_to_csv(input_file, output_file=None, overwrite=False):
     """
-    Convert a KiCad symbol library to a CSV file with part data.
+    Convert a KiCad symbol library to a CSV file.
 
-    Reads a .kicad_sym file, extracts each part's CSV rows using functions from
-    common.py, and writes them to a CSV file with a blank row between parts.
+    This is the main entry point for the KiCad-to-CSV conversion process.
+    It extracts symbols from a .kicad_sym file and formats them for CSV output.
 
     Args:
-        input_file (str): Path to the input .kicad_sym file.
-        output_file (str, optional): Path to the output CSV file. Defaults to input file
-                                    with .csv extension.
+        input_file (str): Path to the input KiCad symbol library (.kicad_sym).
+        output_file (str, optional): Path for the output CSV file.
+                                    If None, uses the input filename with .csv extension.
         overwrite (bool, optional): Allow overwriting existing output file. Defaults to False.
 
     Returns:
         str: Path to the generated CSV file.
 
     Raises:
-        FileNotFoundError: If the input file does not exist.
-        ValueError: If the output file exists and overwrite is False, or if the input file
-                    is not a .kicad_sym file.
+        FileNotFoundError: If the input file doesn't exist.
+        ValueError: If the input file is not a .kicad_sym file, or if the output file
+                  exists and overwrite is False.
     """
     # Validate input file
     if not os.path.exists(input_file):
@@ -989,10 +1063,15 @@ def library_to_csv(input_file, output_file=None, overwrite=False):
 
 def kilib2csv():
     """
-    Command-line interface for parsing KiCad symbol libraries to CSV files.
+    Command-line interface for converting KiCad symbol libraries to CSV files.
 
-    Processes .kicad_sym files, extracts part data, and writes CSV files with blank
-    rows between parts. Handles errors gracefully and provides user feedback.
+    Usage:
+        kilib2csv [-h] [-v] [-o OUTPUT] [-w] input_files [input_files ...]
+
+    Examples:
+        kilib2csv library.kicad_sym             # Generate library.csv
+        kilib2csv -o output.csv lib.kicad_sym   # Generate output.csv from lib.kicad_sym
+        kilib2csv -w *.kicad_sym                # Convert multiple libraries, overwriting existing CSVs
 
     Args:
         None (uses sys.argv via argparse).
@@ -1001,7 +1080,8 @@ def kilib2csv():
         None
 
     Exits:
-        1: If invalid arguments are provided (e.g., multiple inputs with --output).
+        0: On successful completion.
+        1: If errors occur during processing.
     """
     parser = argparse.ArgumentParser(description="Parse KiCad symbol libraries to CSV files")
     parser.add_argument('-v', '--version', action='version', version=f'%(prog)s {__version__}')
@@ -1027,7 +1107,7 @@ def kilib2csv():
             )
             print(f"Generated {output_file} successfully from {input_file}")
         except Exception as e:
-            print(f"Error processing {input_file}: {str(e)}")
+            print(f"Error processing file '{input_file}': {str(e)}")
             error_flag = True
             continue
 
