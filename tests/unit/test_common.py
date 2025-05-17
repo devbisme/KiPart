@@ -7,7 +7,7 @@ from kipart.common import (
     parse_mixed_string,
     extract_symbols_from_lib,
     symbol_to_csv_rows,
-    open_input_file,
+    read_row_file,
     read_symbol_rows,
     generate_symbol,
     add_quotes,
@@ -110,7 +110,7 @@ def test_symbol_to_csv_rows():
     rows = symbol_to_csv_rows(Sexp(sexp))
     assert rows == expected_rows
 
-def test_open_input_file(tmp_path):
+def test_open_row_file(tmp_path):
     """Test reading CSV and Excel files."""
     # Test CSV
     csv_content = "my_part,\nReference:,U\npin,name\n1,P1"
@@ -118,7 +118,7 @@ def test_open_input_file(tmp_path):
     with open(csv_path, 'w') as f:
         f.write(csv_content)
     
-    rows = open_input_file(csv_path)
+    rows = read_row_file(csv_path)
     assert rows == [["my_part", ""], ["Reference:", "U"], ["pin", "name"], ["1", "P1"]]
 
     # Test Excel
@@ -126,12 +126,12 @@ def test_open_input_file(tmp_path):
     excel_path = tmp_path / "test.xlsx"
     df.to_excel(excel_path, index=False, header=False)
     
-    rows = open_input_file(excel_path)
+    rows = read_row_file(excel_path)
     assert rows == [["my_part", ""], ["Reference:", "U"], ["pin", "name"], ["1", "P1"]]
 
     # Test invalid extension
     with pytest.raises(ValueError, match="Unsupported file extension"):
-        open_input_file(tmp_path / "test.txt")
+        read_row_file(tmp_path / "test.txt")
 
 def test_read_symbol_rows():
     """Test grouping CSV rows into symbols."""

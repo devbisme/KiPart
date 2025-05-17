@@ -1,9 +1,9 @@
 import pytest
 import os
 import subprocess
-from kipart.kipart import generate_library
+from kipart.kipart import row_file_to_symbol_lib_file
 
-def test_generate_library(tmp_path):
+def test_generate_symbol_library(tmp_path):
     """Test generating a KiCad symbol library from a CSV file."""
     # Create a sample CSV file
     csv_content = """my_part,
@@ -18,7 +18,7 @@ pin,name,type,side
         f.write(csv_content)
     
     output_path = tmp_path / "output.kicad_sym"
-    result = generate_library(csv_path, output_file=output_path)
+    result = row_file_to_symbol_lib_file(csv_path, symbol_lib_file=output_path)
     
     assert os.path.exists(result)
     with open(result) as f:
@@ -30,7 +30,7 @@ pin,name,type,side
     
     # Test overwrite protection
     with pytest.raises(ValueError, match="Output file.*already exists"):
-        generate_library(csv_path, output_file=output_path, overwrite=False)
+        row_file_to_symbol_lib_file(csv_path, symbol_lib_file=output_path, overwrite=False)
 
 def test_kipart_cli(tmp_path):
     """Test the kipart.py command-line interface."""
