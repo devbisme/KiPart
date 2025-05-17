@@ -38,9 +38,9 @@ __all__ = [
     'generate_symbol',
     'generate_symbol_lib',
     'row_file_to_symbol_lib_file',
+    'symbol_lib_file_to_csv_file',
     # Command-line interfaces
     'kipart',
-    'library_to_csv',
     'kilib2csv',
 ]
 
@@ -924,6 +924,71 @@ def row_file_to_symbol_lib_file(row_file, symbol_lib_file=None, sort_by='row', r
 
     return symbol_lib_file
 
+def symbol_lib_file_to_csv_file(symbol_lib_file, csv_file=None, overwrite=False):
+    """
+    Convert a KiCad symbol library to a CSV file.
+
+    This is the main entry point for the KiCad-to-CSV conversion process.
+    It extracts symbols from a .kicad_sym file and formats them for CSV output.
+
+    Args:
+        input_file (str): Path to the input KiCad symbol library (.kicad_sym).
+        csv_file (str, optional): Path for the output CSV file.
+                                  If None, uses the input filename with .csv extension.
+        overwrite (bool, optional): Allow overwriting existing output file. Defaults to False.
+
+    Returns:
+        str: Path to the generated CSV file.
+
+    Raises:
+        FileNotFoundError: If the input file doesn't exist.
+        ValueError: If the input file is not a .kicad_sym file, or if the output file
+                  exists and overwrite is False.
+    """
+    # Validate input file
+    if not os.path.exists(symbol_lib_file):
+        raise FileNotFoundError(f"Input file {symbol_lib_file} does not exist")
+    
+    _, ext = os.path.splitext(symbol_lib_file)
+    if ext.lower() != '.kicad_sym':
+        raise ValueError(f"Input file must be a .kicad_sym file, got {ext}")
+    
+    # Determine output filename
+    if not csv_file:
+        csv_file = os.path.splitext(symbol_lib_file)[0] + '.csv'
+    
+    # Check for existing output file
+    if os.path.exists(csv_file) and not overwrite:
+        raise ValueError(f"Output file {csv_file} already exists. Use --overwrite to allow overwriting.")
+    
+    # Read the symbol library contents
+    with open(symbol_lib_file, 'r') as f:
+        symbol_lib = f.read()
+    
+    # Extract parts from the symbol library using common utility
+    parts = extract_symbols_from_lib(symbol_lib)
+
+    # Sort parts by name for consistent output.
+    parts = sorted(parts, key=lambda x: x[1])
+    
+    # Convert each part to CSV rows and combine with blank rows
+    all_rows = []
+    for part in parts:  # Sort for consistent output
+        part_rows = symbol_to_csv_rows(part)
+        all_rows.extend(part_rows)
+        all_rows.append([])  # Add blank row between parts
+    
+    # Remove trailing blank row if present
+    if all_rows and all_rows[-1] == []:
+        all_rows.pop()
+    
+    # Write to CSV file
+    with open(csv_file, 'w', newline='') as f:
+        writer = csv.writer(f)
+        writer.writerows(all_rows)
+    
+    return csv_file
+
 # ===== Command-Line Interface Functions =====
 
 def kipart():
@@ -994,73 +1059,6 @@ def kipart():
         print("Errors occurred during processing. Please check the output above.")
         sys.exit(1)
 
-def library_to_csv(input_file, output_file=None, overwrite=False):
-    """
-    Convert a KiCad symbol library to a CSV file.
-
-    This is the main entry point for the KiCad-to-CSV conversion process.
-    It extracts symbols from a .kicad_sym file and formats them for CSV output.
-
-    Args:
-        input_file (str): Path to the input KiCad symbol library (.kicad_sym).
-        output_file (str, optional): Path for the output CSV file.
-                                    If None, uses the input filename with .csv extension.
-        overwrite (bool, optional): Allow overwriting existing output file. Defaults to False.
-
-    Returns:
-        str: Path to the generated CSV file.
-
-    Raises:
-        FileNotFoundError: If the input file doesn't exist.
-        ValueError: If the input file is not a .kicad_sym file, or if the output file
-                  exists and overwrite is False.
-    """
-    # Validate input file
-    if not os.path.exists(input_file):
-        raise FileNotFoundError(f"Input file {input_file} does not exist")
-    
-    _, ext = os.path.splitext(input_file)
-    if ext.lower() != '.kicad_sym':
-        raise ValueError(f"Input file must be a .kicad_sym file, got {ext}")
-    
-    # Determine output filename
-    if output_file:
-        final_output_file = output_file
-    else:
-        final_output_file = os.path.splitext(input_file)[0] + '.csv'
-    
-    # Check for existing output file
-    if os.path.exists(final_output_file) and not overwrite:
-        raise ValueError(f"Output file {final_output_file} already exists. Use --overwrite to allow overwriting.")
-    
-    # Read the symbol library contents
-    with open(input_file, 'r') as f:
-        symbol_lib = f.read()
-    
-    # Extract parts from the symbol library using common utility
-    parts = extract_symbols_from_lib(symbol_lib)
-
-    # Sort parts by name for consistent output.
-    parts = sorted(parts, key=lambda x: x[1])
-    
-    # Convert each part to CSV rows and combine with blank rows
-    all_rows = []
-    for part in parts:  # Sort for consistent output
-        part_rows = symbol_to_csv_rows(part)
-        all_rows.extend(part_rows)
-        all_rows.append([])  # Add blank row between parts
-    
-    # Remove trailing blank row if present
-    if all_rows and all_rows[-1] == []:
-        all_rows.pop()
-    
-    # Write to CSV file
-    with open(final_output_file, 'w', newline='') as f:
-        writer = csv.writer(f)
-        writer.writerows(all_rows)
-    
-    return final_output_file
-
 def kilib2csv():
     """
     Command-line interface for converting KiCad symbol libraries to CSV files.
@@ -1100,9 +1098,9 @@ def kilib2csv():
     error_flag = False
     for input_file in args.input_files:
         try:
-            output_file = library_to_csv(
+            output_file = symbol_lib_file_to_csv_file(
                 input_file,
-                output_file=args.output,
+                csv_file=args.output,
                 overwrite=args.overwrite
             )
             print(f"Generated {output_file} successfully from {input_file}")
