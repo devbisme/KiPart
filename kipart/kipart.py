@@ -91,10 +91,15 @@ def gridify(value, grid_spacing=GRID_SPACING, policy='round'):
     Args:
         value (float): The value to round.
         grid_spacing (float, optional): The grid spacing to use for rounding. 
-                                       Defaults to GRID_SPACING (2.54 mm).
+                                      Defaults to GRID_SPACING (1.27 mm).
+        policy (str, optional): Rounding policy. One of: 'round', 'up', 'down'.
+                              Defaults to 'round'.
 
     Returns:
-        float: The rounded value (always rounded up to next grid multiple).
+        float: The rounded value according to the specified policy.
+        
+    Raises:
+        ValueError: If an invalid rounding policy is specified.
     """
     if policy == 'up':
         return math.ceil(value / grid_spacing) * grid_spacing
@@ -411,6 +416,9 @@ def empty_symbol_lib():
     """
     Create an empty KiCad symbol library with standard header information.
     
+    Creates a basic library structure with KiCad-compatible version and generator
+    information. This serves as the foundation for building new symbol libraries.
+    
     Returns:
         Sexp: An S-expression object representing an empty KiCad symbol library
               with version and generator information.
@@ -424,15 +432,21 @@ def merge_symbol_libs(lib1, lib2, overwrite=False):
     """
     Merge two KiCad symbol libraries.
     
+    Combines symbols from two libraries into a new library. The version and
+    generator information is preserved from the first library. By default, if
+    symbols with the same name exist in both libraries, an error is raised unless
+    the overwrite parameter is set to True.
+    
     Args:
-        lib1 (Sexp): First symbol library (base library)
-        lib2 (Sexp): Second symbol library to merge into the base
-        overwrite (bool): Whether to allow overwriting of symbols in lib1 with 
-                          symbols of the same name from lib2. If False, the merge
-                          will raise an exception when duplicate names are found.
+        lib1 (Sexp): First symbol library (base library).
+        lib2 (Sexp): Second symbol library to merge into the base.
+        overwrite (bool, optional): Whether to allow overwriting of symbols in lib1 with 
+                                  symbols of the same name from lib2. If False, the merge
+                                  will raise an exception when duplicate names are found.
+                                  Defaults to False.
     
     Returns:
-        Sexp: Merged symbol library
+        Sexp: Merged symbol library.
     
     Raises:
         ValueError: If overwrite=False and lib2 contains symbols with names that
@@ -575,17 +589,18 @@ def symbol_to_csv_rows(symbol):
 
 def create_rectangle_outline(x0, y0, x1, y1, alpha=0.0001):
     """
-    Create a rectangular outline for a symbol.
-
-    This function is used for debugging purposes.
+    Create a rectangular outline for debugging purposes.
     
     Args:
-        x0, y0: The (x, y) coordinates of the top-left corner of the rectangle
-        x1, y1: The (x, y) coordinates of the bottom-right corner of the rectangle
-        alpha: Transparency value for the fill color (default is 0.0001 for nearly invisible)
+        x0 (float): X-coordinate of the first corner.
+        y0 (float): Y-coordinate of the first corner.
+        x1 (float): X-coordinate of the opposite corner.
+        y1 (float): Y-coordinate of the opposite corner.
+        alpha (float, optional): Transparency value for the fill color.
+                               Default is 0.0001 (nearly invisible).
         
     Returns:
-        Sexp: The rectangle outline
+        Sexp: S-expression representing the rectangle outline.
     """
     
     return Sexp(['rectangle',
@@ -597,18 +612,20 @@ def create_rectangle_outline(x0, y0, x1, y1, alpha=0.0001):
 
 def create_pin_name_outline(pin, x, y, orientation, pin_length):
     """
-    Create a rectangular outline that surrounds a pin's name.
-
-    This function is used for debugging purposes.
+    Create a rectangular outline that surrounds a pin's name for debugging purposes.
     
     Args:
-        pin (dict): Dict containing pin properties
-        x, y: The (x, y) position of the pin
-        orientation (str): The orientation of the pin ('R', 'L', 'U', or 'D')
-        pin_length (float): Length of the pin line in grid units
+        pin (dict): Dictionary containing pin properties including 'name'.
+        x (float): X-coordinate of the pin connection point.
+        y (float): Y-coordinate of the pin connection point.
+        orientation (int): Orientation of the pin in degrees (0, 90, 180, or 270).
+        pin_length (float): Length of the pin line in grid units.
         
     Returns:
-        Sexp: The rectangle outlining a pin name
+        Sexp: S-expression representing the outline around the pin name.
+        
+    Raises:
+        ValueError: If an invalid orientation is provided.
     """
     
     pin_name = pin['name']
@@ -1091,16 +1108,17 @@ def generate_symbol_lib(rows, sort_by='row', reverse=False, default_side='left',
     Args:
         rows (list of list): Raw CSV rows containing one or more symbols.
         sort_by (str, optional): Method to sort pins within each symbol:
-                               - 'row': Original order in the CSV (default)
-                               - 'num': By pin number using natural sort
-                               - 'name': By pin name using natural sort
+                                - 'row': Original order in the CSV (default)
+                                - 'num': By pin number using natural sort
+                                - 'name': By pin name using natural sort
         reverse (bool, optional): Reverse the pin sort order. Defaults to False.
         default_side (str, optional): Default side for pins without a side specified.
-                                    Valid values: 'left', 'right', 'top', 'bottom'.
-                                    Defaults to 'left'.
+                                     Valid values: 'left', 'right', 'top', 'bottom'.
+                                     Defaults to 'left'.
         alt_pin_delim (str, optional): Delimiter for splitting pin names into
                                       alternatives. Defaults to None (no splitting).
-        bundle (bool, optional): Bundle identically-named power or ground pins. Defaults to False.
+        bundle (bool, optional): Bundle identically-named power or ground pins into single pins.
+                               Defaults to False.
         scrunch (bool, optional): Compress pins of left/right columns underneath top/bottom rows.
                                  Defaults to False.
     
@@ -1150,23 +1168,27 @@ def row_file_to_symbol_lib_file(row_file, symbol_lib_file=None, sort_by='row', r
 
     This is the main entry point for the CSV-to-KiCad conversion process.
     It handles file I/O and delegates the symbol generation to other functions.
+    If the output file exists and overwrite is True, it will merge the new symbols
+    with the existing library.
 
     Args:
         row_file (str): Path to the input CSV or Excel file with symbol data.
         symbol_lib_file (str, optional): Path for the output .kicad_sym file.
-                                       If None, uses the input filename with .kicad_sym extension.
+                                        If None, uses the input filename with .kicad_sym extension.
         sort_by (str, optional): Method to sort pins within each symbol:
-                               - 'row': Original order in the CSV (default)
-                               - 'num': By pin number using natural sort
-                               - 'name': By pin name using natural sort
+                                - 'row': Original order in the CSV (default)
+                                - 'num': By pin number using natural sort
+                                - 'name': By pin name using natural sort
         reverse (bool, optional): Reverse the pin sort order. Defaults to False.
         default_side (str, optional): Default side for pins without a side specified.
-                                    Valid values: 'left', 'right', 'top', 'bottom'.
-                                    Defaults to 'left'.
+                                     Valid values: 'left', 'right', 'top', 'bottom'.
+                                     Defaults to 'left'.
         alt_pin_delim (str, optional): Delimiter for splitting pin names into
                                       alternatives. Defaults to None (no splitting).
-        overwrite (bool, optional): Allow overwriting existing output file. Defaults to False.
-        bundle (bool, optional): Bundle identically-named power or ground pins. Defaults to False.
+        overwrite (bool, optional): Allow overwriting or merging with existing output file.
+                                   Defaults to False.
+        bundle (bool, optional): Bundle identically-named power or ground pins into single pins.
+                               Defaults to False.
         scrunch (bool, optional): Compress pins of left/right columns underneath top/bottom rows.
                                  Defaults to False.
 
@@ -1175,7 +1197,7 @@ def row_file_to_symbol_lib_file(row_file, symbol_lib_file=None, sort_by='row', r
 
     Raises:
         ValueError: If the input file is invalid, no symbols are found, or
-                  output file exists without overwrite permission.
+                   output file exists without overwrite permission.
         FileNotFoundError: If the input file doesn't exist.
     """
 
@@ -1226,10 +1248,11 @@ def symbol_lib_file_to_csv_file(symbol_lib_file, csv_file=None, overwrite=False)
     It extracts symbols from a .kicad_sym file and formats them for CSV output.
 
     Args:
-        input_file (str): Path to the input KiCad symbol library (.kicad_sym).
+        symbol_lib_file (str): Path to the input KiCad symbol library (.kicad_sym).
         csv_file (str, optional): Path for the output CSV file.
-                                  If None, uses the input filename with .csv extension.
-        overwrite (bool, optional): Allow overwriting existing output file. Defaults to False.
+                                 If None, uses the input filename with .csv extension.
+        overwrite (bool, optional): Allow overwriting existing output file. 
+                                   Defaults to False.
 
     Returns:
         str: Path to the generated CSV file.
@@ -1237,7 +1260,7 @@ def symbol_lib_file_to_csv_file(symbol_lib_file, csv_file=None, overwrite=False)
     Raises:
         FileNotFoundError: If the input file doesn't exist.
         ValueError: If the input file is not a .kicad_sym file, or if the output file
-                  exists and overwrite is False.
+                   exists and overwrite is False.
     """
     # Validate input file
     if not os.path.exists(symbol_lib_file):
@@ -1291,7 +1314,7 @@ def kipart():
 
     Usage:
         kipart [-h] [-v] [-r] [--side {left,right,top,bottom}] [-o OUTPUT]
-               [-w] [-s {row,num,name}] [-a ALT_DELIMITER] [-b] [--scrunch] input_files [input_files ...]
+               [-w] [-s {row,num,name}] [-a ALT_DELIMITER] [-b] [--scrunch] [-m] input_files [input_files ...]
 
     Examples:
         kipart input.csv                # Generate input.kicad_sym 
@@ -1299,6 +1322,7 @@ def kipart():
         kipart -s num -r *.csv          # Generate libraries with pins sorted by number (descending)
         kipart -b input.csv             # Bundle identical power/ground pins into single pins
         kipart --scrunch input.csv      # Compress pins of left/right columns under top/bottom rows
+        kipart -m existing.csv          # Merge with existing library instead of overwriting
 
     Args:
         None (uses sys.argv via argparse).
