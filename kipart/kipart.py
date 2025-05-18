@@ -628,7 +628,7 @@ def create_pin_sexp(pin, x, y, orientation, pin_length, alt_pin_delim=None):
     
     return pin_sexps
 
-def generate_symbol(symbol_rows, sort_by='row', reverse=False, default_side='left', alt_pin_delim=None, push=0.5, bundle=False):
+def generate_symbol(symbol_rows, sort_by='row', reverse=False, default_side='left', alt_pin_delim=None, push=0.5, bundle=False, scrunch=False):
     """
     Generate a KiCad symbol S-expression from CSV rows.
 
@@ -656,6 +656,8 @@ def generate_symbol(symbol_rows, sort_by='row', reverse=False, default_side='lef
                                 When 1, pins start at the bottom/right-most position.
                                 Defaults to 0.5 (pins are centered).
         bundle (bool, optional): Bundle identically-named power or ground pins. Defaults to False.
+        scrunch (bool, optional): Compress pins of left/right columns underneath top/bottom rows.
+                                 Defaults to False.
 
     Returns:
         Sexp: KiCad symbol as an Sexp object, ready to be included in a library.
@@ -853,8 +855,20 @@ def generate_symbol(symbol_rows, sort_by='row', reverse=False, default_side='lef
         lr_width = gridify(lr_width, policy='up')
         tb_height = gridify(tb_height, policy='up')
         tb_width = gridify(tb_width, policy='up')
-        unit_width = 2 * max(lr_width, SIDE_CLEARANCE) + max(tb_width, LR_SEPARATION)  
-        unit_height = 2 * max(tb_height, SIDE_CLEARANCE) + max(lr_height, TB_SEPARATION)
+        
+        # If scrunch option is enabled, compress left/right columns under top/bottom rows
+        if scrunch:
+            # Make the symbol width just wide enough to accommodate top and bottom pins
+            unit_width = max(tb_width + 2 * SIDE_CLEARANCE, LR_SEPARATION)
+            # But ensure it's at least wide enough for any left/right pin names
+            unit_width = max(unit_width, 2 * lr_width)
+            # Height needs to be tall enough for both top/bottom and left/right pins
+            unit_height = 2 * tb_height + lr_height + 2 * SIDE_CLEARANCE
+            # unit_height = max(2 * tb_height, lr_height + 2 * SIDE_CLEARANCE)
+        else:
+            # Standard layout (left/right columns beside top/bottom rows)
+            unit_width = 2 * max(lr_width, SIDE_CLEARANCE) + max(tb_width, LR_SEPARATION)  
+            unit_height = 2 * max(tb_height, SIDE_CLEARANCE) + max(lr_height, TB_SEPARATION)
 
         # Define the rectangular outline for the unit
         xorg = 0
@@ -926,8 +940,12 @@ def generate_symbol(symbol_rows, sort_by='row', reverse=False, default_side='lef
                     y -= PIN_SPACING
 
             elif side == 'top':
-                ctr_offset = gridify(push * (tb_width - pin_cnt*PIN_HEIGHT))
-                x = x0 + lr_width + ctr_offset + PIN_HEIGHT/2
+                if scrunch:
+                    ctr_offset = gridify(push * (unit_width - pin_cnt*PIN_HEIGHT))
+                    x = x0 + ctr_offset + PIN_HEIGHT/2
+                else:
+                    ctr_offset = gridify(push * (tb_width - pin_cnt*PIN_HEIGHT))
+                    x = x0 + lr_width + ctr_offset + PIN_HEIGHT/2
                 y = y1 + PIN_LENGTH
                 x, y = gridify(x), gridify(y)
                 orientation = 270
@@ -939,8 +957,12 @@ def generate_symbol(symbol_rows, sort_by='row', reverse=False, default_side='lef
                     x += PIN_SPACING
 
             elif side == 'bottom':
-                ctr_offset = gridify(push * (tb_width - pin_cnt*PIN_HEIGHT))
-                x = x0 + lr_width + ctr_offset + PIN_HEIGHT/2
+                if scrunch:
+                    ctr_offset = gridify(push * (unit_width - pin_cnt*PIN_HEIGHT))
+                    x = x0 + ctr_offset + PIN_HEIGHT/2
+                else:
+                    ctr_offset = gridify(push * (tb_width - pin_cnt*PIN_HEIGHT))
+                    x = x0 + lr_width + ctr_offset + PIN_HEIGHT/2
                 y = -y1 - PIN_LENGTH
                 x, y = gridify(x), gridify(y)
                 orientation = 90
@@ -967,7 +989,7 @@ def generate_symbol(symbol_rows, sort_by='row', reverse=False, default_side='lef
 
     return symbol_sexp
 
-def generate_symbol_lib(rows, sort_by='row', reverse=False, default_side='left', alt_pin_delim=None, bundle=False):
+def generate_symbol_lib(rows, sort_by='row', reverse=False, default_side='left', alt_pin_delim=None, bundle=False, scrunch=False):
     """
     Generate a complete KiCad symbol library from CSV or Excel data.
     
@@ -988,6 +1010,8 @@ def generate_symbol_lib(rows, sort_by='row', reverse=False, default_side='left',
         alt_pin_delim (str, optional): Delimiter for splitting pin names into
                                       alternatives. Defaults to None (no splitting).
         bundle (bool, optional): Bundle identically-named power or ground pins. Defaults to False.
+        scrunch (bool, optional): Compress pins of left/right columns underneath top/bottom rows.
+                                 Defaults to False.
     
     Returns:
         Sexp: Complete KiCad symbol library as an Sexp object, ready to write to file.
@@ -1014,7 +1038,8 @@ def generate_symbol_lib(rows, sort_by='row', reverse=False, default_side='left',
                 reverse=reverse, 
                 default_side=default_side,
                 alt_pin_delim=alt_pin_delim,
-                bundle=bundle
+                bundle=bundle,
+                scrunch=scrunch
             )
             symbol_lib.append(symbol)
         except Exception as e:
@@ -1032,7 +1057,7 @@ def generate_symbol_lib(rows, sort_by='row', reverse=False, default_side='left',
     
     return symbol_lib
 
-def row_file_to_symbol_lib_file(row_file, symbol_lib_file=None, sort_by='row', reverse=False, default_side='left', alt_pin_delim=None, overwrite=False, bundle=False):
+def row_file_to_symbol_lib_file(row_file, symbol_lib_file=None, sort_by='row', reverse=False, default_side='left', alt_pin_delim=None, overwrite=False, bundle=False, scrunch=False):
     """
     Convert a CSV or Excel file to a KiCad symbol library file.
 
@@ -1055,6 +1080,8 @@ def row_file_to_symbol_lib_file(row_file, symbol_lib_file=None, sort_by='row', r
                                       alternatives. Defaults to None (no splitting).
         overwrite (bool, optional): Allow overwriting existing output file. Defaults to False.
         bundle (bool, optional): Bundle identically-named power or ground pins. Defaults to False.
+        scrunch (bool, optional): Compress pins of left/right columns underneath top/bottom rows.
+                                 Defaults to False.
 
     Returns:
         str: Path to the generated .kicad_sym file.
@@ -1077,7 +1104,9 @@ def row_file_to_symbol_lib_file(row_file, symbol_lib_file=None, sort_by='row', r
     rows = read_row_file(row_file)
 
     # Generate the symbol library from the rows.
-    symbol_lib = generate_symbol_lib(rows, sort_by=sort_by, reverse=reverse, default_side=default_side, alt_pin_delim=alt_pin_delim, bundle=bundle)
+    symbol_lib = generate_symbol_lib(rows, sort_by=sort_by, reverse=reverse, 
+                                    default_side=default_side, alt_pin_delim=alt_pin_delim, 
+                                    bundle=bundle, scrunch=scrunch)
 
     # Store the symbol library as an S-expression in the output file.
     with open(symbol_lib_file, 'w') as f:
@@ -1157,14 +1186,15 @@ def kipart():
     Command-line interface for generating KiCad symbol libraries from CSV or Excel files.
 
     Usage:
-        kipart [-h] [-v] [--reverse] [--side {left,right,top,bottom}] [-o OUTPUT]
-               [-w] [-s {row,num,name}] [-a ALT_DELIMITER] [--bundle] input_files [input_files ...]
+        kipart [-h] [-v] [-r] [--side {left,right,top,bottom}] [-o OUTPUT]
+               [-w] [-s {row,num,name}] [-a ALT_DELIMITER] [-b] [--scrunch] input_files [input_files ...]
 
     Examples:
         kipart input.csv                # Generate input.kicad_sym 
         kipart -o lib.kicad_sym in.xlsx # Generate lib.kicad_sym from in.xlsx
-        kipart -s num --reverse *.csv   # Generate libraries with pins sorted by number (descending)
-        kipart --bundle input.csv       # Bundle identical power/ground pins into single pins
+        kipart -s num -r *.csv          # Generate libraries with pins sorted by number (descending)
+        kipart -b input.csv             # Bundle identical power/ground pins into single pins
+        kipart --scrunch input.csv      # Compress pins of left/right columns under top/bottom rows
 
     Args:
         None (uses sys.argv via argparse).
@@ -1190,6 +1220,8 @@ def kipart():
                         help="Delimiter character for splitting pin names into alternatives")
     parser.add_argument('-b', '--bundle', action='store_true',
                         help="Bundle identically-named power or ground pins into single schematic pins")
+    parser.add_argument('--scrunch', action='store_true',
+                        help="Compress pins of left/right columns underneath top/bottom rows")
     parser.add_argument('input_files', nargs='+',
                         help="Input CSV or Excel files (.csv, .xlsx, .xls)")
     
@@ -1212,7 +1244,8 @@ def kipart():
                 default_side=args.side,
                 alt_pin_delim=args.alt_delimiter,
                 overwrite=args.overwrite,
-                bundle=args.bundle
+                bundle=args.bundle,
+                scrunch=args.scrunch
             )
             print(f"Generated {symbol_lib_file} successfully from {row_file}")
         except Exception as e:
