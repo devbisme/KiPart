@@ -62,7 +62,7 @@ FONT_SIZE = 1.27  # Default font size for pin names and numbers
 GRID_SPACING = 1.27  # Grid spacing for aligning pins and symbols
 PIN_LENGTH = 4 * GRID_SPACING  # Standard pin length in KiCad
 PIN_HEIGHT = 2 * GRID_SPACING  # Standard pin height in KiCad
-PIN_SPACING = 2 * GRID_SPACING  # Standard pin height in KiCad
+PIN_SPACING = 2 * GRID_SPACING  # Standard pin spacing in KiCad
 PIN_NAME_OFFSET = 0.85 # Offset from the end of the pin to the pin name
 STROKE_WIDTH = 0.254  # Stroke width for symbol outlines
 SIDE_CLEARANCE = GRID_SPACING  # Clearance between the endpoint of a side and the closest pin
@@ -560,6 +560,7 @@ def create_pin_sexp(pin, x, y, orientation, pin_length, alt_pin_delim=None):
     
     Constructs the complete S-expression structure for a pin with all required
     attributes including position, orientation, name, number, and visual properties.
+    Also handles bundled pins.
     
     Args:
         pin (dict): Dictionary containing pin properties:
@@ -576,42 +577,58 @@ def create_pin_sexp(pin, x, y, orientation, pin_length, alt_pin_delim=None):
                                      alternatives. Defaults to None (no splitting).
         
     Returns:
-        Sexp: S-expression object representing a complete pin definition.
+        List(Sexp): List of one or more pin S-expression objects depending upon bundling.
     """
-    pin_sexp = Sexp(['pin', pin['type'], pin['style']])
-    pin_sexp.append(['at', x, y, orientation])
-    pin_sexp.append(['length', pin_length])
 
-    # Add pin name   
-    names = pin['name'].split(alt_pin_delim)
-    name_sexp = Sexp(['name', names[0]])
-    effects_sexp = Sexp(['effects'])
-    font_sexp = Sexp(['font'])
-    font_sexp.append(['size', 1.27, 1.27])
-    effects_sexp.append(font_sexp)
-    if pin['hidden'].lower() in ['1', 'true', 'yes']:
-        effects_sexp.append(['hide', 'yes'])
-    name_sexp.append(effects_sexp)
-    pin_sexp.append(name_sexp)
+    # Handle bundled pins which have multiple pin numbers.
+    pin_numbers = pin['number']
+    if isinstance(pin['number'], str):
+        # An unbundled pin has a list of one pin number.
+        pin_numbers = [pin['number']]
+    elif isinstance(pin['number'], list):
+        # A bundled pin has a list of multiple pin numbers.
+        pin_numbers = pin['number']
+    else:
+        raise ValueError(f"Invalid pin number format: {pin['number']}")
+
+    pin_sexps = []
+
+    # Iterate through the pins. Only the first pin of a bundle is visible (not hidden)
+    for hide, pin_number in enumerate(pin_numbers, 0):
+        pin_sexp = Sexp(['pin', pin['type'], pin['style']])
+        pin_sexp.append(['at', x, y, orientation])
+        pin_sexp.append(['length', pin_length])
+        if hide or pin['hidden'].lower() in ['1', 'true', 'yes']:
+            pin_sexp.append(['hide', 'yes'])
+
+        # Add pin name   
+        names = pin['name'].split(alt_pin_delim)
+        name_sexp = Sexp(['name', names[0]])
+        effects_sexp = Sexp(['effects'])
+        font_sexp = Sexp(['font'])
+        font_sexp.append(['size', 1.27, 1.27])
+        effects_sexp.append(font_sexp)
+        name_sexp.append(effects_sexp)
+        pin_sexp.append(name_sexp)
+        
+        # Add pin number
+        number_sexp = Sexp(['number', pin_number])
+        effects_sexp = Sexp(['effects'])
+        font_sexp = Sexp(['font'])
+        font_sexp.append(['size', 1.27, 1.27])
+        effects_sexp.append(font_sexp)
+        number_sexp.append(effects_sexp)
+        pin_sexp.append(number_sexp)
+
+        # Add alternate names
+        for name in names[1:]:
+            pin_sexp.append(['alternate', name, pin['type'], pin['style']])
+
+        pin_sexps.append(pin_sexp)
     
-    # Add pin number
-    number_sexp = Sexp(['number', pin['number']])
-    effects_sexp = Sexp(['effects'])
-    font_sexp = Sexp(['font'])
-    font_sexp.append(['size', 1.27, 1.27])
-    effects_sexp.append(font_sexp)
-    if pin['hidden'].lower() in ['1', 'true', 'yes']:
-        effects_sexp.append(['hide', 'yes'])
-    number_sexp.append(effects_sexp)
-    pin_sexp.append(number_sexp)
+    return pin_sexps
 
-    # Add alternate names
-    for name in names[1:]:
-        pin_sexp.append(['alternate', name, pin['type'], pin['style']])
-    
-    return pin_sexp
-
-def generate_symbol(symbol_rows, sort_by='row', reverse=False, default_side='left', alt_pin_delim=None, push=0.5):
+def generate_symbol(symbol_rows, sort_by='row', reverse=False, default_side='left', alt_pin_delim=None, push=0.5, bundle=False):
     """
     Generate a KiCad symbol S-expression from CSV rows.
 
@@ -638,6 +655,7 @@ def generate_symbol(symbol_rows, sort_by='row', reverse=False, default_side='lef
         push (float, optional): When 0, pins start at the top/left-most position on a side.
                                 When 1, pins start at the bottom/right-most position.
                                 Defaults to 0.5 (pins are centered).
+        bundle (bool, optional): Bundle identically-named power or ground pins. Defaults to False.
 
     Returns:
         Sexp: KiCad symbol as an Sexp object, ready to be included in a library.
@@ -747,6 +765,37 @@ def generate_symbol(symbol_rows, sort_by='row', reverse=False, default_side='lef
             'row_index': idx  # Store original row index for row sorting
         }
         pins.append(pin_data)
+
+    # Bundle identical power or ground input pins if requested
+    if bundle:
+        # Group pins by name, unit, and type (only for power pins)
+        bundled_pins = {}
+        pins_to_keep = []
+        
+        for pin in pins:
+            # Only bundle power pins (power_in or power_out)
+            if pin['type'] in ['power_in']:
+                key = (pin['name'], pin['unit'], pin['type'], pin['side'])
+                if key not in bundled_pins:
+                    bundled_pins[key] = []
+                bundled_pins[key].append(pin)
+            else:
+                # Keep non-power pins as they are
+                pins_to_keep.append(pin)
+        
+        # For each group of identical power pins, create a single pin with combined numbers
+        for pin_group in bundled_pins.values():
+            if len(pin_group) > 1:
+                # Create a bundled pin using the first pin's data
+                bundled_pin = pin_group[0].copy()
+                # Store bundled pin numbers as a list.
+                bundled_pin['number'] = [p['number'] for p in pin_group if p['number'] != '*']
+                pins_to_keep.append(bundled_pin)
+            else:
+                # Single pins don't need bundling
+                pins_to_keep.append(pin_group[0])
+        
+        pins = pins_to_keep
 
     # Validate that at least one valid pin exists
     if not any(pin['number'] != '*' for pin in pins):
@@ -858,7 +907,7 @@ def generate_symbol(symbol_rows, sort_by='row', reverse=False, default_side='lef
                 orientation = 0
                 for pin in pin_list:
                     if pin['number'] != '*':
-                        unit_sexp.append(create_pin_sexp(pin, x, y, orientation, PIN_LENGTH, alt_pin_delim=alt_pin_delim))
+                        unit_sexp.extend(create_pin_sexp(pin, x, y, orientation, PIN_LENGTH, alt_pin_delim=alt_pin_delim))
                         if debug:
                             unit_sexp.append(create_pin_name_outline(pin, x, y, orientation, PIN_LENGTH))
                     y -= PIN_SPACING
@@ -871,7 +920,7 @@ def generate_symbol(symbol_rows, sort_by='row', reverse=False, default_side='lef
                 orientation = 180
                 for pin in pin_list:
                     if pin['number'] != '*':
-                        unit_sexp.append(create_pin_sexp(pin, x, y, orientation, PIN_LENGTH, alt_pin_delim=alt_pin_delim))
+                        unit_sexp.extend(create_pin_sexp(pin, x, y, orientation, PIN_LENGTH, alt_pin_delim=alt_pin_delim))
                         if debug:
                             unit_sexp.append(create_pin_name_outline(pin, x, y, orientation, PIN_LENGTH))
                     y -= PIN_SPACING
@@ -884,7 +933,7 @@ def generate_symbol(symbol_rows, sort_by='row', reverse=False, default_side='lef
                 orientation = 270
                 for pin in pin_list:
                     if pin['number'] != '*':
-                        unit_sexp.append(create_pin_sexp(pin, x, y, orientation, PIN_LENGTH, alt_pin_delim=alt_pin_delim))
+                        unit_sexp.extend(create_pin_sexp(pin, x, y, orientation, PIN_LENGTH, alt_pin_delim=alt_pin_delim))
                         if debug:
                             unit_sexp.append(create_pin_name_outline(pin, x, y, orientation, PIN_LENGTH))
                     x += PIN_SPACING
@@ -897,7 +946,7 @@ def generate_symbol(symbol_rows, sort_by='row', reverse=False, default_side='lef
                 orientation = 90
                 for pin in pin_list:
                     if pin['number'] != '*':
-                        unit_sexp.append(create_pin_sexp(pin, x, y, orientation, PIN_LENGTH, alt_pin_delim=alt_pin_delim))
+                        unit_sexp.extend(create_pin_sexp(pin, x, y, orientation, PIN_LENGTH, alt_pin_delim=alt_pin_delim))
                         if debug:
                             unit_sexp.append(create_pin_name_outline(pin, x, y, orientation, PIN_LENGTH))
                     x += PIN_SPACING
@@ -918,7 +967,7 @@ def generate_symbol(symbol_rows, sort_by='row', reverse=False, default_side='lef
 
     return symbol_sexp
 
-def generate_symbol_lib(rows, sort_by='row', reverse=False, default_side='left', alt_pin_delim=None):
+def generate_symbol_lib(rows, sort_by='row', reverse=False, default_side='left', alt_pin_delim=None, bundle=False):
     """
     Generate a complete KiCad symbol library from CSV or Excel data.
     
@@ -938,6 +987,7 @@ def generate_symbol_lib(rows, sort_by='row', reverse=False, default_side='left',
                                     Defaults to 'left'.
         alt_pin_delim (str, optional): Delimiter for splitting pin names into
                                       alternatives. Defaults to None (no splitting).
+        bundle (bool, optional): Bundle identically-named power or ground pins. Defaults to False.
     
     Returns:
         Sexp: Complete KiCad symbol library as an Sexp object, ready to write to file.
@@ -963,7 +1013,8 @@ def generate_symbol_lib(rows, sort_by='row', reverse=False, default_side='left',
                 sort_by=sort_by, 
                 reverse=reverse, 
                 default_side=default_side,
-                alt_pin_delim=alt_pin_delim
+                alt_pin_delim=alt_pin_delim,
+                bundle=bundle
             )
             symbol_lib.append(symbol)
         except Exception as e:
@@ -981,7 +1032,7 @@ def generate_symbol_lib(rows, sort_by='row', reverse=False, default_side='left',
     
     return symbol_lib
 
-def row_file_to_symbol_lib_file(row_file, symbol_lib_file=None, sort_by='row', reverse=False, default_side='left', alt_pin_delim=None, overwrite=False):
+def row_file_to_symbol_lib_file(row_file, symbol_lib_file=None, sort_by='row', reverse=False, default_side='left', alt_pin_delim=None, overwrite=False, bundle=False):
     """
     Convert a CSV or Excel file to a KiCad symbol library file.
 
@@ -1003,6 +1054,7 @@ def row_file_to_symbol_lib_file(row_file, symbol_lib_file=None, sort_by='row', r
         alt_pin_delim (str, optional): Delimiter for splitting pin names into
                                       alternatives. Defaults to None (no splitting).
         overwrite (bool, optional): Allow overwriting existing output file. Defaults to False.
+        bundle (bool, optional): Bundle identically-named power or ground pins. Defaults to False.
 
     Returns:
         str: Path to the generated .kicad_sym file.
@@ -1025,7 +1077,7 @@ def row_file_to_symbol_lib_file(row_file, symbol_lib_file=None, sort_by='row', r
     rows = read_row_file(row_file)
 
     # Generate the symbol library from the rows.
-    symbol_lib = generate_symbol_lib(rows, sort_by=sort_by, reverse=reverse, default_side=default_side, alt_pin_delim=alt_pin_delim)
+    symbol_lib = generate_symbol_lib(rows, sort_by=sort_by, reverse=reverse, default_side=default_side, alt_pin_delim=alt_pin_delim, bundle=bundle)
 
     # Store the symbol library as an S-expression in the output file.
     with open(symbol_lib_file, 'w') as f:
@@ -1106,12 +1158,13 @@ def kipart():
 
     Usage:
         kipart [-h] [-v] [--reverse] [--side {left,right,top,bottom}] [-o OUTPUT]
-               [-w] [-s {row,num,name}] [-a ALT_DELIMITER] input_files [input_files ...]
+               [-w] [-s {row,num,name}] [-a ALT_DELIMITER] [--bundle] input_files [input_files ...]
 
     Examples:
         kipart input.csv                # Generate input.kicad_sym 
         kipart -o lib.kicad_sym in.xlsx # Generate lib.kicad_sym from in.xlsx
         kipart -s num --reverse *.csv   # Generate libraries with pins sorted by number (descending)
+        kipart --bundle input.csv       # Bundle identical power/ground pins into single pins
 
     Args:
         None (uses sys.argv via argparse).
@@ -1125,7 +1178,7 @@ def kipart():
     """
     parser = argparse.ArgumentParser(description="Convert CSV or Excel files to KiCad symbol libraries")
     parser.add_argument('-v', '--version', action='version', version=f'%(prog)s {__version__}')
-    parser.add_argument('--reverse', action='store_true', help="Sort pins in reverse order")
+    parser.add_argument('-r', '--reverse', action='store_true', help="Sort pins in reverse order")
     parser.add_argument('--side', choices=['left', 'right', 'top', 'bottom'], default='left',
                         help="Which side to place the pins by default")
     parser.add_argument('-o', '--output', help="Generated KiCad symbol library (.kicad_sym)")
@@ -1135,6 +1188,8 @@ def kipart():
                              "their pin number (num), or their pin name (name)")
     parser.add_argument('-a', '--alt-delimiter', dest='alt_delimiter', default=None,
                         help="Delimiter character for splitting pin names into alternatives")
+    parser.add_argument('-b', '--bundle', action='store_true',
+                        help="Bundle identically-named power or ground pins into single schematic pins")
     parser.add_argument('input_files', nargs='+',
                         help="Input CSV or Excel files (.csv, .xlsx, .xls)")
     
@@ -1156,7 +1211,8 @@ def kipart():
                 reverse=args.reverse,
                 default_side=args.side,
                 alt_pin_delim=args.alt_delimiter,
-                overwrite=args.overwrite
+                overwrite=args.overwrite,
+                bundle=args.bundle
             )
             print(f"Generated {symbol_lib_file} successfully from {row_file}")
         except Exception as e:
