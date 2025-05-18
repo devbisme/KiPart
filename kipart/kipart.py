@@ -20,7 +20,7 @@ Dependencies:
 __all__ = [
     # Basic utility functions
     'gridify',
-    'get_text_bounding_box',
+    'text_width',
     'parse_mixed_string',
     'yntf_to_yesno',
     'str_to_type',
@@ -30,13 +30,19 @@ __all__ = [
     # File handling functions
     'read_row_file',
     'read_symbol_rows',
-    # Symbol parsing functions
+    # Symbol library functions
+    'empty_symbol_lib',
+    'merge_symbol_libs',
     'extract_symbols_from_lib',
+    # Symbol parsing functions
     'symbol_to_csv_rows',
     # Symbol generation functions
+    'create_rectangle_outline',
+    'create_pin_name_outline',
     'create_pin_sexp',
     'generate_symbol',
     'generate_symbol_lib',
+    # File conversion functions
     'row_file_to_symbol_lib_file',
     'symbol_lib_file_to_csv_file',
     # Command-line interfaces
@@ -48,8 +54,8 @@ import csv
 import math
 import pandas as pd
 import os
-import sys  # Added for CLI functionality
-import argparse  # Added for CLI functionality
+import sys
+import argparse
 from simp_sexp import Sexp
 
 try:
@@ -63,7 +69,7 @@ GRID_SPACING = 1.27  # Grid spacing for aligning pins and symbols
 PIN_LENGTH = 4 * GRID_SPACING  # Standard pin length in KiCad
 PIN_HEIGHT = 2 * GRID_SPACING  # Standard pin height in KiCad
 PIN_SPACING = 2 * GRID_SPACING  # Standard pin spacing in KiCad
-PIN_NAME_OFFSET = 0.85 # Offset from the end of the pin to the pin name
+PIN_NAME_OFFSET = 0.85  # Offset from the end of the pin to the pin name
 STROKE_WIDTH = 0.254  # Stroke width for symbol outlines
 SIDE_CLEARANCE = GRID_SPACING  # Clearance between the endpoint of a side and the closest pin
 PIN_OFFSET = SIDE_CLEARANCE + GRID_SPACING
@@ -399,7 +405,90 @@ def read_symbol_rows(rows):
     
     return symbols
 
-# ===== Symbol Parsing Functions =====
+# ===== Symbol Library Functions =====
+
+def empty_symbol_lib():
+    """
+    Create an empty KiCad symbol library with standard header information.
+    
+    Returns:
+        Sexp: An S-expression object representing an empty KiCad symbol library
+              with version and generator information.
+    """
+    return Sexp(['kicad_symbol_lib',
+                ['version', '20241209'],
+                ['generator', 'kicad_symbol_editor'],
+                ['generator_version', '8.0']])
+    
+def merge_symbol_libs(lib1, lib2, overwrite=False):
+    """
+    Merge two KiCad symbol libraries.
+    
+    Args:
+        lib1 (Sexp): First symbol library (base library)
+        lib2 (Sexp): Second symbol library to merge into the base
+        overwrite (bool): Whether to allow overwriting of symbols in lib1 with 
+                          symbols of the same name from lib2. If False, the merge
+                          will raise an exception when duplicate names are found.
+    
+    Returns:
+        Sexp: Merged symbol library
+    
+    Raises:
+        ValueError: If overwrite=False and lib2 contains symbols with names that
+                   already exist in lib1.
+    """
+    # Create a new library with the same version, generator, etc. as lib1
+    merged_lib = empty_symbol_lib()
+    
+    # Copy attributes from lib1 (version, generator, etc.) if they differ from defaults
+    lib1_version = None
+    lib1_generator = None
+    lib1_generator_version = None
+    
+    # Extract these values from lib1
+    for item in lib1:
+        if item[0] == 'version':
+            lib1_version = item[1]
+        elif item[0] == 'generator':
+            lib1_generator = item[1]
+        elif item[0] == 'generator_version':
+            lib1_generator_version = item[1]
+    
+    # Replace default values in merged_lib if lib1 has different values
+    for i, item in enumerate(merged_lib):
+        if item[0] == 'version' and lib1_version:
+            merged_lib[i] = ['version', lib1_version]
+        elif item[0] == 'generator' and lib1_generator:
+            merged_lib[i] = ['generator', lib1_generator]
+        elif item[0] == 'generator_version' and lib1_generator_version:
+            merged_lib[i] = ['generator_version', lib1_generator_version]
+    
+    # Extract all symbols from lib1 and create a name-to-symbol mapping
+    lib1_symbols = extract_symbols_from_lib(lib1)
+    lib1_symbols_map = {symbol[1]: symbol for symbol in lib1_symbols}
+    
+    # Extract all symbols from lib2
+    lib2_symbols = extract_symbols_from_lib(lib2)
+    lib2_symbols_map = {symbol[1]: symbol for symbol in lib2_symbols}
+    
+    # Check for duplicates when overwrite is not allowed
+    if not overwrite:
+        duplicates = set(lib1_symbols_map.keys()) & set(lib2_symbols_map.keys())
+        if duplicates:
+            raise ValueError(f"Cannot merge libraries: The following symbols exist in both libraries: {', '.join(duplicates)}. Use --overwrite to replace them.")
+    
+    # Add all symbols from lib1 that aren't being overwritten
+    for name, symbol in lib1_symbols_map.items():
+        if overwrite and name in lib2_symbols_map:
+            continue  # Skip symbols that will be overwritten
+        merged_lib.append(symbol)
+    
+    # Add all symbols from lib2
+    for name, symbol in lib2_symbols_map.items():
+        merged_lib.append(symbol)
+    
+    return merged_lib
 
 def extract_symbols_from_lib(symbol_lib):
     """
@@ -482,7 +571,7 @@ def symbol_to_csv_rows(symbol):
 
     return rows
 
-# ===== Symbol Generation Functions =====
+# ===== Symbol Drawing Functions =====
 
 def create_rectangle_outline(x0, y0, x1, y1, alpha=0.0001):
     """
@@ -627,6 +716,8 @@ def create_pin_sexp(pin, x, y, orientation, pin_length, alt_pin_delim=None):
         pin_sexps.append(pin_sexp)
     
     return pin_sexps
+
+# ===== Symbol Generation Functions =====
 
 def generate_symbol(symbol_rows, sort_by='row', reverse=False, default_side='left', alt_pin_delim=None, push=0.5, bundle=False, scrunch=False):
     """
@@ -989,19 +1080,6 @@ def generate_symbol(symbol_rows, sort_by='row', reverse=False, default_side='lef
 
     return symbol_sexp
 
-def empty_symbol_lib():
-    """
-    Create an empty KiCad symbol library with standard header information.
-    
-    Returns:
-        Sexp: An S-expression object representing an empty KiCad symbol library
-              with version and generator information.
-    """
-    return Sexp(['kicad_symbol_lib',
-                ['version', '20241209'],
-                ['generator', 'kicad_symbol_editor'],
-                ['generator_version', '8.0']])
-
 def generate_symbol_lib(rows, sort_by='row', reverse=False, default_side='left', alt_pin_delim=None, bundle=False, scrunch=False):
     """
     Generate a complete KiCad symbol library from CSV or Excel data.
@@ -1064,75 +1142,7 @@ def generate_symbol_lib(rows, sort_by='row', reverse=False, default_side='left',
     
     return symbol_lib
 
-def merge_symbol_libs(lib1, lib2, overwrite=False):
-    """
-    Merge two KiCad symbol libraries.
-    
-    Args:
-        lib1 (Sexp): First symbol library (base library)
-        lib2 (Sexp): Second symbol library to merge into the base
-        overwrite (bool): Whether to allow overwriting of symbols in lib1 with 
-                          symbols of the same name from lib2. If False, the merge
-                          will raise an exception when duplicate names are found.
-    
-    Returns:
-        Sexp: Merged symbol library
-    
-    Raises:
-        ValueError: If overwrite=False and lib2 contains symbols with names that
-                   already exist in lib1.
-    """
-    # Create a new library with the same version, generator, etc. as lib1
-    merged_lib = empty_symbol_lib()
-    
-    # Copy attributes from lib1 (version, generator, etc.) if they differ from defaults
-    lib1_version = None
-    lib1_generator = None
-    lib1_generator_version = None
-    
-    # Extract these values from lib1
-    for item in lib1:
-        if item[0] == 'version':
-            lib1_version = item[1]
-        elif item[0] == 'generator':
-            lib1_generator = item[1]
-        elif item[0] == 'generator_version':
-            lib1_generator_version = item[1]
-    
-    # Replace default values in merged_lib if lib1 has different values
-    for i, item in enumerate(merged_lib):
-        if item[0] == 'version' and lib1_version:
-            merged_lib[i] = ['version', lib1_version]
-        elif item[0] == 'generator' and lib1_generator:
-            merged_lib[i] = ['generator', lib1_generator]
-        elif item[0] == 'generator_version' and lib1_generator_version:
-            merged_lib[i] = ['generator_version', lib1_generator_version]
-    
-    # Extract all symbols from lib1 and create a name-to-symbol mapping
-    lib1_symbols = extract_symbols_from_lib(lib1)
-    lib1_symbols_map = {symbol[1]: symbol for symbol in lib1_symbols}
-    
-    # Extract all symbols from lib2
-    lib2_symbols = extract_symbols_from_lib(lib2)
-    lib2_symbols_map = {symbol[1]: symbol for symbol in lib2_symbols}
-    
-    # Check for duplicates when overwrite is not allowed
-    if not overwrite:
-        duplicates = set(lib1_symbols_map.keys()) & set(lib2_symbols_map.keys())
-        if duplicates:
-            raise ValueError(f"Cannot merge libraries: The following symbols exist in both libraries: {', '.join(duplicates)}. Use --overwrite to replace them.")
-    
-    # Add all symbols from lib1 that aren't being overwritten
-    for name, symbol in lib1_symbols_map.items():
-        if overwrite and name in lib2_symbols_map:
-            continue  # Skip symbols that will be overwritten
-        merged_lib.append(symbol)
-    
-    # Add all symbols from lib2
-    for name, symbol in lib2_symbols_map.items():
-        merged_lib.append(symbol)
-    
-    return merged_lib
+# ===== File Conversion Functions =====
 
 def row_file_to_symbol_lib_file(row_file, symbol_lib_file=None, sort_by='row', reverse=False, default_side='left', alt_pin_delim=None, overwrite=False, bundle=False, scrunch=False):
     """
