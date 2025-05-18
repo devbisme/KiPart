@@ -59,17 +59,23 @@ except ImportError:
 
 # Constants for layout calculations
 FONT_SIZE = 1.27  # Default font size for pin names and numbers
-GRID_SPACING = 2.54  # Grid spacing for aligning pins and symbols
-PIN_LENGTH = 2 * GRID_SPACING  # Standard pin length in KiCad
-PIN_HEIGHT = GRID_SPACING  # Standard pin height in KiCad
-PIN_SPACING = GRID_SPACING  # Standard pin height in KiCad
+GRID_SPACING = 1.27  # Grid spacing for aligning pins and symbols
+PIN_LENGTH = 4 * GRID_SPACING  # Standard pin length in KiCad
+PIN_HEIGHT = 2 * GRID_SPACING  # Standard pin height in KiCad
+PIN_SPACING = 2 * GRID_SPACING  # Standard pin height in KiCad
+PIN_NAME_OFFSET = 0.85 # Offset from the end of the pin to the pin name
 STROKE_WIDTH = 0.254  # Stroke width for symbol outlines
-SIDE_CLEARANCE = GRID_SPACING/2  # Clearance between the endpoint of a side and the closest pin
-PIN_OFFSET = SIDE_CLEARANCE + GRID_SPACING/2
+SIDE_CLEARANCE = GRID_SPACING  # Clearance between the endpoint of a side and the closest pin
+PIN_OFFSET = SIDE_CLEARANCE + GRID_SPACING
+LR_SEPARATION = 2 * GRID_SPACING  # Minimum separation between opposing pin names on left and right sides
+TB_SEPARATION = 2 * GRID_SPACING  # Minimum separation between opposing pin names on top and bottom sides
+
+# Enable/disable debugging diagnostics
+debug = False
 
 # ===== Basic Utility Functions =====
 
-def gridify(value, grid_spacing=GRID_SPACING):
+def gridify(value, grid_spacing=GRID_SPACING, policy='round'):
     """
     Round a value to the nearest grid spacing multiple.
     
@@ -84,7 +90,14 @@ def gridify(value, grid_spacing=GRID_SPACING):
     Returns:
         float: The rounded value (always rounded up to next grid multiple).
     """
-    return round(value / grid_spacing) * grid_spacing
+    if policy == 'up':
+        return math.ceil(value / grid_spacing) * grid_spacing
+    elif policy == 'down':
+        return math.floor(value / grid_spacing) * grid_spacing
+    elif policy == 'round':
+        return round(value / grid_spacing) * grid_spacing
+    else:
+        raise ValueError(f"Invalid gridify policy '{policy}'. Use 'up', 'down', or 'round'.")
 
 def text_width(text, alt_pin_delim=None, font_size=FONT_SIZE, grid_spacing=GRID_SPACING):
     """
@@ -100,7 +113,7 @@ def text_width(text, alt_pin_delim=None, font_size=FONT_SIZE, grid_spacing=GRID_
         float: width of the text in mm.
     """
     # Approximate character width as 60% of font size for monospaced fonts
-    char_width = font_size * 0.6
+    char_width = font_size * 0.9
 
     # If using alternate pin names, then the bounding box width
     # is the length of the longest alternate name.
@@ -111,10 +124,7 @@ def text_width(text, alt_pin_delim=None, font_size=FONT_SIZE, grid_spacing=GRID_
     else:
         text_len = max(len(alt) for alt in alternates)
 
-    # For alignment purposes, the width should always be an integer number
-    # of GRID_SPACING units such that it will enclose the text.
     width = text_len * char_width
-    width = math.ceil(width / grid_spacing) * grid_spacing
     return width
 
 def parse_mixed_string(s):
@@ -474,6 +484,76 @@ def symbol_to_csv_rows(symbol):
 
 # ===== Symbol Generation Functions =====
 
+def create_rectangle_outline(x0, y0, x1, y1, alpha=0.0001):
+    """
+    Create a rectangular outline for a symbol.
+
+    This function is used for debugging purposes.
+    
+    Args:
+        x0, y0: The (x, y) coordinates of the top-left corner of the rectangle
+        x1, y1: The (x, y) coordinates of the bottom-right corner of the rectangle
+        alpha: Transparency value for the fill color (default is 0.0001 for nearly invisible)
+        
+    Returns:
+        Sexp: The rectangle outline
+    """
+    
+    return Sexp(['rectangle',
+                          ['start', x0, y0],
+                          ['end', x1, y1],
+                          ['stroke', ['width', STROKE_WIDTH/2], ['type', 'solid']],
+                          ['fill', ['type', 'color'], ['color', 0, 0, 0, alpha]],
+                          ])
+
+def create_pin_name_outline(pin, x, y, orientation, pin_length):
+    """
+    Create a rectangular outline that surrounds a pin's name.
+
+    This function is used for debugging purposes.
+    
+    Args:
+        pin (dict): Dict containing pin properties
+        x, y: The (x, y) position of the pin
+        orientation (str): The orientation of the pin ('R', 'L', 'U', or 'D')
+        pin_length (float): Length of the pin line in grid units
+        
+    Returns:
+        Sexp: The rectangle outlining a pin name
+    """
+    
+    pin_name = pin['name']
+    name_offset = PIN_NAME_OFFSET
+
+    w = text_width(pin_name)
+    h = FONT_SIZE
+    
+    # Adjust position based on orientation and pin length
+    if orientation == 0:  # Left-side pin
+        x0 = x + pin_length + name_offset
+        x1 = x0 + w
+        y0 = y + h/2
+        y1 = y - h/2
+    elif orientation == 180:  # Right-side pin
+        x0 = x - pin_length - name_offset
+        x1 = x0 - w
+        y0 = y + h/2
+        y1 = y - h/2
+    elif orientation == 90:  # Bottom-side pin
+        x0 = x - h/2
+        x1 = x0 + h
+        y0 = y + pin_length + name_offset
+        y1 = y0 + w
+    elif orientation == 270:  # Top-side pin
+        x0 = x - h/2
+        x1 = x0 + h
+        y0 = y - pin_length - name_offset
+        y1 = y0 - w
+    else:
+        raise ValueError(f"Invalid orientation: {orientation}.")
+    
+    return create_rectangle_outline(x0, y0, x1, y1)
+
 def create_pin_sexp(pin, x, y, orientation, pin_length, alt_pin_delim=None):
     """
     Create an S-expression for a pin in a KiCad symbol.
@@ -582,7 +662,7 @@ def generate_symbol(symbol_rows, sort_by='row', reverse=False, default_side='lef
     symbol_sexp.append(['on_board', 'yes'])
 
     # Enter default properties. User-specified property values will override these.
-    # The entries in the property list are [value, y coord, text justification, hidden].
+    # The entries in the property list are [value, x_offset, y_offset, text justification, hidden].
     properties = {
         'Reference':     ['U',       0,  1.5 * GRID_SPACING, 'right', 'no'],
         'Value':         [part_name, 0,  0.5 * GRID_SPACING, 'right', 'no'],
@@ -704,7 +784,7 @@ def generate_symbol(symbol_rows, sort_by='row', reverse=False, default_side='lef
                 if pin['number'] == '*':
                     w = text_width('')
                 else:
-                    w = text_width(pin['name'], alt_pin_delim=alt_pin_delim)
+                    w = text_width(pin['name'], alt_pin_delim=alt_pin_delim) + PIN_NAME_OFFSET
                 # Update the bounding box based on width of the pin name...
                 bbox[side]['width'] = max(bbox[side]['width'], w)
                 # ... and the standard height of a pin.
@@ -717,15 +797,17 @@ def generate_symbol(symbol_rows, sort_by='row', reverse=False, default_side='lef
 
         # Compute the bounding box for the entire unit.
         lr_height = max(bbox['left']['height'], bbox['right']['height'])
+        lr_width = max(bbox['left']['width'], bbox['right']['width'], SIDE_CLEARANCE)
+        tb_height = max(bbox['top']['height'], bbox['bottom']['height'], SIDE_CLEARANCE)
         tb_width = max(bbox['top']['width'], bbox['bottom']['width'])
-        unit_width = 2 * max(bbox['left']['width'], bbox['right']['width']) + max(bbox['top']['width'], bbox['bottom']['width'])  
-        unit_height = 2 * max(bbox['top']['height'], bbox['bottom']['height']) + max(bbox['left']['height'], bbox['right']['height'])
-        unit_width += 2 * SIDE_CLEARANCE  
-        unit_height += 2 * SIDE_CLEARANCE  
-        tb_offset = max(bbox['top']['height'], bbox['bottom']['height'])
-        lr_offset = max(bbox['left']['width'], bbox['right']['width'])
+        lr_height = gridify(lr_height, policy='up')
+        lr_width = gridify(lr_width, policy='up')
+        tb_height = gridify(tb_height, policy='up')
+        tb_width = gridify(tb_width, policy='up')
+        unit_width = 2 * max(lr_width, SIDE_CLEARANCE) + max(tb_width, LR_SEPARATION)  
+        unit_height = 2 * max(tb_height, SIDE_CLEARANCE) + max(lr_height, TB_SEPARATION)
 
-        # Define the rectanglular outline for the unit
+        # Define the rectangular outline for the unit
         xorg = 0
         yorg = 0
         x0 = gridify(xorg-unit_width/2)
@@ -733,13 +815,27 @@ def generate_symbol(symbol_rows, sort_by='row', reverse=False, default_side='lef
         x1 = gridify(xorg+unit_width/2)
         y1 = gridify(yorg+unit_height/2)
         rect_sexp = Sexp(['rectangle',
-                          ['start', x0, y0],
-                          ['end', x1, y1],
+                          ['start', x0, y0], # lower-left corner
+                          ['end', x1, y1],   # upper-right corner
                           ['stroke', ['width', STROKE_WIDTH], ['type', 'solid']],
                           ['fill', ['type', 'background']],
                           ])
         # Add the rectangle to the unit Sexp
         unit_sexp.append(rect_sexp)
+
+        # For debugging, show the boxes that contain the pins on each side.
+        if debug:
+            lr_box = create_rectangle_outline(x0, y0+tb_height, x0+lr_width, y0+tb_height+lr_height, alpha=0.1)
+            unit_sexp.append(lr_box)
+            lr_box = create_rectangle_outline(x1, y0+tb_height, x1-lr_width, y0+tb_height+lr_height, alpha=0.1)
+            unit_sexp.append(lr_box)
+            tb_box = create_rectangle_outline(x0+lr_width, y0, x0+lr_width+tb_width, y0+tb_height, alpha=0.1)
+            unit_sexp.append(tb_box)
+            tb_box = create_rectangle_outline(x0+lr_width, y1-tb_height, x0+lr_width+tb_width, y1, alpha=0.1)
+            unit_sexp.append(tb_box)
+            # For debugging, indicate the bottom-left and top-right corners of the unit outline
+            unit_sexp.append(create_rectangle_outline(x0, y0, x0+1, y0+1, alpha=0.3))
+            unit_sexp.append(create_rectangle_outline(x1, y1, x1-1, y1-1, alpha=0.3))
 
         # Process pins for each side
         for side, pin_list in unit.items():
@@ -757,41 +853,53 @@ def generate_symbol(symbol_rows, sort_by='row', reverse=False, default_side='lef
             if side == 'left':
                 ctr_offset = gridify(push * (lr_height - pin_cnt*PIN_HEIGHT))
                 x = x0 - PIN_LENGTH
-                y = -y0 - PIN_OFFSET - tb_offset - ctr_offset
+                y = y0 + tb_height + lr_height - ctr_offset - PIN_HEIGHT/2
+                x, y = gridify(x), gridify(y)
                 orientation = 0
                 for pin in pin_list:
                     if pin['number'] != '*':
                         unit_sexp.append(create_pin_sexp(pin, x, y, orientation, PIN_LENGTH, alt_pin_delim=alt_pin_delim))
+                        if debug:
+                            unit_sexp.append(create_pin_name_outline(pin, x, y, orientation, PIN_LENGTH))
                     y -= PIN_SPACING
 
             elif side == 'right':
                 ctr_offset = gridify(push * (lr_height - pin_cnt*PIN_HEIGHT))
                 x = x1 + PIN_LENGTH
-                y = -y0 - PIN_OFFSET - tb_offset - ctr_offset
+                y = y0 + tb_height + lr_height - ctr_offset - PIN_HEIGHT/2
+                x, y = gridify(x), gridify(y)
                 orientation = 180
                 for pin in pin_list:
                     if pin['number'] != '*':
                         unit_sexp.append(create_pin_sexp(pin, x, y, orientation, PIN_LENGTH, alt_pin_delim=alt_pin_delim))
+                        if debug:
+                            unit_sexp.append(create_pin_name_outline(pin, x, y, orientation, PIN_LENGTH))
                     y -= PIN_SPACING
 
             elif side == 'top':
                 ctr_offset = gridify(push * (tb_width - pin_cnt*PIN_HEIGHT))
-                x = x0 + PIN_OFFSET + lr_offset + ctr_offset
-                y = -y0 + PIN_LENGTH
+                x = x0 + lr_width + ctr_offset + PIN_HEIGHT/2
+                y = y1 + PIN_LENGTH
+                x, y = gridify(x), gridify(y)
                 orientation = 270
                 for pin in pin_list:
                     if pin['number'] != '*':
                         unit_sexp.append(create_pin_sexp(pin, x, y, orientation, PIN_LENGTH, alt_pin_delim=alt_pin_delim))
+                        if debug:
+                            unit_sexp.append(create_pin_name_outline(pin, x, y, orientation, PIN_LENGTH))
                     x += PIN_SPACING
 
             elif side == 'bottom':
                 ctr_offset = gridify(push * (tb_width - pin_cnt*PIN_HEIGHT))
-                x = x0 + PIN_OFFSET + lr_offset + ctr_offset
+                x = x0 + lr_width + ctr_offset + PIN_HEIGHT/2
                 y = -y1 - PIN_LENGTH
+                x, y = gridify(x), gridify(y)
                 orientation = 90
                 for pin in pin_list:
                     if pin['number'] != '*':
                         unit_sexp.append(create_pin_sexp(pin, x, y, orientation, PIN_LENGTH, alt_pin_delim=alt_pin_delim))
+                        if debug:
+                            unit_sexp.append(create_pin_name_outline(pin, x, y, orientation, PIN_LENGTH))
                     x += PIN_SPACING
 
         symbol_sexp.append(unit_sexp)
@@ -801,7 +909,7 @@ def generate_symbol(symbol_rows, sort_by='row', reverse=False, default_side='lef
         symbol_sexp.append(['property', name, value,
                          ['at', x0 + x_offset, y1 + y_offset, 0],
                          ['effects', 
-                            ['font', ['size', 1.27, 1.27]],
+                            ['font', ['size', FONT_SIZE, FONT_SIZE]],
                             ['justify', justify],
                             ['hide', hide]]])
 
