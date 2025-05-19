@@ -551,7 +551,7 @@ def symbol_to_csv_rows(symbol):
     # Generate CSV rows starting with symbol name and properties
     rows = []
     rows.append([symbol_name, ""])
-    for _, prop_name, prop_value in properties:
+    for _, prop_name, prop_value, *discard in properties:
         rows.append([prop_name + ':', prop_value])
 
     # Add pin data column labels
@@ -922,6 +922,10 @@ def generate_symbol(symbol_rows, sort_by='row', reverse=False, default_side='lef
         else:
             raise ValueError(f"Invalid side '{pin['side']}' for pin {pin['number']} in unit {unit_name} of part {part_name}")
 
+    # Collect the Sexp for each unit and then add them to the symbol Sexp
+    # after the properties are added below.
+    unit_sexps = []
+
     # Create the Sexp for each unit and add it to the symbol Sexp.
     for unit_id, unit in units.items():
 
@@ -1081,7 +1085,7 @@ def generate_symbol(symbol_rows, sort_by='row', reverse=False, default_side='lef
                             unit_sexp.append(create_pin_name_outline(pin, x, y, orientation, PIN_LENGTH))
                     x += PIN_SPACING
 
-        symbol_sexp.append(unit_sexp)
+        unit_sexps.append(unit_sexp)
 
     # Add completed set of properties to the symbol Sexp
     for name, [value, x_offset, y_offset, justify, hide] in properties.items():
@@ -1091,7 +1095,9 @@ def generate_symbol(symbol_rows, sort_by='row', reverse=False, default_side='lef
                             ['font', ['size', FONT_SIZE, FONT_SIZE]],
                             ['justify', justify],
                             ['hide', hide]]])
-
+        
+    # Now add the units to the symbol
+    symbol_sexp.extend(unit_sexps)
 
     symbol_sexp.append(['embedded_fonts', 'no'])
 
@@ -1439,6 +1445,7 @@ def kilib2csv():
             )
             print(f"Generated {output_file} successfully from {input_file}")
         except Exception as e:
+            # raise
             print(f"Error processing file '{input_file}': {str(e)}")
             error_flag = True
             continue
