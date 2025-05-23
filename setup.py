@@ -28,7 +28,8 @@ with open("HISTORY.rst") as history_file:
 requirements = [
     "pandas",
     "openpyxl",
-    "sexpdata == 1.0.0",
+    "simp_sexp",
+    # "simp_sexp @ git+https://github.com/devbisme/simp_sexp.git@master",
 ]
 
 test_requirements = []  # TODO: put package test requirements here
