@@ -27,6 +27,7 @@ __all__ = [
     'str_to_style',
     'str_to_side',
     'add_quotes',
+    'rmv_quotes',
     # File handling functions
     'read_row_file',
     'read_symbol_rows',
@@ -56,6 +57,7 @@ import pandas as pd
 import os
 import sys
 import argparse
+import functools
 from simp_sexp import Sexp
 
 try:
@@ -306,17 +308,19 @@ def str_to_side(value):
         return "bottom"
     raise ValueError(f"Invalid value for side: {value}")
 
-def add_quotes(sexp):
+def add_rmv_quotes(sexp, operation='add'):
     """
-    Add quotes to specific elements in an S-expression.
+    Add or remove quotes to specific elements in an S-expression.
     
     This function adds quotes around the values of specific elements in the
     given S-expression object. The elements that get quoted are defined in
     the internal list 'quote_elements'.
     
     Args:
-        sexp: An S-expression object that has an 'add_quotes' method.
-        
+        sexp(Sexp): An S-expression object that has an 'add_quotes' method.
+        operation (str): The operation to perform. Either 'add' to add quotes
+                        or 'rmv' to remove quotes. Default is 'add'.
+
     Returns:
         None. The S-expression is modified in-place.
     """
@@ -335,7 +339,15 @@ def add_quotes(sexp):
         ]
     # Apply quoting to each element type in the S-expression
     for search_name, stop_idx in quote_elements:
-        sexp.add_quotes(search_name, stop_idx=stop_idx, ignore_case=True)
+        if operation in ('add',):
+            sexp.add_quotes(search_name, stop_idx=stop_idx, ignore_case=True)
+        elif operation in ('sub', 'rmv'):
+            sexp.rmv_quotes(search_name, stop_idx=stop_idx, ignore_case=True)
+        else:
+            raise ValueError(f"Invalid operation '{operation}'. Use 'add' or 'rmv'.")
+        
+add_quotes = functools.partial(add_rmv_quotes, operation='add')
+rmv_quotes = functools.partial(add_rmv_quotes, operation='rmv')
 
 # ===== File Handling Functions =====
 
@@ -564,6 +576,11 @@ def symbol_to_csv_rows(symbol):
         for pin in pins:
             number = pin.search('/pin/number', ignore_case=True)[0][1]
             name = pin.search('/pin/name', ignore_case=True)[0][1]
+            pin_hidden = pin.search('/pin/hide', ignore_case=True)
+            if pin_hidden:
+                pin_hidden = yntf_to_yesno(pin_hidden[0][1])
+            else:
+                pin_hidden = 'no'
             type_ = pin[1]
             style = pin[2]
             orientation = pin.search('/pin/at', ignore_case=True)[0][3]
@@ -578,7 +595,7 @@ def symbol_to_csv_rows(symbol):
                 num_hidden = yntf_to_yesno(num_hidden[0][1])
             else:
                 num_hidden = False
-            hidden = "yes" if name_hidden=='yes' and num_hidden=='yes' else "no"
+            hidden = "yes" if pin_hidden=='yes' or (name_hidden=='yes' and num_hidden=='yes') else "no"
             rows.append([
                 number, name, type_, side, unit_id, style, hidden
             ])
@@ -812,17 +829,21 @@ def generate_symbol(symbol_rows, sort_by='row', reverse=False, default_side='lef
             # Convert the user-specified property label to the canonical label used by KiCad.
             try:
                 label = {
-                    'ref': 'Reference',
                     'reference': 'Reference',
+                    'ref': 'Reference',
                     'value': 'Value',
                     'val': 'Value',
                     'footprint': 'Footprint',
                     'fp': 'Footprint',
                     'datasheet': 'Datasheet',
                     'description': 'Description',
+                    'description': 'Description',
                     'desc': 'Description',
+                    'ki_keywords': 'ki_keywords',
                     'keywords': 'ki_keywords',
+                    'ki_locked': 'ki_locked',
                     'locked': 'ki_locked',
+                    'ki_fp_filters': 'ki_fp_filters',
                     'filters': 'ki_fp_filters',
                     'fp_filters': 'ki_fp_filters',
                 }[label.lower()]
