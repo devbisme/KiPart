@@ -14,11 +14,15 @@ from kipart.kipart import (
     read_symbol_rows,
     generate_symbol,
     add_quotes,
+    rmv_quotes,
     row_file_to_symbol_lib_file,
     symbol_lib_file_to_csv_file,
     empty_symbol_lib,
     merge_symbol_libs,
 )
+from tests.unit.random_symbol import generate_random_symbol_lib
+from tests.unit.compare_symbols import symbols_are_equal, symbol_libs_are_equal
+
 
 def test_get_text_bounding_box():
     """Test text bounding box calculation."""
@@ -69,10 +73,6 @@ def test_extract_symbols_from_lib(tmp_path):
     assert len(parts) == 2
     assert parts[0][0] == "symbol" and parts[0][1] == "part1"
     assert parts[1][0] == "symbol" and parts[1][1] == "part2"
-    # assert "part1" in parts
-    # assert "part2" in parts
-    # assert "(symbol \"part1\"" in parts["part1"]
-    # assert "(symbol \"part2\"" in parts["part2"]
 
     # Test invalid S-expression
     parts = extract_symbols_from_lib(["(invalid)"])
@@ -617,3 +617,373 @@ pin,name,type,side
             for item in symbol:
                 if isinstance(item, list) and item[0] == 'property' and item[1] == 'Reference':
                     assert item[2] == 'X'  # Should be updated to X
+
+def test_symbols_are_equal():
+    """Test the symbols_are_equal function with various symbol configurations."""
+    # Create test symbols with different property and pin orderings
+    symbol1_str = """
+    (symbol "test_part"
+      (in_bom yes)
+      (on_board yes)
+      (property "Reference" "U")
+      (property "Value" "test_part")
+      (symbol "test_part_1_1"
+        (rectangle (start -10 -5) (end 10 5))
+        (pin input line (at -15 0 0) (length 5) (name "IN") (number "1"))
+        (pin output line (at 15 0 180) (length 5) (name "OUT") (number "2"))
+      )
+    )
+    """
+    
+    # Same symbol with properties, pins, and units in different order
+    symbol2_str = """
+    (symbol "test_part"
+      (property "Value" "test_part")
+      (property "Reference" "U")
+      (on_board yes)
+      (in_bom yes)
+      (symbol "test_part_1_1"
+        (pin output line (at 15 0 180) (length 5) (name "OUT") (number "2"))
+        (rectangle (start -10 -5) (end 10 5))
+        (pin input line (at -15 0 0) (length 5) (name "IN") (number "1"))
+      )
+    )
+    """
+    
+    # Symbol with different property value (should not be equal)
+    symbol3_str = """
+    (symbol "test_part"
+      (in_bom yes)
+      (on_board yes)
+      (property "Reference" "R")  # Changed from U to R
+      (property "Value" "test_part")
+      (symbol "test_part_1_1"
+        (rectangle (start -10 -5) (end 10 5))
+        (pin input line (at -15 0 0) (length 5) (name "IN") (number "1"))
+        (pin output line (at 15 0 180) (length 5) (name "OUT") (number "2"))
+      )
+    )
+    """
+    
+    # Symbol with different pin properties (should not be equal)
+    symbol4_str = """
+    (symbol "test_part"
+      (in_bom yes)
+      (on_board yes)
+      (property "Reference" "U")
+      (property "Value" "test_part")
+      (symbol "test_part_1_1"
+        (rectangle (start -10 -5) (end 10 5))
+        (pin input line (at -15 0 0) (length 5) (name "INPUT") (number "1"))  # Changed name
+        (pin output line (at 15 0 180) (length 5) (name "OUT") (number "2"))
+      )
+    )
+    """
+    
+    # Symbol with different pin position (should not be equal)
+    symbol5_str = """
+    (symbol "test_part"
+      (in_bom yes)
+      (on_board yes)
+      (property "Reference" "U")
+      (property "Value" "test_part")
+      (symbol "test_part_1_1"
+        (rectangle (start -10 -5) (end 10 5))
+        (pin input line (at -15 2 0) (length 5) (name "IN") (number "1"))  # Changed Y position
+        (pin output line (at 15 0 180) (length 5) (name "OUT") (number "2"))
+      )
+    )
+    """
+    
+    # Symbol with multiple units in different order (should be equal)
+    symbol6_str = """
+    (symbol "multi_unit"
+      (property "Reference" "U")
+      (property "Value" "multi_unit")
+      (symbol "multi_unit_1_1"
+        (rectangle (start -5 -5) (end 5 5))
+        (pin input line (at -10 0 0) (length 5) (name "IN1") (number "1"))
+      )
+      (symbol "multi_unit_2_1"
+        (rectangle (start -5 -5) (end 5 5))
+        (pin output line (at 10 0 180) (length 5) (name "OUT1") (number "2"))
+      )
+    )
+    """
+    
+    symbol7_str = """
+    (symbol "multi_unit"
+      (property "Reference" "U")
+      (property "Value" "multi_unit")
+      (symbol "multi_unit_2_1"
+        (rectangle (start -5 -5) (end 5 5))
+        (pin output line (at 10 0 180) (length 5) (name "OUT1") (number "2"))
+      )
+      (symbol "multi_unit_1_1"
+        (rectangle (start -5 -5) (end 5 5))
+        (pin input line (at -10 0 0) (length 5) (name "IN1") (number "1"))
+      )
+    )
+    """
+    
+    # Parse all symbols
+    symbol1 = Sexp(symbol1_str)
+    symbol2 = Sexp(symbol2_str)
+    symbol3 = Sexp(symbol3_str)
+    symbol4 = Sexp(symbol4_str)
+    symbol5 = Sexp(symbol5_str)
+    symbol6 = Sexp(symbol6_str)
+    symbol7 = Sexp(symbol7_str)
+    
+    # Test equality
+    assert symbols_are_equal(symbol1, symbol2) == True
+    assert symbols_are_equal(symbol1, symbol3) == False  # Different property value
+    assert symbols_are_equal(symbol1, symbol4) == False  # Different pin name
+    assert symbols_are_equal(symbol1, symbol5) == False  # Different pin position
+    assert symbols_are_equal(symbol6, symbol7) == True   # Units in different order
+    
+    # Test with generated symbols
+    symbol_rows = [
+        ["test_gen", ""],
+        ["Reference:", "U"],
+        ["pin", "name", "type", "side"],
+        ["1", "IN", "input", "left"],
+        ["2", "OUT", "output", "right"]
+    ]
+    
+    gen_symbol1 = generate_symbol(symbol_rows, sort_by="num")
+    gen_symbol2 = generate_symbol(symbol_rows, sort_by="name")  # Different sort but same content
+    add_quotes(gen_symbol1)
+    add_quotes(gen_symbol2)
+    
+    assert symbols_are_equal(gen_symbol1, gen_symbol2) == True
+
+def test_symbol_libs_are_equal():
+    """Test the symbol_libs_are_equal function with various library configurations."""
+    # Create test libraries with the same symbols in different orders
+    lib1_content = """
+    (kicad_symbol_lib
+      (version 20241209)
+      (generator "kicad_symbol_editor")
+      (symbol "part1"
+        (property "Reference" "U")
+        (symbol "part1_1_1" 
+          (rectangle (start -10 -5) (end 10 5))
+          (pin input line (at -15 0 0) (length 5) (name "IN") (number "1"))
+        )
+      )
+      (symbol "part2"
+        (property "Reference" "R")
+        (symbol "part2_1_1" 
+          (rectangle (start -5 -5) (end 5 5))
+          (pin passive line (at -10 0 0) (length 5) (name "P1") (number "1"))
+        )
+      )
+    )
+    """
+    
+    # Same library with symbols in different order
+    lib2_content = """
+    (kicad_symbol_lib
+      (version 20241209)
+      (generator "kicad_symbol_editor")
+      (symbol "part2"
+        (property "Reference" "R")
+        (symbol "part2_1_1" 
+          (rectangle (start -5 -5) (end 5 5))
+          (pin passive line (at -10 0 0) (length 5) (name "P1") (number "1"))
+        )
+      )
+      (symbol "part1"
+        (property "Reference" "U")
+        (symbol "part1_1_1" 
+          (rectangle (start -10 -5) (end 10 5))
+          (pin input line (at -15 0 0) (length 5) (name "IN") (number "1"))
+        )
+      )
+    )
+    """
+    
+    # Library with different symbol properties (should not be equal)
+    lib3_content = """
+    (kicad_symbol_lib
+      (version 20241209)
+      (generator "kicad_symbol_editor")
+      (symbol "part1"
+        (property "Reference" "U")
+        (symbol "part1_1_1" 
+          (rectangle (start -10 -5) (end 10 5))
+          (pin input line (at -15 0 0) (length 5) (name "IN") (number "1"))
+        )
+      )
+      (symbol "part2"
+        (property "Reference" "D")
+        (symbol "part2_1_1" 
+          (rectangle (start -5 -5) (end 5 5))
+          (pin passive line (at -10 0 0) (length 5) (name "P1") (number "1"))
+        )
+      )
+    )
+    """
+    
+    # Library with a different symbol name (should not be equal)
+    lib4_content = """
+    (kicad_symbol_lib
+      (version 20241209)
+      (generator "kicad_symbol_editor")
+      (symbol "part1"
+        (property "Reference" "U")
+        (symbol "part1_1_1" 
+          (rectangle (start -10 -5) (end 10 5))
+          (pin input line (at -15 0 0) (length 5) (name "IN") (number "1"))
+        )
+      )
+      (symbol "part3"
+        (property "Reference" "R")
+        (symbol "part3_1_1" 
+          (rectangle (start -5 -5) (end 5 5))
+          (pin passive line (at -10 0 0) (length 5) (name "P1") (number "1"))
+        )
+      )
+    )
+    """
+    
+    # Library with different pin in a symbol (should not be equal)
+    lib5_content = """
+    (kicad_symbol_lib
+      (version 20241209)
+      (generator "kicad_symbol_editor")
+      (symbol "part1"
+        (property "Reference" "U")
+        (symbol "part1_1_1" 
+          (rectangle (start -10 -5) (end 10 5))
+          (pin input line (at -15 0 0) (length 5) (name "INPUT") (number "1"))
+        )
+      )
+      (symbol "part2"
+        (property "Reference" "R")
+        (symbol "part2_1_1" 
+          (rectangle (start -5 -5) (end 5 5))
+          (pin passive line (at -10 0 0) (length 5) (name "P1") (number "1"))
+        )
+      )
+    )
+    """
+    
+    # Parse the libraries
+    lib1 = Sexp(lib1_content)
+    lib2 = Sexp(lib2_content)
+    lib3 = Sexp(lib3_content)
+    lib4 = Sexp(lib4_content)
+    lib5 = Sexp(lib5_content)
+    
+    # Test equality
+    assert symbol_libs_are_equal(lib1, lib1) == True  # Same library should be equal to itself
+    assert symbol_libs_are_equal(lib1, lib2) == True  # Same symbols in different order
+    assert symbol_libs_are_equal(lib1, lib3) == False  # Different symbol property
+    assert symbol_libs_are_equal(lib1, lib4) == False  # Different symbol name
+    assert symbol_libs_are_equal(lib1, lib5) == False  # Different pin name
+    
+    # Test with generated symbols
+    rows1 = [
+        ["part1", ""],
+        ["Reference:", "U"],
+        ["pin", "name", "type", "side"],
+        ["1", "IN1", "input", "left"],
+        [],
+        ["part2", ""],
+        ["Reference:", "U"],
+        ["pin", "name", "type", "side"],
+        ["1", "IN2", "input", "left"]
+    ]
+    
+    # Same symbols but in different order
+    rows2 = [
+        ["part2", ""],
+        ["Reference:", "U"],
+        ["pin", "name", "type", "side"],
+        ["1", "IN2", "input", "left"],
+        [],
+        ["part1", ""],
+        ["Reference:", "U"],
+        ["pin", "name", "type", "side"],
+        ["1", "IN1", "input", "left"]
+    ]
+    
+    # Generate symbol libraries
+    lib1_generated = empty_symbol_lib()
+    lib2_generated = empty_symbol_lib()
+    
+    # Process each symbol for lib1
+    symbol_row_groups1 = read_symbol_rows(rows1)
+    for symbol_rows in symbol_row_groups1:
+        symbol = generate_symbol(symbol_rows)
+        lib1_generated.append(symbol)
+    
+    # Process each symbol for lib2
+    symbol_row_groups2 = read_symbol_rows(rows2)
+    for symbol_rows in symbol_row_groups2:
+        symbol = generate_symbol(symbol_rows)
+        lib2_generated.append(symbol)
+    
+    add_quotes(lib1_generated)
+    add_quotes(lib2_generated)
+    
+    # Test if generated libraries are equal
+    assert symbol_libs_are_equal(lib1_generated, lib2_generated) == True
+
+def test_end_to_end_conversion(tmp_path):
+    """
+    Test end-to-end conversion from symbols to CSV and back to symbols.
+    
+    This test performs the following steps:
+    1. Creates a library of 10 random symbols
+    2. Saves the library to a .kicad_sym file
+    3. Converts the .kicad_sym file to a CSV file
+    4. Converts the CSV file back to a .kicad_sym file
+    5. Loads the new .kicad_sym file
+    6. Compares the original and new libraries for equality
+    
+    The test verifies that the conversion process is lossless and the resulting
+    libraries contain the same symbols with the same properties.
+    """
+    
+    # Step 1: Create a library with 10 random symbols
+    random_symbols_1 = generate_random_symbol_lib(10)
+    
+    # Step 2: Store the library to a file
+    add_quotes(random_symbols_1)
+    sym_file_1 = tmp_path / "random_symbols_1.kicad_sym"
+    with open(sym_file_1, 'w') as f:
+        f.write(str(random_symbols_1))
+    # with open(sym_file_1, 'r') as f:
+    #     random_symbols_1 = Sexp(f.read())
+    rmv_quotes(random_symbols_1)
+    
+    # Step 3: Convert to CSV
+    csv_file = tmp_path / "random_symbols_2.csv"
+    symbol_lib_file_to_csv_file(sym_file_1, csv_file=csv_file, overwrite=True)
+    
+    # Step 4: Convert CSV back to symbol library
+    sym_file_2 = tmp_path / "random_symbols_2.kicad_sym"
+    row_file_to_symbol_lib_file(csv_file, symbol_lib_file=sym_file_2, overwrite=True)
+    
+    # Step 5: Read back the converted symbol library
+    with open(sym_file_2, 'r') as f:
+        random_symbols_2 = Sexp(f.read())
+    
+    # Step 6: Compare the libraries for equality
+    assert symbol_libs_are_equal(random_symbols_1, random_symbols_2), \
+           "Symbol libraries are not equivalent after round-trip conversion"
+    
+    # Additional verification: Check that all original symbols are in the new library
+    symbols1 = extract_symbols_from_lib(random_symbols_1)
+    symbols2 = extract_symbols_from_lib(random_symbols_2)
+    assert len(symbols1) == len(symbols2), \
+           f"Symbol count mismatch: {len(symbols1)} vs {len(symbols2)}"
+    
+    # Print some statistics about the test
+    symbol_names = [s[1] for s in symbols1]
+    print(f"Successfully performed round-trip conversion for {len(symbols1)} symbols:")
+    for name in symbol_names:
+        print(f"  - {name}")
