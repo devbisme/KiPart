@@ -265,9 +265,8 @@ def symbol_libs_are_equal(lib1, lib2):
     # Check basic library attributes (version, generator)
     lib1_version = lib1.search('/kicad_symbol_lib/version', ignore_case=True)
     lib2_version = lib2.search('/kicad_symbol_lib/version', ignore_case=True)
-    if lib1_version != lib2_version:
-        pass
-        # return False
+    if int(lib1_version[0][1]) != int(lib2_version[0][1]):
+        return False
 
     # Extract all symbols from each library
     symbols1 = extract_symbols_from_lib(lib1)

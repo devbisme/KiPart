@@ -20,8 +20,8 @@ from kipart.kipart import (
     empty_symbol_lib,
     merge_symbol_libs,
 )
-from tests.unit.random_symbol import generate_random_symbol_lib
-from tests.unit.compare_symbols import symbols_are_equal, symbol_libs_are_equal
+from kipart.random_symbol import generate_random_symbol_lib
+from kipart.compare_symbols import symbols_are_equal, symbol_libs_are_equal
 
 
 def test_get_text_bounding_box():
@@ -956,8 +956,6 @@ def test_end_to_end_conversion(tmp_path):
     sym_file_1 = tmp_path / "random_symbols_1.kicad_sym"
     with open(sym_file_1, 'w') as f:
         f.write(str(random_symbols_1))
-    # with open(sym_file_1, 'r') as f:
-    #     random_symbols_1 = Sexp(f.read())
     rmv_quotes(random_symbols_1)
     
     # Step 3: Convert to CSV
