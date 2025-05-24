@@ -10,8 +10,8 @@ from simp_sexp import Sexp
 # Add the parent directory to the path so we can import kipart modules
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
-from kipart.kipart import empty_symbol_lib, add_quotes
-from tests.unit.random_symbol import generate_random_symbol_lib
+from kipart import empty_symbol_lib, add_quotes
+from kipart.random_symbol import generate_random_symbol_lib
 
 def main():
     """Generate random symbols based on command-line arguments and save to a file."""
