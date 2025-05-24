@@ -61,7 +61,7 @@ import functools
 from simp_sexp import Sexp
 
 try:
-    from .pckg_info import __version__
+    from .version import __version__
 except ImportError:
     __version__ = "unknown"
 
