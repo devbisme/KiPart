@@ -1147,7 +1147,7 @@ def generate_symbol(
                 pin_list.sort(
                     key=lambda p: (
                         parse_mixed_string(p["name"])
-                        if p["number"] != "*"
+                        if p["name"] != "*"
                         else (chr(0x10FFFF), float("inf"))
                     ),
                     reverse=reverse,
