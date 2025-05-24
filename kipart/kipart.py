@@ -803,6 +803,7 @@ def generate_symbol(
     push=0.5,
     bundle=False,
     scrunch=False,
+    circulate=False,
 ):
     """
     Generate a KiCad symbol S-expression from CSV rows.
@@ -833,6 +834,8 @@ def generate_symbol(
         bundle (bool, optional): Bundle identically-named power or ground pins. Defaults to False.
         scrunch (bool, optional): Compress pins of left/right columns underneath top/bottom rows.
                                  Defaults to False.
+        circulate (bool, optional): Reverse the direction and starting point of pins on the top 
+                                   and right sides. Defaults to False.
 
     Returns:
         Sexp: KiCad symbol as an Sexp object, ready to be included in a library.
@@ -1172,22 +1175,38 @@ def generate_symbol(
             elif side == "right":
                 ctr_offset = gridify(push * (lr_height - pin_cnt * PIN_HEIGHT))
                 x = x1 + PIN_LENGTH
-                y = y0 + tb_height + lr_height - ctr_offset - PIN_HEIGHT / 2
+                if circulate:
+                    # Start from bottom, go upward when circulate is True
+                    y = y0 + tb_height + ctr_offset + PIN_HEIGHT / 2
+                    dx, dy = 0, PIN_SPACING
+                else:
+                    # Start from top, go downward (original behavior)
+                    y = y0 + tb_height + lr_height - ctr_offset - PIN_HEIGHT / 2
+                    dx, dy = 0, -PIN_SPACING
                 orientation = 180
-                dx, dy = 0, -PIN_SPACING
-                x, y = gridify(x), gridify(y)
 
             # Set parameters for placing pins on the top side
             elif side == "top":
-                if scrunch:
-                    ctr_offset = gridify(push * (unit_width - pin_cnt * PIN_HEIGHT))
-                    x = x0 + ctr_offset + PIN_HEIGHT / 2
+                if circulate:
+                    # Start from right, go leftward when circulate is True
+                    if scrunch:
+                        ctr_offset = gridify(push * (unit_width - pin_cnt * PIN_HEIGHT))
+                        x = x0 + unit_width - ctr_offset - PIN_HEIGHT / 2
+                    else:
+                        ctr_offset = gridify(push * (tb_width - pin_cnt * PIN_HEIGHT))
+                        x = x0 + lr_width + tb_width - ctr_offset - PIN_HEIGHT / 2
+                    dx, dy = -PIN_SPACING, 0
                 else:
-                    ctr_offset = gridify(push * (tb_width - pin_cnt * PIN_HEIGHT))
-                    x = x0 + lr_width + ctr_offset + PIN_HEIGHT / 2
+                    # Start from left, go rightward (original behavior)
+                    if scrunch:
+                        ctr_offset = gridify(push * (unit_width - pin_cnt * PIN_HEIGHT))
+                        x = x0 + ctr_offset + PIN_HEIGHT / 2
+                    else:
+                        ctr_offset = gridify(push * (tb_width - pin_cnt * PIN_HEIGHT))
+                        x = x0 + lr_width + ctr_offset + PIN_HEIGHT / 2
+                    dx, dy = PIN_SPACING, 0
                 y = y1 + PIN_LENGTH
                 orientation = 270
-                dx, dy = PIN_SPACING, 0
 
             # Set parameters for placing pins on the bottom side
             elif side == "bottom":
@@ -1259,6 +1278,7 @@ def generate_symbol_lib(
     alt_pin_delim=None,
     bundle=False,
     scrunch=False,
+    circulate=False,
 ):
     """
     Generate a complete KiCad symbol library from CSV or Excel data.
@@ -1283,6 +1303,8 @@ def generate_symbol_lib(
                                Defaults to False.
         scrunch (bool, optional): Compress pins of left/right columns underneath top/bottom rows.
                                  Defaults to False.
+        circulate (bool, optional): Reverse the direction and starting point of pins on the top 
+                                   and right sides. Defaults to False.
 
     Returns:
         Sexp: Complete KiCad symbol library as an Sexp object, ready to write to file.
@@ -1308,6 +1330,7 @@ def generate_symbol_lib(
                 alt_pin_delim=alt_pin_delim,
                 bundle=bundle,
                 scrunch=scrunch,
+                circulate=circulate,
             )
             symbol_lib.append(symbol)
         except Exception as e:
@@ -1338,6 +1361,7 @@ def row_file_to_symbol_lib_file(
     overwrite=False,
     bundle=False,
     scrunch=False,
+    circulate=False,
 ):
     """
     Convert a CSV or Excel file to a KiCad symbol library file.
@@ -1367,6 +1391,8 @@ def row_file_to_symbol_lib_file(
                                Defaults to False.
         scrunch (bool, optional): Compress pins of left/right columns underneath top/bottom rows.
                                  Defaults to False.
+        circulate (bool, optional): Reverse the direction and starting point of pins on the top 
+                                   and right sides. Defaults to False.
 
     Returns:
         str: Path to the generated .kicad_sym file.
@@ -1399,6 +1425,7 @@ def row_file_to_symbol_lib_file(
         alt_pin_delim=alt_pin_delim,
         bundle=bundle,
         scrunch=scrunch,
+        circulate=circulate,
     )
 
     # If the output file already exists and overwrite is True, we need to merge
@@ -1503,7 +1530,7 @@ def kipart():
 
     Usage:
         kipart [-h] [-v] [-r] [--side {left,right,top,bottom}] [-o OUTPUT]
-               [-w] [-s {row,num,name}] [-a ALT_DELIMITER] [-b] [--scrunch] [-m] input_files [input_files ...]
+               [-w] [-s {row,num,name}] [-a ALT_DELIMITER] [-b] [--scrunch] [--circulate] [-m] input_files [input_files ...]
 
     Examples:
         kipart input.csv                # Generate input.kicad_sym
@@ -1511,6 +1538,7 @@ def kipart():
         kipart -s num -r *.csv          # Generate libraries with pins sorted by number (descending)
         kipart -b input.csv             # Bundle identical power/ground pins into single pins
         kipart --scrunch input.csv      # Compress pins of left/right columns under top/bottom rows
+        kipart --circulate input.csv    # Reverse pin direction on top and right sides
         kipart -m existing.csv          # Merge with existing library instead of overwriting
 
     Args:
@@ -1574,6 +1602,11 @@ def kipart():
         help="Compress pins of left/right columns underneath top/bottom rows",
     )
     parser.add_argument(
+        "--circulate",
+        action="store_true",
+        help="Reverse the direction and starting point of pins on the top and right sides",
+    )
+    parser.add_argument(
         "-m",
         "--merge",
         action="store_true",
@@ -1611,6 +1644,7 @@ def kipart():
                 overwrite=effective_overwrite,
                 bundle=args.bundle,
                 scrunch=args.scrunch,
+                circulate=args.circulate,
             )
             print(f"Generated {symbol_lib_file} successfully from {row_file}")
         except Exception as e:
