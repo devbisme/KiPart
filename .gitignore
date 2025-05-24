@@ -44,3 +44,6 @@ output/*/index.html
 
 # IntelliJ/PyCharm
 .idea/
+
+# Ignore all generated KiCad symbol files that might be left around.
+*.kicad_sym
