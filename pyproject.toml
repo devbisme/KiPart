@@ -1,7 +1,81 @@
 [build-system]
-requires = ["setuptools>=42", "wheel"]
+requires = ["setuptools>=61.0.0", "wheel"]
 build-backend = "setuptools.build_meta"
 
-[tool.pytest.ini_options]
-pythonpath = ["."]
+[project]
+name = "kipart"
+version = "2.0.0"
+description = "Utilities for converting rows of CSV pin data into KiCad symbols and back."
+authors = [
+    {name = "Dave Vandenbout", email = "dave@vdb.name"}
+]
+readme = "README.md"
+requires-python = ">=3.8"
+license = {text = "MIT"}
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: MIT License",
+    "Natural Language :: English",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: Implementation :: CPython",
+    "Topic :: Scientific/Engineering :: Electronic Design Automation (EDA)",
+    "Topic :: Software Development :: Libraries",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+]
+keywords = ["kipart", "KiCad", "electronic", "circuit", "schematics", "EDA", "CSV", "symbol"]
+dependencies = [
+    "pandas",
+    "openpyxl",
+    "simp_sexp",
+    # "simp_sexp @ git+https://github.com/devbisme/simp_sexp.git@master",
+]
+
+[project.urls]
+"Homepage" = "https://github.com/devbisme/kipart"
+"Source Code" = "https://github.com/devbisme/kipart"
+"Documentation" = "https://github.com/devbisme/kipart#readme"
+"Bug Tracker" = "https://github.com/devbisme/kipart/issues"
+"Changelog" = "https://github.com/devbisme/kipart/blob/master/HISTORY.md"
+
+[project.scripts]
+kipart = "kipart.kipart:kipart"
+kilib2csv = "kipart.kipart:kilib2csv"
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.0",
+    "tox>=4.0.0",
+]
+
+[tool.setuptools]
+packages = ["kipart"]
+
+[tool.wheel]
+universal = true
+
+[tool.pytest]
 testpaths = ["tests"]
+python_files = ["test_*.py"]
+
+[tool.tox]
+legacy_tox_ini = """
+[tox]
+envlist = py38, py39, py310, py311, py312, py313
+isolated_build = True
+
+[testenv]
+deps =
+    pytest>=7.0
+commands =
+    pytest {posargs:tests}
+"""
