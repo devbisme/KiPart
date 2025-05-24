@@ -34,18 +34,20 @@ def test_get_text_bounding_box():
     width = text_width("ABC", font_size=2.0)
     assert width == pytest.approx(3 * 2.0 * 0.9)
 
+
 def test_parse_mixed_string():
     """Test mixed alphanumeric string parsing for sorting."""
     # Test numeric and alphanumeric strings
     assert parse_mixed_string("10") == (chr(0), 10)
     assert parse_mixed_string("A1") == ("A", 1)
     assert parse_mixed_string("PIN10B") == ("PIN", 10, "B")
-    assert parse_mixed_string("*") == (chr(0x10FFFF), float('inf'))
+    assert parse_mixed_string("*") == (chr(0x10FFFF), float("inf"))
 
     # Test sorting behavior
     strings = ["A1", "A10", "B2", "10"]
     sorted_strings = sorted(strings, key=parse_mixed_string)
     assert sorted_strings == ["10", "A1", "A10", "B2"]
+
 
 def test_extract_symbols_from_lib(tmp_path):
     """Test extracting parts from a KiCad symbol library."""
@@ -64,7 +66,7 @@ def test_extract_symbols_from_lib(tmp_path):
     )
     """
     file_path = tmp_path / "test.kicad_sym"
-    with open(file_path, 'w') as f:
+    with open(file_path, "w") as f:
         f.write(content)
 
     with open(file_path) as f:
@@ -77,6 +79,7 @@ def test_extract_symbols_from_lib(tmp_path):
     # Test invalid S-expression
     parts = extract_symbols_from_lib(["(invalid)"])
     assert parts == []
+
 
 def test_symbol_to_csv_rows():
     """Test converting a symbol S-expression to CSV rows."""
@@ -110,33 +113,37 @@ def test_symbol_to_csv_rows():
         ["Value:", "my_part"],
         ["pin", "name", "type", "side", "unit", "style", "hidden"],
         ["1", "P1", "input", "left", "my_part_1", "line", "no"],
-        ["2", "P2", "output", "right", "my_part_1", "line", "yes"]
+        ["2", "P2", "output", "right", "my_part_1", "line", "yes"],
     ]
     rows = symbol_to_csv_rows(Sexp(sexp))
     assert rows == expected_rows
+
 
 def test_open_row_file(tmp_path):
     """Test reading CSV and Excel files."""
     # Test CSV
     csv_content = "my_part,\nReference:,U\npin,name\n1,P1"
     csv_path = tmp_path / "test.csv"
-    with open(csv_path, 'w') as f:
+    with open(csv_path, "w") as f:
         f.write(csv_content)
-    
+
     rows = read_row_file(csv_path)
     assert rows == [["my_part", ""], ["Reference:", "U"], ["pin", "name"], ["1", "P1"]]
 
     # Test Excel
-    df = pd.DataFrame([["my_part", ""], ["Reference:", "U"], ["pin", "name"], ["1", "P1"]])
+    df = pd.DataFrame(
+        [["my_part", ""], ["Reference:", "U"], ["pin", "name"], ["1", "P1"]]
+    )
     excel_path = tmp_path / "test.xlsx"
     df.to_excel(excel_path, index=False, header=False)
-    
+
     rows = read_row_file(excel_path)
     assert rows == [["my_part", ""], ["Reference:", "U"], ["pin", "name"], ["1", "P1"]]
 
     # Test invalid extension
     with pytest.raises(ValueError, match="Unsupported file extension"):
         read_row_file(tmp_path / "test.txt")
+
 
 def test_read_symbol_rows():
     """Test grouping CSV rows into symbols."""
@@ -148,16 +155,22 @@ def test_read_symbol_rows():
         [],
         ["part2", ""],
         ["pin", "name"],
-        ["2", "P2"]
+        ["2", "P2"],
     ]
     symbols = read_symbol_rows(rows)
     assert len(symbols) == 2
-    assert symbols[0] == [["part1", ""], ["Reference:", "U"], ["pin", "name"], ["1", "P1"]]
+    assert symbols[0] == [
+        ["part1", ""],
+        ["Reference:", "U"],
+        ["pin", "name"],
+        ["1", "P1"],
+    ]
     assert symbols[1] == [["part2", ""], ["pin", "name"], ["2", "P2"]]
 
     # Test empty input
     with pytest.raises(ValueError, match="No valid symbols found"):
         read_symbol_rows([])
+
 
 def test_generate_symbol():
     """Test generating a symbol S-expression from CSV rows."""
@@ -166,21 +179,22 @@ def test_generate_symbol():
         ["Reference:", "U"],
         ["pin", "name", "type", "side"],
         ["1", "P1", "input", "left"],
-        ["2", "P2", "output", "right"]
+        ["2", "P2", "output", "right"],
     ]
     symbol = generate_symbol(symbol_rows, sort_by="num")
     add_quotes(symbol)
     sexp_str = str(symbol)
     assert '(symbol "my_part"' in sexp_str
     assert '(property "Reference" "U"' in sexp_str
-    assert '(pin input line' in sexp_str
-    assert '(pin output line' in sexp_str
+    assert "(pin input line" in sexp_str
+    assert "(pin output line" in sexp_str
     assert '(name "P1"' in sexp_str
     assert '(name "P2"' in sexp_str
 
     # Test invalid part name
     with pytest.raises(ValueError, match="Invalid part name"):
         generate_symbol([["", ""], ["pin", "name"], ["1", "P1"]])
+
 
 def test_generate_symbol_library(tmp_path):
     """Test generating a KiCad symbol library from a CSV file."""
@@ -193,23 +207,26 @@ pin,name,type,side
 2,P2,output,right
 """
     csv_path = tmp_path / "test.csv"
-    with open(csv_path, 'w') as f:
+    with open(csv_path, "w") as f:
         f.write(csv_content)
-    
+
     output_path = tmp_path / "output.kicad_sym"
     result = row_file_to_symbol_lib_file(csv_path, symbol_lib_file=output_path)
-    
+
     assert os.path.exists(result)
     with open(result) as f:
         content = f.read()
-        assert '(kicad_symbol_lib' in content
+        assert "(kicad_symbol_lib" in content
         assert '(symbol "my_part"' in content
-        assert '(pin input line' in content
-        assert '(pin output line' in content
-    
+        assert "(pin input line" in content
+        assert "(pin output line" in content
+
     # Test overwrite protection
     with pytest.raises(ValueError, match="Output file.*already exists"):
-        row_file_to_symbol_lib_file(csv_path, symbol_lib_file=output_path, overwrite=False)
+        row_file_to_symbol_lib_file(
+            csv_path, symbol_lib_file=output_path, overwrite=False
+        )
+
 
 def test_kipart_cli(tmp_path):
     """Test the kipart.py command-line interface."""
@@ -220,15 +237,16 @@ pin,name,type,side
 1,P1,input,left
 """
     csv_path = tmp_path / "test.csv"
-    with open(csv_path, 'w') as f:
+    with open(csv_path, "w") as f:
         f.write(csv_content)
-    
+
     output_path = tmp_path / "output.kicad_sym"
-    
+
     # Test successful run
     result = subprocess.run(
         ["kipart", str(csv_path), "-o", str(output_path)],
-        capture_output=True, text=True
+        capture_output=True,
+        text=True,
     )
     assert result.returncode == 0
     assert f"Generated {output_path}" in result.stdout
@@ -236,11 +254,11 @@ pin,name,type,side
 
     # Test invalid input
     result = subprocess.run(
-        ["kipart", str(tmp_path / "invalid.txt")],
-        capture_output=True, text=True
+        ["kipart", str(tmp_path / "invalid.txt")], capture_output=True, text=True
     )
     assert "Error processing" in result.stdout
     assert result.returncode != 0  # Script continues after error
+
 
 def test_library_to_csv(tmp_path):
     """Test converting a KiCad symbol library to CSV."""
@@ -284,12 +302,12 @@ def test_library_to_csv(tmp_path):
     )
     """
     kicad_sym_path = tmp_path / "test.kicad_sym"
-    with open(kicad_sym_path, 'w') as f:
+    with open(kicad_sym_path, "w") as f:
         f.write(kicad_sym_content)
-    
+
     output_path = tmp_path / "output.csv"
     result = symbol_lib_file_to_csv_file(kicad_sym_path, csv_file=output_path)
-    
+
     assert os.path.exists(result)
     expected_rows = [
         ["my_part", ""],
@@ -302,20 +320,23 @@ def test_library_to_csv(tmp_path):
         ["Reference:", "U"],
         ["Value:", "part2"],
         ["pin", "name", "type", "side", "unit", "style", "hidden"],
-        ["1", "OUT", "output", "left", "part2_1", "line", "no"]
+        ["1", "OUT", "output", "left", "part2_1", "line", "no"],
     ]
     with open(output_path) as f:
         reader = csv.reader(f)
         rows = list(reader)
         assert rows == expected_rows
-    
+
     # Test invalid file
     with pytest.raises(FileNotFoundError):
         symbol_lib_file_to_csv_file(tmp_path / "nonexistent.kicad_sym")
-    
+
     # Test overwrite protection
     with pytest.raises(ValueError, match="Output file.*already exists"):
-        symbol_lib_file_to_csv_file(kicad_sym_path, csv_file=output_path, overwrite=False)
+        symbol_lib_file_to_csv_file(
+            kicad_sym_path, csv_file=output_path, overwrite=False
+        )
+
 
 def test_kilib2csv_cli(tmp_path):
     """Test the kilib2csv.py command-line interface."""
@@ -341,15 +362,16 @@ def test_kilib2csv_cli(tmp_path):
     )
     """
     kicad_sym_path = tmp_path / "test.kicad_sym"
-    with open(kicad_sym_path, 'w') as f:
+    with open(kicad_sym_path, "w") as f:
         f.write(kicad_sym_content)
-    
+
     output_path = tmp_path / "output.csv"
-    
+
     # Test successful run
     result = subprocess.run(
         ["kilib2csv", str(kicad_sym_path), "-o", str(output_path)],
-        capture_output=True, text=True
+        capture_output=True,
+        text=True,
     )
     print(result.stdout)
     print(result.stderr)
@@ -359,44 +381,45 @@ def test_kilib2csv_cli(tmp_path):
 
     # Test invalid input
     result = subprocess.run(
-        ["kilib2csv", str(tmp_path / "invalid.txt")],
-        capture_output=True, text=True
+        ["kilib2csv", str(tmp_path / "invalid.txt")], capture_output=True, text=True
     )
     assert result.returncode != 0  # Script continues after error
     assert "Error processing" in result.stdout
 
+
 def test_empty_symbol_lib():
     """Test creation of an empty symbol library."""
     lib = empty_symbol_lib()
-    
+
     # Check that it's a valid Sexp with the expected structure
     assert isinstance(lib, Sexp)
-    assert lib[0] == 'kicad_symbol_lib'
-    
+    assert lib[0] == "kicad_symbol_lib"
+
     # Check that it has the required attributes
     has_version = False
     has_generator = False
     has_generator_version = False
-    
+
     for item in lib:
         if isinstance(item, list):
-            if item[0] == 'version':
+            if item[0] == "version":
                 has_version = True
-                assert item[1] == '20241209'
-            elif item[0] == 'generator':
+                assert item[1] == "20241209"
+            elif item[0] == "generator":
                 has_generator = True
-                assert item[1] == 'kicad_symbol_editor'
-            elif item[0] == 'generator_version':
+                assert item[1] == "kicad_symbol_editor"
+            elif item[0] == "generator_version":
                 has_generator_version = True
-                assert item[1] == '8.0'
-    
+                assert item[1] == "8.0"
+
     assert has_version
     assert has_generator
     assert has_generator_version
-    
+
     # Check that it has no symbols yet
     symbols = extract_symbols_from_lib(lib)
     assert len(symbols) == 0
+
 
 def test_merge_symbol_libs(tmp_path):
     """Test merging two symbol libraries."""
@@ -416,7 +439,7 @@ def test_merge_symbol_libs(tmp_path):
       )
     )
     """
-    
+
     lib2_content = """
     (kicad_symbol_lib
       (version 20241209)
@@ -432,33 +455,38 @@ def test_merge_symbol_libs(tmp_path):
       )
     )
     """
-    
+
     lib1 = Sexp(lib1_content)
     lib2 = Sexp(lib2_content)
-    
+
     # Test merge with overwrite=False (should fail due to duplicate)
     with pytest.raises(ValueError, match="Cannot merge libraries.*common_part"):
         merged = merge_symbol_libs(lib1, lib2, overwrite=False)
-    
+
     # Test merge with overwrite=True
     merged = merge_symbol_libs(lib1, lib2, overwrite=True)
-    
+
     # Check that merged library has all symbols
     symbols = extract_symbols_from_lib(merged)
     symbol_names = [s[1] for s in symbols]
-    
+
     assert len(symbols) == 3
     assert "part1" in symbol_names
     assert "part2" in symbol_names
     assert "common_part" in symbol_names
-    
+
     # Verify that common_part from lib2 was used
     for symbol in symbols:
         if symbol[1] == "common_part":
             # Find the Reference property value
             for item in symbol:
-                if isinstance(item, list) and item[0] == 'property' and item[1] == 'Reference':
-                    assert item[2] == 'X'  # Should be from lib2, not lib1
+                if (
+                    isinstance(item, list)
+                    and item[0] == "property"
+                    and item[1] == "Reference"
+                ):
+                    assert item[2] == "X"  # Should be from lib2, not lib1
+
 
 def test_scrunch_option():
     """Test the scrunch option for compressing pins under top/bottom rows."""
@@ -469,51 +497,56 @@ def test_scrunch_option():
         ["1", "P1", "input", "left"],
         ["2", "P2", "output", "right"],
         ["3", "P3", "input", "top"],
-        ["4", "P4", "output", "bottom"]
+        ["4", "P4", "output", "bottom"],
     ]
-    
+
     # Generate symbol with scrunch=False (default)
     normal_symbol = generate_symbol(symbol_rows, sort_by="num")
-    
+
     # Generate symbol with scrunch=True
     scrunched_symbol = generate_symbol(symbol_rows, sort_by="num", scrunch=True)
-    
+
     # Convert to strings for easier comparison
     normal_str = str(normal_symbol)
     scrunched_str = str(scrunched_symbol)
-    
+
     # Both should have all pins
-    assert normal_str.count('(pin ') == 4
-    assert scrunched_str.count('(pin ') == 4
-    
+    assert normal_str.count("(pin ") == 4
+    assert scrunched_str.count("(pin ") == 4
+
     # Extract the rectangle dimensions
     # In normal layout, left/right pins are side by side with top/bottom
     # In scrunched layout, left/right pins are underneath top/bottom
-    
+
     # Helper function to extract rectangle coordinates from symbol string
     def get_rectangle_coords(symbol_str):
         import re
-        rect_match = re.search(r'\(rectangle\s+\(start\s+([\-\d\.]+)\s+([\-\d\.]+)\)\s+\(end\s+([\-\d\.]+)\s+([\-\d\.]+)\)', symbol_str)
+
+        rect_match = re.search(
+            r"\(rectangle\s+\(start\s+([\-\d\.]+)\s+([\-\d\.]+)\)\s+\(end\s+([\-\d\.]+)\s+([\-\d\.]+)\)",
+            symbol_str,
+        )
         if rect_match:
             return [float(rect_match.group(i)) for i in range(1, 5)]
         return None
-    
+
     normal_coords = get_rectangle_coords(normal_str)
     scrunched_coords = get_rectangle_coords(scrunched_str)
-    
+
     assert normal_coords is not None
     assert scrunched_coords is not None
-    
+
     # Extract width and height
     normal_width = abs(normal_coords[2] - normal_coords[0])
     normal_height = abs(normal_coords[3] - normal_coords[1])
-    
+
     scrunched_width = abs(scrunched_coords[2] - scrunched_coords[0])
     scrunched_height = abs(scrunched_coords[3] - scrunched_coords[1])
-    
+
     # Scrunched should be narrower and taller
     assert scrunched_width <= normal_width
     assert scrunched_height >= normal_height
+
 
 def test_bundle_option():
     """Test the bundle option for power pins."""
@@ -525,38 +558,45 @@ def test_bundle_option():
         ["2", "GND", "power", "left"],  # Same name, should be bundled
         ["3", "VCC", "power", "left"],
         ["4", "VCC", "power", "left"],  # Same name, should be bundled
-        ["5", "SIG", "input", "right"]  # Different type, should not be bundled
+        ["5", "SIG", "input", "right"],  # Different type, should not be bundled
     ]
-    
+
     # Generate symbol with bundle=False (default)
     normal_symbol = generate_symbol(symbol_rows, sort_by="num")
-    
+
     # Generate symbol with bundle=True
     bundled_symbol = generate_symbol(symbol_rows, sort_by="num", bundle=True)
-    
+
     # Convert to strings for easier comparison
     normal_str = str(normal_symbol)
     bundled_str = str(bundled_symbol)
-    
+
     # Normal should have 5 pins
-    assert normal_str.count('(pin ') == 5
-    
+    assert normal_str.count("(pin ") == 5
+
     # Bundled should have fewer pins (3 pins - one each for GND, VCC, and SIG)
     # But we need to check carefully since the S-expression might have other 'pin' instances
     # Let's count visible pins (ones without hide)
-    
+
     # Check that input pin doesn't get bundled
-    assert bundled_str.count('(pin input ') == 1
-    
+    assert bundled_str.count("(pin input ") == 1
+
     # Check that power pins get bundled
     power_pins_count = 0
-    power_in_indexes = [i for i, char in enumerate(bundled_str) if bundled_str[i:i+11] == '(pin power_']
+    power_in_indexes = [
+        i
+        for i, char in enumerate(bundled_str)
+        if bundled_str[i : i + 11] == "(pin power_"
+    ]
     for idx in power_in_indexes:
-        if '(hide yes)' not in bundled_str[idx:idx+100]:  # If no hide within reasonable distance
+        if (
+            "(hide yes)" not in bundled_str[idx : idx + 100]
+        ):  # If no hide within reasonable distance
             power_pins_count += 1
-    
+
     # Should have just one visible power_in pin for each group (GND and VCC)
     assert power_pins_count == 2
+
 
 def test_row_file_to_symbol_lib_file_with_merge(tmp_path):
     """Test merging behavior when overwriting existing library."""
@@ -572,13 +612,13 @@ pin,name,type,side
 1,P2,output,right
 """
     csv_path = tmp_path / "test.csv"
-    with open(csv_path, 'w') as f:
+    with open(csv_path, "w") as f:
         f.write(csv_content)
-    
+
     # Create an initial library
     output_path = tmp_path / "output.kicad_sym"
     row_file_to_symbol_lib_file(csv_path, symbol_lib_file=output_path)
-    
+
     # Create a CSV with a third part and an updated part1
     csv_content2 = """part1,
 Reference:,X
@@ -591,32 +631,37 @@ pin,name,type,side
 1,P3,input,top
 """
     csv_path2 = tmp_path / "test2.csv"
-    with open(csv_path2, 'w') as f:
+    with open(csv_path2, "w") as f:
         f.write(csv_content2)
-    
+
     # Update the library with overwrite=True to test merge
     row_file_to_symbol_lib_file(csv_path2, symbol_lib_file=output_path, overwrite=True)
-    
+
     # Read the resulting library
     with open(output_path) as f:
         content = f.read()
-    
+
     # All three parts should be in the library
     lib = Sexp(content)
     symbols = extract_symbols_from_lib(lib)
     symbol_names = [s[1] for s in symbols]
-    
+
     assert len(symbols) == 3
     assert "part1" in symbol_names
     assert "part2" in symbol_names
     assert "part3" in symbol_names
-    
+
     # part1 should have the updated reference (X instead of U)
     for symbol in symbols:
         if symbol[1] == "part1":
             for item in symbol:
-                if isinstance(item, list) and item[0] == 'property' and item[1] == 'Reference':
-                    assert item[2] == 'X'  # Should be updated to X
+                if (
+                    isinstance(item, list)
+                    and item[0] == "property"
+                    and item[1] == "Reference"
+                ):
+                    assert item[2] == "X"  # Should be updated to X
+
 
 def test_symbols_are_equal():
     """Test the symbols_are_equal function with various symbol configurations."""
@@ -634,7 +679,7 @@ def test_symbols_are_equal():
       )
     )
     """
-    
+
     # Same symbol with properties, pins, and units in different order
     symbol2_str = """
     (symbol "test_part"
@@ -649,7 +694,7 @@ def test_symbols_are_equal():
       )
     )
     """
-    
+
     # Symbol with different property value (should not be equal)
     symbol3_str = """
     (symbol "test_part"
@@ -664,7 +709,7 @@ def test_symbols_are_equal():
       )
     )
     """
-    
+
     # Symbol with different pin properties (should not be equal)
     symbol4_str = """
     (symbol "test_part"
@@ -679,7 +724,7 @@ def test_symbols_are_equal():
       )
     )
     """
-    
+
     # Symbol with different pin position (should not be equal)
     symbol5_str = """
     (symbol "test_part"
@@ -694,7 +739,7 @@ def test_symbols_are_equal():
       )
     )
     """
-    
+
     # Symbol with multiple units in different order (should be equal)
     symbol6_str = """
     (symbol "multi_unit"
@@ -710,7 +755,7 @@ def test_symbols_are_equal():
       )
     )
     """
-    
+
     symbol7_str = """
     (symbol "multi_unit"
       (property "Reference" "U")
@@ -725,7 +770,7 @@ def test_symbols_are_equal():
       )
     )
     """
-    
+
     # Parse all symbols
     symbol1 = Sexp(symbol1_str)
     symbol2 = Sexp(symbol2_str)
@@ -734,29 +779,32 @@ def test_symbols_are_equal():
     symbol5 = Sexp(symbol5_str)
     symbol6 = Sexp(symbol6_str)
     symbol7 = Sexp(symbol7_str)
-    
+
     # Test equality
     assert symbols_are_equal(symbol1, symbol2) == True
     assert symbols_are_equal(symbol1, symbol3) == False  # Different property value
     assert symbols_are_equal(symbol1, symbol4) == False  # Different pin name
     assert symbols_are_equal(symbol1, symbol5) == False  # Different pin position
-    assert symbols_are_equal(symbol6, symbol7) == True   # Units in different order
-    
+    assert symbols_are_equal(symbol6, symbol7) == True  # Units in different order
+
     # Test with generated symbols
     symbol_rows = [
         ["test_gen", ""],
         ["Reference:", "U"],
         ["pin", "name", "type", "side"],
         ["1", "IN", "input", "left"],
-        ["2", "OUT", "output", "right"]
+        ["2", "OUT", "output", "right"],
     ]
-    
+
     gen_symbol1 = generate_symbol(symbol_rows, sort_by="num")
-    gen_symbol2 = generate_symbol(symbol_rows, sort_by="name")  # Different sort but same content
+    gen_symbol2 = generate_symbol(
+        symbol_rows, sort_by="name"
+    )  # Different sort but same content
     add_quotes(gen_symbol1)
     add_quotes(gen_symbol2)
-    
+
     assert symbols_are_equal(gen_symbol1, gen_symbol2) == True
+
 
 def test_symbol_libs_are_equal():
     """Test the symbol_libs_are_equal function with various library configurations."""
@@ -781,7 +829,7 @@ def test_symbol_libs_are_equal():
       )
     )
     """
-    
+
     # Same library with symbols in different order
     lib2_content = """
     (kicad_symbol_lib
@@ -803,7 +851,7 @@ def test_symbol_libs_are_equal():
       )
     )
     """
-    
+
     # Library with different symbol properties (should not be equal)
     lib3_content = """
     (kicad_symbol_lib
@@ -825,7 +873,7 @@ def test_symbol_libs_are_equal():
       )
     )
     """
-    
+
     # Library with a different symbol name (should not be equal)
     lib4_content = """
     (kicad_symbol_lib
@@ -847,7 +895,7 @@ def test_symbol_libs_are_equal():
       )
     )
     """
-    
+
     # Library with different pin in a symbol (should not be equal)
     lib5_content = """
     (kicad_symbol_lib
@@ -869,21 +917,23 @@ def test_symbol_libs_are_equal():
       )
     )
     """
-    
+
     # Parse the libraries
     lib1 = Sexp(lib1_content)
     lib2 = Sexp(lib2_content)
     lib3 = Sexp(lib3_content)
     lib4 = Sexp(lib4_content)
     lib5 = Sexp(lib5_content)
-    
+
     # Test equality
-    assert symbol_libs_are_equal(lib1, lib1) == True  # Same library should be equal to itself
+    assert (
+        symbol_libs_are_equal(lib1, lib1) == True
+    )  # Same library should be equal to itself
     assert symbol_libs_are_equal(lib1, lib2) == True  # Same symbols in different order
     assert symbol_libs_are_equal(lib1, lib3) == False  # Different symbol property
     assert symbol_libs_are_equal(lib1, lib4) == False  # Different symbol name
     assert symbol_libs_are_equal(lib1, lib5) == False  # Different pin name
-    
+
     # Test with generated symbols
     rows1 = [
         ["part1", ""],
@@ -894,9 +944,9 @@ def test_symbol_libs_are_equal():
         ["part2", ""],
         ["Reference:", "U"],
         ["pin", "name", "type", "side"],
-        ["1", "IN2", "input", "left"]
+        ["1", "IN2", "input", "left"],
     ]
-    
+
     # Same symbols but in different order
     rows2 = [
         ["part2", ""],
@@ -907,35 +957,36 @@ def test_symbol_libs_are_equal():
         ["part1", ""],
         ["Reference:", "U"],
         ["pin", "name", "type", "side"],
-        ["1", "IN1", "input", "left"]
+        ["1", "IN1", "input", "left"],
     ]
-    
+
     # Generate symbol libraries
     lib1_generated = empty_symbol_lib()
     lib2_generated = empty_symbol_lib()
-    
+
     # Process each symbol for lib1
     symbol_row_groups1 = read_symbol_rows(rows1)
     for symbol_rows in symbol_row_groups1:
         symbol = generate_symbol(symbol_rows)
         lib1_generated.append(symbol)
-    
+
     # Process each symbol for lib2
     symbol_row_groups2 = read_symbol_rows(rows2)
     for symbol_rows in symbol_row_groups2:
         symbol = generate_symbol(symbol_rows)
         lib2_generated.append(symbol)
-    
+
     add_quotes(lib1_generated)
     add_quotes(lib2_generated)
-    
+
     # Test if generated libraries are equal
     assert symbol_libs_are_equal(lib1_generated, lib2_generated) == True
+
 
 def test_end_to_end_conversion(tmp_path):
     """
     Test end-to-end conversion from symbols to CSV and back to symbols.
-    
+
     This test performs the following steps:
     1. Creates a library of 10 random symbols
     2. Saves the library to a .kicad_sym file
@@ -943,43 +994,45 @@ def test_end_to_end_conversion(tmp_path):
     4. Converts the CSV file back to a .kicad_sym file
     5. Loads the new .kicad_sym file
     6. Compares the original and new libraries for equality
-    
+
     The test verifies that the conversion process is lossless and the resulting
     libraries contain the same symbols with the same properties.
     """
-    
+
     # Step 1: Create a library with 10 random symbols
     random_symbols_1 = generate_random_symbol_lib(10)
-    
+
     # Step 2: Store the library to a file
     add_quotes(random_symbols_1)
     sym_file_1 = tmp_path / "random_symbols_1.kicad_sym"
-    with open(sym_file_1, 'w') as f:
+    with open(sym_file_1, "w") as f:
         f.write(str(random_symbols_1))
     rmv_quotes(random_symbols_1)
-    
+
     # Step 3: Convert to CSV
     csv_file = tmp_path / "random_symbols_2.csv"
     symbol_lib_file_to_csv_file(sym_file_1, csv_file=csv_file, overwrite=True)
-    
+
     # Step 4: Convert CSV back to symbol library
     sym_file_2 = tmp_path / "random_symbols_2.kicad_sym"
     row_file_to_symbol_lib_file(csv_file, symbol_lib_file=sym_file_2, overwrite=True)
-    
+
     # Step 5: Read back the converted symbol library
-    with open(sym_file_2, 'r') as f:
+    with open(sym_file_2, "r") as f:
         random_symbols_2 = Sexp(f.read())
-    
+
     # Step 6: Compare the libraries for equality
-    assert symbol_libs_are_equal(random_symbols_1, random_symbols_2), \
-           "Symbol libraries are not equivalent after round-trip conversion"
-    
+    assert symbol_libs_are_equal(
+        random_symbols_1, random_symbols_2
+    ), "Symbol libraries are not equivalent after round-trip conversion"
+
     # Additional verification: Check that all original symbols are in the new library
     symbols1 = extract_symbols_from_lib(random_symbols_1)
     symbols2 = extract_symbols_from_lib(random_symbols_2)
-    assert len(symbols1) == len(symbols2), \
-           f"Symbol count mismatch: {len(symbols1)} vs {len(symbols2)}"
-    
+    assert len(symbols1) == len(
+        symbols2
+    ), f"Symbol count mismatch: {len(symbols1)} vs {len(symbols2)}"
+
     # Print some statistics about the test
     symbol_names = [s[1] for s in symbols1]
     print(f"Successfully performed round-trip conversion for {len(symbols1)} symbols:")
