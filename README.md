@@ -65,53 +65,62 @@ This will install two command-line utilities:
 
 KiPart is mainly intended to be used as a script:
 
-    usage: kipart [-h] [-v] [-r] [--side {left,right,top,bottom}] [-o OUTPUT] [-w] [-s {row,num,name}] [-a ALT_DELIMITER] [-b] [--scrunch] [--circulate] [-m]
-                input_files [input_files ...]
+    usage: kipart [-h] [-o OUTPUT] [-w] [-m] [-s {row,num,name}] [-r] [--ccw] [--scrunch] [--side {left,right,top,bottom}] [--push PUSH] [-a ALT_DELIMITER] [-b] [-v] input_files [input_files ...]
 
-    Convert CSV or Excel files to KiCad symbol libraries
+    Convert CSV or Excel files into KiCad symbol libraries
 
     positional arguments:
-    input_files           Input CSV or Excel files (.csv, .xlsx, .xls)
+    input_files           Input symbol pin data CSV or Excel files (.csv, .xlsx, .xls)
 
     options:
     -h, --help            show this help message and exit
-    -v, --version         show program's version number and exit
-    -r, --reverse         Sort pins in reverse order
-    --side {left,right,top,bottom}
-                            Which side to place the pins by default
     -o OUTPUT, --output OUTPUT
-                            Generated KiCad symbol library (.kicad_sym)
-    -w, --overwrite       Allow overwriting of an existing part library
+                            Output KiCad symbol library file (.kicad_sym)
+    -w, --overwrite       Allow overwriting of an existing symbol library
+    -m, --merge           Merge symbols into an existing library rather than overwriting completely
     -s {row,num,name}, --sort {row,num,name}
                             Sort the part pins by their entry order in the CSV file (row), their pin number (num), or their pin name (name)
+    -r, --reverse         Sort pins in reverse order
+    --ccw                 Arrange pins counter-clockwise around the symbol
+    --scrunch             Compress symbol pins on the left/right sides underneath the top/bottom sides
+    --side {left,right,top,bottom}
+                            Default side for pins without a side specifier
+    --push PUSH           Position of pin groups on each side (0.0=start, 0.5=centered, 1.0=end)
     -a ALT_DELIMITER, --alt-delimiter ALT_DELIMITER
                             Delimiter character for splitting pin names into alternatives
-    -b, --bundle          Bundle identically-named power or ground pins into single schematic pins
-    --scrunch             Compress pins of left/right columns underneath top/bottom rows
-    --circulate           Reverse the direction and starting point of pins on the top and right sides
-    -m, --merge           Merge with existing library rather than overwriting completely
+    -b, --bundle          Bundle identically-named power or ground input pins into single schematic pins
+    -v, --version         show program's version number and exit
 
 The main input to `kipart` is one or more CSV or Excel files.
 These contain the following items:
 
-1.  The part name or number stands alone on row. The following five
-    cells on the same row can contain: #. A reference prefix such as `R`
-    (defaults to `U` if left blank), #. A footprint such as
-    `Diodes_SMD:D_0603` (defaults to blank), #. A manufacturer\'s part
-    number such as `MT48LC16M16A2F4-6A:GTR` (defaults to blank). #. A
-    link to the part\'s datasheet. #. A description of the part.
-2.  The next non-blank row contains the column headers. The required
-    headers are \'Pin\' and \'Name\'. Optional columns are \'Unit\',
-    \'Side\', \'Type\', \'Style\', and \'Hidden\'. These can be placed
+1.  The part name or number stands alone in the first column of a row.
+2.  Part properties are listed on the following rows. Each property begins
+    with a property name followed by a colon and the property value. The
+    allowable properties are:
+
+    -   `Reference`: The reference designator such as `U`.
+    -   `Value`: The part value (often the same as the name).
+    -   `Footprint`: The part's package type (e.g., QFP, BGA, etc.).
+    -   `Datasheet`: A URL to the part's datasheet.
+    -   `Description`: A description of the part.
+    -   `Keywords`: Keywords for searching for the part.
+    -   `Filters`: The footprint filters for the part.
+    -   `Locked`: I have no idea what this does...
+
+3.  After the properties, the next row contains the column headers. The required
+    headers are `Pin` and `Name`. Optional columns are `Unit`,
+    `Side`, `Type`, `Style`, and `Hidden`. These can be placed
     in any order and in any column.
-3.  On each succeeding row, enter the pin number, name, unit identifier
-    (if the schematic symbol will have multiple units), pin type and
-    style. Each of these items should be entered in the column with the
-    appropriate header.
-    -   Pin numbers can be either numeric (e.g., \'69\') if the part is
-        a DIP or QFP, or they can be alphanumeric (e.g., \'C10\') if a
-        BGA or CSP is used. Using one or more [\*]{.title-ref}
-        characters instead of a pin number creates non-existent \"gap\"
+4.  Immediately after the column headers, each succeeding row contains the
+    following data for one of the part's pins: the pin number, name,
+    unit identifier (if the schematic symbol will have multiple units),
+    pin type and style. Each of these items should be entered in the
+    same column as the corresponding header.
+    -   Pin numbers can be either numeric (e.g., `69`) if the part is
+        a DIP or QFP, or they can be alphanumeric (e.g., `C10`) for
+        BGAs or CSPs. Using a \* character instead
+        of a pin number creates non-existent \"gap\"
         pins that can be used to visually separate the pins into groups.
         (This only works when the `-s row` sorting option is selected.)
 
@@ -123,24 +132,23 @@ These contain the following items:
         will be generated in the schematic symbol for each distinct unit
         identifier.
 
-    -   
+    -   The side column specifies the side of the symbol the pin will be placed on.
+        The allowable values are:
 
-        The side column specifies the side of the symbol the pin will be placed on. The allowable values are:
-
-        :   -   left
+            -   left
             -   right
             -   top
             -   bottom
 
-    -   
+    -   The type column specifies the electrical type of the pin.
+        The allowable values are:
 
-        The type column specifies the electrical type of the pin. The allowable values are:
-
-        :   -   input, inp, in, clk
+            -   input, inp, in, clk
             -   output, outp, out
             -   bidirectional, bidir, bi, inout, io, iop
-            -   tristate, tri
+            -   tristate, tri, tri_state, tristate
             -   passive, pass
+            -   free
             -   unspecified, un, analog
             -   power_in, pwr_in, pwrin, power, pwr, ground, gnd
             -   power_out, pwr_out, pwrout, pwr_o
@@ -148,44 +156,29 @@ These contain the following items:
             -   open_emitter, openemitter, open_emit, openemit, oe
             -   no_connect, noconnect, no_conn, noconn, nc
 
-    -   
+    -   The style column specifies the graphic representation of the pin.
+        The allowable pin styles are:
 
-        The style column specifies the graphic representation of the pin. The allowable pin styles are:
-
-        :   -   line, \<blank\>
-            -   inverted, inv, \~, \#
+            -   line, <blank>
+            -   inverted, inv, ~, #
             -   clock, clk, rising_clk
-            -   inverted_clock, inv_clk, clk_b, clk_n, \~clk, #clk
-            -   input_low, inp_low, in_lw, in_b, in_n, \~in, #in
-            -   clock_low, clk_low, clk_lw, clk_b, clk_n, \~clk, #clk
-            -   output_low, outp_low, out_lw, out_b, out_n, \~out, #out
-            -   falling_edge_clock, falling_clk, fall_clk
+            -   inverted_clock, inv_clk, clk_b, clk_n, ~clk, #clk
+            -   input_low, inp_low, in_lw, in_b, in_n, ~in, #in
+            -   clock_low, clk_low, clk_lw, clk_b, clk_n, ~clk, #clk
+            -   output_low, outp_low, out_lw, out_b, out_n, ~out, #out
+            -   edge_clock_high
             -   non_logic, nl, analog
 
-    -   The hidden column specifies whether the pin is visible in
-        Eeschema. This can be one of \'y\', \'yes\', \'t\', \'true\', or
-        \'1\' to make it invisible, anything else makes it visible.
-4.  A blank row ends the list of pins for the part.
-5.  Multiple parts (each consisting of name, column header and pin rows)
-    separated by blank lines are allowed in a single CSV file. Each part
-    will become a separate symbol in the KiCad library.
+    -   The hidden column specifies whether the pin is invisible.
+        This can be one of 'y', 'yes', 't', 'true', or
+        '1' to make it invisible, anything else makes it visible.
 
-When the option `-r xilinx7` is used, the individual pin files or entire
-.zip archives for the [Xilinx 7-Series
-FPGAs](http://www.xilinx.com/support/packagefiles/) can be processed.
+6.  A blank row ends the list of pins for the part.
+7.  Multiple parts (each consisting of a name, properties, column header
+    and pin data rows) separated by blank lines are allowed in a single CSV file.
+    Each part will become a separate symbol in the KiCad library.
 
-When the option `-r stm32cube` is used, the input file should be the pin
-layout file exported from the STM32CubeMx tool. To create this file,
-create a project with STM32CubeMx and then from window menu select
-\"Pinout -\> Generate CSV pinout text file\". If you select pin features
-or define labels for pins these will be reflected in the generated
-library symbol.
-
-When the option `-r lattice` is used, the input file should come from
-the Lattice website.
-
-The `-s` option specifies the arrangement of the pins in the schematic
-symbol:
+The `-s` option specifies the pin order on each side of the symbol:
 
 -   `-s row` places the pins in the order they were entered into the
     file.
@@ -196,60 +189,44 @@ symbol:
 
 The `--reverse` option reverses the sort order for the pins.
 
-Using the `--side` option you can set the default side for the pins. The
-option from the file will override the command line option. The default
-choice is `left`.
-
-Specifying the `-f` option enables *fuzzy matching* on the pin types,
-styles and sides used in the CSV file. So, for example, `ck` would match
-`clk` or `rgt` would match `right`.
-
-Specifying the `-b` option will place multiple pins with the identical
-names at the same location such that they can all attach to the same net
-with a single connection. This is helpful for handling the multiple VCC,
-GND, and NC pins found on many high pin-count devices.
-
-The `--annotation` option determines the suffix added to bundled pin names:
-
-:   -   `none`: No suffix is added.
-    -   `count`: The number of bundled pins is added as `[n]`.
-    -   `range`: The range of bundled pins is added as `[n:0]`.
-
-The `-w` option is used to overwrite an existing library with any new
-parts from the file. The old contents of the library are lost.
-
-The `-a` option is used to add parts to an existing library. If a part
-with the same name already exists, the new part will only overwrite it
-if the `-w` flag is also used. Any existing parts in the library that
-are not overwritten are retained.
-
-Specifying the `--fill` option will determine how symbol boxes are
-filled:
-
--   `no_fill`: Default. Schematic symbols are created with no filled
-    boxes.
--   `fg_fill`: Symbol boxes will be foreground filled
--   `bg_fill`: Symbol boxes will be background filled. (This is the
-    default.)
-
-The `--box_line_width` option sets the linewidth of the schematic symbol
-box in units of mils. The default setting is zero.
-
-The `--push` option affects the positions of the pins on each side of
-the schematic symbol box. A value of 0.0 pushes them to the upper-most
-or left-most position on the left/right or top/bottom sides. A value of
-1.0 pushes them to the bottom-most or right-most position on the
-left-right or top-bottom sides. A value of 0.5 (the default) centers
-them.
+The `--ccw` option arranges the pins running counter-clockwise
+around the symbol starting from the upper-left corner. If this
+option is not enabled, the pins on the left/right sides will run from
+top to bottom and the pins on the top/bottom sides will run from
+left to right.
 
 The `--scrunch` option will compress a three- or four-sided schematic
 symbol by moving the left and right columns of pins closer together so
 that their pin labels are shadowed by the pins on the top and bottom
 rows.
 
-By default, the first pin of a schematic symbol is placed at the origin.
-The `-c` option causes the centroid of the symbol to be placed at the
-origin.
+The `--side` option sets the default side for pins.
+Any pin with a side specified in its side column will override the command line option. The default choice for side is `left`.
+
+The `--push` option is used to set the position of the pins on each side of
+the schematic symbol box. A value of 0.0 pushes them to the upper-most
+or left-most position on the left/right or top/bottom sides. A value of
+1.0 pushes them to the bottom-most or right-most position on the
+left/right or top/bottom sides. A value of 0.5 (the default) centers
+them.
+
+Specifying the `-b` option will place multiple power input pins with the identical
+names at the same location such that they can all attach to the same net
+with a single connection. This is helpful for handling the multiple VCC and
+GND pins found on many high pin-count devices.
+
+The `-a` option specifies a delimiter for splitting pin names
+into alternates. This is useful for parts with pins having multiple
+functions. For example, `-a /` will split the pin name `IO1/SDA/MOSI` into
+a pin named `IO1` with two alternates names of `SDA` and `MOSI`.
+
+The `-w` option is used to overwrite an existing library with any new
+parts from the file. The old contents of the library are lost.
+
+The `-m` option is used to merge parts into an existing library. If a part
+with the same name already exists, the new part will only overwrite it
+if the `-w` flag is also used. Any existing parts in the library that
+are not overwritten are retained.
 
 #### Examples
 
