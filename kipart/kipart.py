@@ -65,6 +65,11 @@ try:
 except ImportError:
     __version__ = "unknown"
 
+# Constants for pin default settings
+DEFAULT_SIDE = "left"  # Default pin side for unspecified pins
+DEFAULT_STYLE = "line"  # Default pin style for unspecified pins
+DEFAULT_TYPE = "passive"  # Default pin type for unspecified pins
+
 # Constants for layout calculations
 FONT_SIZE = 1.27  # Default font size for pin names and numbers
 GRID_SPACING = 1.27  # Grid spacing for aligning pins and symbols
@@ -83,6 +88,7 @@ LR_SEPARATION = (
 TB_SEPARATION = (
     2 * GRID_SPACING
 )  # Minimum separation between opposing pin names on top and bottom sides
+DEFAULT_PUSH = 0.5  # Default push value for pin alignment (centered)
 
 # Enable/disable debugging diagnostics
 debug = False
@@ -798,11 +804,11 @@ def rows_to_symbol(
     symbol_rows,
     sort_by="row",
     reverse=False,
-    default_side="left",
-    default_type="passive",
-    default_style="line",
+    default_side=DEFAULT_SIDE,
+    default_type=DEFAULT_TYPE,
+    default_style=DEFAULT_STYLE,
     alt_pin_delim=None,
-    push=0.5,
+    push=DEFAULT_PUSH,
     bundle=False,
     scrunch=False,
     ccw=False,
@@ -1282,14 +1288,14 @@ def rows_to_symbol_lib(
     rows,
     sort_by="row",
     reverse=False,
-    default_side="left",
-    default_type="passive",
-    default_style="line",
+    default_side=DEFAULT_SIDE,
+    default_type=DEFAULT_TYPE,
+    default_style=DEFAULT_STYLE,
     alt_pin_delim=None,
     bundle=False,
     scrunch=False,
     ccw=False,
-    push=0.5,
+    push=DEFAULT_PUSH,
 ):
     """
     Generate a complete KiCad symbol library from CSV or Excel data.
@@ -1379,15 +1385,15 @@ def row_file_to_symbol_lib_file(
     symbol_lib_file=None,
     sort_by="row",
     reverse=False,
-    default_side="left",
-    default_type="passive",
-    default_style="line",
+    default_side=DEFAULT_SIDE,
+    default_type=DEFAULT_TYPE,
+    default_style=DEFAULT_STYLE,
     alt_pin_delim=None,
     overwrite=False,
     bundle=False,
     scrunch=False,
     ccw=False,
-    push=0.5,
+    push=DEFAULT_PUSH,
 ):
     """
     Convert a CSV or Excel file to a KiCad symbol library file.
@@ -1644,12 +1650,12 @@ def kipart():
     )
     parser.add_argument(
         "--type",
-        default="passive",
+        default=DEFAULT_TYPE,
         help="Default type for pins without a type specifier (e.g., input, output, bidirectional, passive)",
     )
     parser.add_argument(
         "--style",
-        default="line",
+        default=DEFAULT_STYLE,
         help="Default style for pins without a style specifier (e.g., line, inverted, clock)",
     )
     parser.add_argument(
