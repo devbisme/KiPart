@@ -1279,6 +1279,7 @@ def generate_symbol_lib(
     bundle=False,
     scrunch=False,
     ccw=False,
+    push=0.5,
 ):
     """
     Generate a complete KiCad symbol library from CSV or Excel data.
@@ -1305,6 +1306,9 @@ def generate_symbol_lib(
                                  Defaults to False.
         ccw (bool, optional): Reverse the direction and starting point of pins on the top 
                                    and right sides. Defaults to False.
+        push (float, optional): Controls position of pin groups on each side.
+                               0.0 places pins at start of side, 1.0 at end of side,
+                               0.5 (default) centers the pins.
 
     Returns:
         Sexp: Complete KiCad symbol library as an Sexp object, ready to write to file.
@@ -1331,6 +1335,7 @@ def generate_symbol_lib(
                 bundle=bundle,
                 scrunch=scrunch,
                 ccw=ccw,
+                push=push,
             )
             symbol_lib.append(symbol)
         except Exception as e:
@@ -1362,6 +1367,7 @@ def row_file_to_symbol_lib_file(
     bundle=False,
     scrunch=False,
     ccw=False,
+    push=0.5,
 ):
     """
     Convert a CSV or Excel file to a KiCad symbol library file.
@@ -1393,6 +1399,9 @@ def row_file_to_symbol_lib_file(
                                  Defaults to False.
         ccw (bool, optional): Reverse the direction and starting point of pins on the top 
                                    and right sides. Defaults to False.
+        push (float, optional): Controls position of pin groups on each side.
+                               0.0 places pins at start of side, 1.0 at end of side,
+                               0.5 (default) centers the pins.
 
     Returns:
         str: Path to the generated .kicad_sym file.
@@ -1426,6 +1435,7 @@ def row_file_to_symbol_lib_file(
         bundle=bundle,
         scrunch=scrunch,
         ccw=ccw,
+        push=push,
     )
 
     # If the output file already exists and overwrite is True, we need to merge
@@ -1530,7 +1540,8 @@ def kipart():
 
     Usage:
         kipart [-h] [-v] [-r] [--side {left,right,top,bottom}] [-o OUTPUT]
-               [-w] [-s {row,num,name}] [-a ALT_DELIMITER] [-b] [--scrunch] [--ccw] [-m] input_files [input_files ...]
+               [-w] [-s {row,num,name}] [-a ALT_DELIMITER] [-b] [--scrunch] [--ccw] 
+               [--push PUSH] [-m] input_files [input_files ...]
 
     Examples:
         kipart input.csv                # Generate input.kicad_sym
@@ -1539,6 +1550,8 @@ def kipart():
         kipart -b input.csv             # Bundle identical power/ground pins into single pins
         kipart --scrunch input.csv      # Compress pins of left/right columns under top/bottom rows
         kipart --ccw input.csv          # Reverse pin direction on top and right sides
+        kipart --push 0.0 input.csv     # Position pins at start of each side
+        kipart --push 1.0 input.csv     # Position pins at end of each side
         kipart -m existing.csv          # Merge with existing library instead of overwriting
 
     Args:
@@ -1600,6 +1613,12 @@ def kipart():
         help="Default side for pins without a side specifier",
     )
     parser.add_argument(
+        "--push",
+        type=float,
+        default=0.5,
+        help="Position of pin groups on each side (0.0=start, 0.5=centered, 1.0=end)",
+    )
+    parser.add_argument(
         "-a",
         "--alt-delimiter",
         dest="alt_delimiter",
@@ -1621,6 +1640,11 @@ def kipart():
     # Validate single input file with output option
     if args.output and len(args.input_files) > 1:
         print("Error: --output can only be used with a single input file")
+        sys.exit(1)
+        
+    # Validate push value is between 0 and 1
+    if args.push < 0.0 or args.push > 1.0:
+        print("Error: --push value must be between 0.0 and 1.0 inclusive")
         sys.exit(1)
 
     # Process each input file containing rows of symbol pin data
@@ -1645,6 +1669,7 @@ def kipart():
                 bundle=args.bundle,
                 scrunch=args.scrunch,
                 ccw=args.ccw,
+                push=args.push,
             )
             print(f"Generated {symbol_lib_file} successfully from {row_file}")
         except Exception as e:
