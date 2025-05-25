@@ -9,12 +9,14 @@ Excel file.
 
 -   Generates schematic part libraries for KiCad from CSV or Excel
     files.
--   Converts lists of pins in a file into a multi-unit schematic part
-    symbol.
--   Each row of the file lists the number, name, type, style, unit and
-    side of a pin.
--   Pins on a unit with the same name (e.g., GND) can be placed at the
-    same location so they can all be tied to the same net with a single
+-   Converts one or more lists of pins in a file into a library of 
+    multi-unit schematic part symbols.
+-   Each row of the file lists the number, name, type, style, and
+    unit of a pin along with what side of the symbol to place the pin on.
+-   Has several command-line options for controlling the arrangement and
+    order of the pins.
+-   Pins with the same name (e.g., GND) can be placed at the
+    same location so they can all be tied to a net with a single
     connection.
 -   Also includes `kilib2csv` for converting schematic part libraries
     into CSV files suitable for input to KiPart.
