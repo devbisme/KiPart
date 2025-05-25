@@ -5,16 +5,12 @@
 Generate multi-unit schematic symbols for KiCad from a CSV, text, or
 Excel file.
 
--   Free software: MIT license
--   Documentation: <https://devbisme.github.io/KiPart>.
-
 ## Features
 
--   Generates schematic part libraries for KiCad from CSV/text/Excel
+-   Generates schematic part libraries for KiCad from CSV or Excel
     files.
 -   Converts lists of pins in a file into a multi-unit schematic part
     symbol.
--   Converts multiple files stored in .zip archives.
 -   Each row of the file lists the number, name, type, style, unit and
     side of a pin.
 -   Pins on a unit with the same name (e.g., GND) can be placed at the
