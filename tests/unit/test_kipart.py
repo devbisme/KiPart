@@ -249,14 +249,14 @@ pin,name,type,side
         text=True,
     )
     assert result.returncode == 0
-    assert f"Generated {output_path}" in result.stdout
+    assert f"Created {output_path}" in result.stdout
     assert os.path.exists(output_path)
 
     # Test invalid input
     result = subprocess.run(
         ["kipart", str(tmp_path / "invalid.txt")], capture_output=True, text=True
     )
-    assert "Error processing" in result.stdout
+    assert "Error: Failed while processing" in result.stdout
     assert result.returncode != 0  # Script continues after error
 
 

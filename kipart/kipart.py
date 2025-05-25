@@ -862,7 +862,7 @@ def generate_symbol(
     # Enter default properties. User-specified property values will override these.
     # The entries in the property list are [value, x_offset, y_offset, text justification, hidden].
     properties = {
-        "Reference": ["U", 0, 1.5 * GRID_SPACING, "right", "no"],
+        "Reference": ["U", 0, 2.5 * GRID_SPACING, "right", "no"],
         "Value": [part_name, 0, 0.5 * GRID_SPACING, "right", "no"],
         "Footprint": ["", 0, 0, "right", "yes"],
         "Datasheet": ["", 0, 0, "right", "yes"],
@@ -1419,7 +1419,7 @@ def row_file_to_symbol_lib_file(
     # Check for an existing file
     if os.path.exists(symbol_lib_file) and not overwrite:
         raise ValueError(
-            f"Output file {symbol_lib_file} already exists. Use --overwrite to allow overwriting."
+            f"Output file {symbol_lib_file} already exists and overwriting has not been enabled."
         )
 
     # Read rows of symbol pin data from CSV or Excel file.
@@ -1636,28 +1636,44 @@ def kipart():
     )
 
     args = parser.parse_args()
-
-    # Validate single input file with output option
-    if args.output and len(args.input_files) > 1:
-        print("Error: --output can only be used with a single input file")
-        sys.exit(1)
         
     # Validate push value is between 0 and 1
     if args.push < 0.0 or args.push > 1.0:
         print("Error: --push value must be between 0.0 and 1.0 inclusive")
         sys.exit(1)
 
+    if len(args.input_files) == 0:
+        print("Error: No input files specified")
+        sys.exit(1)
+
+    # Merging automatically allows overwriting so further symbols can be added.
+    if args.merge:
+        args.overwrite = True
+
+    # If merging but no output file is specified, set output to the
+    # first input file's name with .kicad_sym extension.
+    if args.merge and not args.output:
+        args.output = os.path.splitext(args.input_files[0])[0] + ".kicad_sym"
+
+    # Do some checks on the output file if given.
+    if args.output:
+
+        # Make sure it's a KiCad symbol file.
+        if os.path.splitext(args.output)[1].lower() != ".kicad_sym":
+            print(f"Error: Output file {args.output} must have a .kicad_sym extension")
+            sys.exit(1)
+        
+        # If the output file already exists and we're not overwriting, exit.
+        if os.path.exists(args.output) and not args.overwrite:
+            print(
+                f"Error: Output file {args.output} already exists. Use -w to allow changes to it."
+            )
+            sys.exit(1)
+
     # Process each input file containing rows of symbol pin data
     error_flag = False
     for row_file in args.input_files:
         try:
-            # Determine if we should overwrite or merge
-            effective_overwrite = args.overwrite
-            if args.merge and os.path.exists(
-                os.path.splitext(row_file)[0] + ".kicad_sym"
-            ):
-                effective_overwrite = True  # Enable overwrite if merging
-
             symbol_lib_file = row_file_to_symbol_lib_file(
                 row_file,
                 symbol_lib_file=args.output,
@@ -1665,16 +1681,28 @@ def kipart():
                 reverse=args.reverse,
                 default_side=args.side,
                 alt_pin_delim=args.alt_delimiter,
-                overwrite=effective_overwrite,
+                overwrite=args.overwrite,
                 bundle=args.bundle,
                 scrunch=args.scrunch,
                 ccw=args.ccw,
                 push=args.push,
             )
-            print(f"Generated {symbol_lib_file} successfully from {row_file}")
+
+            if args.merge:
+                print(f"Merged symbols from {row_file} into {symbol_lib_file}")
+                args.overwrite = True  # Allow overwriting for subsequent files
+            else:
+                print(f"Created {symbol_lib_file} successfully from {row_file}")
+            
+            # If output is going to a single file, any subsequent files
+            # will be merged into it. So set the merge flag to True.
+            if args.output:
+                args.merge = True
+                args.overwrite = True  # Allow overwriting for subsequent files
+        
         except Exception as e:
             # raise
-            print(f"Error processing file '{row_file}': {str(e)}")
+            print(f"Error: Failed while processing file '{row_file}': {str(e)}")
             error_flag = True
             continue
 
