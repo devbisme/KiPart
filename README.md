@@ -65,7 +65,7 @@ This will install two command-line utilities:
 
 KiPart is mainly intended to be used as a script:
 
-    usage: kipart [-h] [-o OUTPUT] [-w] [-m] [-s {row,num,name}] [-r] [--ccw] [--scrunch] [--side {left,right,top,bottom}] [--push PUSH] [-a ALT_DELIMITER] [-b] [-v] input_files [input_files ...]
+    usage: kipart [-h] [-o OUTPUT] [-w] [-m] [-s {row,num,name}] [-r] [--ccw] [--scrunch] [--side {left,right,top,bottom}] [--type TYPE] [--style STYLE] [--push PUSH] [-a ALT_DELIMITER] [-b] [-v] input_files [input_files ...]
 
     Convert CSV or Excel files into KiCad symbol libraries
 
@@ -85,13 +85,15 @@ KiPart is mainly intended to be used as a script:
     --scrunch             Compress symbol pins on the left/right sides underneath the top/bottom sides
     --side {left,right,top,bottom}
                             Default side for pins without a side specifier
+    --type TYPE           Default type for pins without a type specifier (e.g., input, output, bidirectional, passive)
+    --style STYLE         Default style for pins without a style specifier (e.g., line, inverted, clock)
     --push PUSH           Position of pin groups on each side (0.0=start, 0.5=centered, 1.0=end)
     -a ALT_DELIMITER, --alt-delimiter ALT_DELIMITER
                             Delimiter character for splitting pin names into alternatives
     -b, --bundle          Bundle identically-named power or ground input pins into single schematic pins
     -v, --version         show program's version number and exit
 
-The main input to `kipart` is one or more CSV or Excel files.
+The input to `kipart` is one or more CSV or Excel files.
 These contain the following items:
 
 1.  The part name or number stands alone in the first column of a row.
@@ -200,8 +202,9 @@ symbol by moving the left and right columns of pins closer together so
 that their pin labels are shadowed by the pins on the top and bottom
 rows.
 
-The `--side` option sets the default side for pins.
-Any pin with a side specified in its side column will override the command line option. The default choice for side is `left`.
+The `--side`, `--type`, and `--style` options set the default
+side, I/O type, and graphic style for pins that don't have these
+specified in the CSV file.
 
 The `--push` option is used to set the position of the pins on each side of
 the schematic symbol box. A value of 0.0 pushes them to the upper-most
