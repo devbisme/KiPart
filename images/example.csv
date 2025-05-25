@@ -1,0 +1,72 @@
+example_part_1
+Pin,    Type,           Name
+23,     input,          A5
+90,     output,         B1
+88,     bidirectional,  C3
+56,     tristate,       D22
+84,     tristate,       D3
+16,     power_in,       VCC
+5,      power_in,       GND
+29,     power_in,       VCC
+98,     power_in,       GND
+99,     power_in,       VCC
+59,     power_in,       GND
+
+example_part_2
+Pin,    Unit,   Type,           Name
+23,     IO,     input,          A5
+90,     IO,     output,         B1
+88,     IO,     bidirectional,  C3
+56,     IO,     tristate,       D22
+84,     IO,     tristate,       D3
+16,     PWR,    power_in,       VCC
+5,      PWR,    power_in,       GND
+29,     PWR,    power_in,       VCC
+98,     PWR,    power_in,       GND
+99,     PWR,    power_in,       VCC
+59,     PWR,    power_in,       GND
+
+example_part_3
+Pin,    Unit,     Type,           Name,   Side
+23,     1,        input,          A5,     left
+90,     1,        output,         B1,     right
+88,     1,        bidirectional,  C3,     left
+56,     1,        tristate,       D22,    right
+84,     1,        tristate,       D3,     right
+16,     1,        power_in,       VCC,    top
+5,      1,        power_in,       GND,    bottom
+29,     1,        power_in,       VCC,    top
+98,     1,        power_in,       GND,    bottom
+99,     1,        power_in,       VCC,    top
+59,     1,        power_in,       GND,    bottom
+
+a_part_with_secrets
+Pin,    Name,   Type,   Side,   Style,      Hidden
+1,      N.C.,   in,     left,   clk_low,    Y
+2,      GND,    pwr,    left,   ,           yes
+3,      SS_INH, in,     left,   ,           True
+4,      OSC,    in,     left,   ,
+5,      A1,     out,    right,  ,           False
+
+example_part_4
+Pin,    Name,   Side
+1,      P1,     left
+2,      P2,     left
+3,      P3,     left
+4,      P4,     left
+5,      P5,     left
+6,      P6,     bottom
+7,      P7,     bottom
+8,      P8,     bottom
+9,      P9,     bottom
+10,     P10,    bottom
+11,     P11,    right
+12,     P12,    right
+13,     P13,    right
+14,     P14,    right
+15,     P15,    right
+16,     P16,    top
+17,     P17,    top
+18,     P18,    top
+19,     P19,    top
+20,     P20,    top

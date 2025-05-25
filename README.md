@@ -230,38 +230,37 @@ are not overwritten are retained.
 
 #### Examples
 
-KiPart can handle single or multiple input files. The simplest case is
+KiPart can process one or more input files. The simplest case is
 generating a symbol library from a single CSV file. The following
 command will process the `file.csv` file and place the symbols in
-`file.lib`:
+`file.kicad_sym`:
 
     kipart file.csv
 
 This also works with multiple input files with a separate library
 created for each CSV file:
 
-    kipart file1.csv file2.csv  # Creates file1.lib and file2.lib.
+    kipart file1.csv file2.csv  # Creates file1.kicad_sym and file2.kicad_sym.
 
 Symbols from multiple CSV files can be placed into a single library
 using the `-o` option:
 
-    kipart file1.csv file2.csv -o total.lib
+    kipart file1.csv file2.csv -o total.kicad_sym
 
-If `total.lib` already exists, the previous command will report that the
+If `total.kicad_sym` already exists, the previous command will report that the
 file cannot be overwritten. Use the `-w` option to force the overwrite:
 
-    kipart file1.csv file2.csv -w -o total.lib
+    kipart file1.csv file2.csv -w -o total.kicad_sym
 
-Symbol libraries can also be built incrementally by appending symbols
-generated from CSV files:
+Symbol libraries can also be built incrementally using the `-m` option that
+merges symbols generated from one or more CSV files into an existing library:
 
-    kipart file3.csv file4.csv -a -o total.lib
+    kipart file3.csv file4.csv -m -o total.kicad_sym
 
 Assume the following data for a single-unit part is placed into the
-[example.csv]{.title-ref} file:
+`example.csv` file:
 
-    example_part
-
+    example_part_1
     Pin,    Type,           Name
     23,     input,          A5
     90,     output,         B1
@@ -275,23 +274,23 @@ Assume the following data for a single-unit part is placed into the
     99,     power_in,       VCC
     59,     power_in,       GND
 
-Then the command `kipart example.csv -o example1.lib` will create a
+Then the command `kipart example.csv` will create a
 schematic symbol where the pins are arranged in the order of the rows in
 the CSV file they are on:
 
 ![image](images/example1.png)
 
-The command `kipart -s num example.csv -o example2.lib` will create a
+The command `kipart -s num example.csv` will create a
 schematic symbol where the pins are arranged by their pin numbers:
 
 ![image](images/example2.png)
 
-The command `kipart -s name example.csv -o example3.lib` will create a
+The command `kipart -s name example.csv` will create a
 schematic symbol where the pins are arranged by their names:
 
 ![image](images/example3.png)
 
-The command `kipart -b example.csv -o example4.lib` will bundle power
+The command `kipart -b example.csv` will bundle power
 pins with identical names (like `GND` and `VCC`) into single pins like
 so:
 
@@ -300,8 +299,7 @@ so:
 Or you could divide the part into two units: one for I/O pins and the
 other for power pins by adding a `Unit` column like this:
 
-    example_part
-
+    example_part_2
     Pin,    Unit,   Type,           Name
     23,     IO,     input,          A5
     90,     IO,     output,         B1
@@ -315,7 +313,7 @@ other for power pins by adding a `Unit` column like this:
     99,     PWR,    power_in,       VCC
     59,     PWR,    power_in,       GND
 
-Then the command `kipart -b example.csv -o example5.lib` results in a
+Then the command `kipart -b example.csv` results in a
 part symbol having two separate units:
 
 ![image](images/example5_1.png)
@@ -326,8 +324,7 @@ As an alternative, you could go back to a single unit with all the
 inputs on the left side, all the outputs on the right side, the `VCC`
 pins on the top and the `GND` pins on the bottom:
 
-    example_part
-
+    example_part_3
     Pin,    Unit,   Type,           Name,   Side
     23,     1,      input,          A5,     left
     90,     1,      output,         B1,     right
@@ -341,7 +338,7 @@ pins on the top and the `GND` pins on the bottom:
     99,     1,      power_in,       VCC,    top
     59,     1,      power_in,       GND,    bottom
 
-Running the command `kipart -b example.csv -o example6.lib` generates a
+Running the command `kipart -b example.csv` generates a
 part symbol with pins on all four sides:
 
 ![image](images/example6.png)
@@ -350,7 +347,6 @@ If the input file has a `Hidden` column, then some, none, or all pins
 can be made invisible:
 
     a_part_with_secrets
-
     Pin,    Name,   Type,   Side,   Style,      Hidden
     1,      N.C.,   in,     left,   clk_low,    Y
     2,      GND,    pwr,    left,   ,           yes
@@ -362,9 +358,58 @@ In the Part Library Editor, hidden pins are grayed out:
 
 ![image](images/hidden_editor.png)
 
-But in Eeschema, they won\'t be visible at all:
+But in Eeschema, they won't be visible at all:
 
 ![image](images/hidden_eeschema.png)
+
+There are two methods for arranging the pins around the periphery
+of the symbol. The default method is to place the pins running
+from top-to-bottom on the left and right sides and from
+left-to-right on the top and bottom sides.
+For a four-sided part, with the following pin data:
+
+    example_part_4
+    Pin,    Name,   Side
+    1,      P1,     left
+    2,      P2,     left
+    3,      P3,     left
+    4,      P4,     left
+    5,      P5,     left
+    6,      P6,     bottom
+    7,      P7,     bottom
+    8,      P8,     bottom
+    9,      P9,     bottom
+    10,     P10,    bottom
+    11,     P11,    right
+    12,     P12,    right
+    13,     P13,    right
+    14,     P14,    right
+    15,     P15,    right
+    16,     P16,    top
+    17,     P17,    top
+    18,     P18,    top
+    19,     P19,    top
+    20,     P20,    top
+
+Then the command `kipart example.csv -s num` will result in the following symbol:
+
+![image](images/quadpart.png)
+
+The pin arrangement shown above is often not what you want.
+The `--ccw` enables an alternative method where the pins are placed
+counter-clockwise starting from the upper-left corner.
+The command `kipart example.csv -s num --ccw`
+generates the following symbol:
+
+![image](images/quadpart_ccw.png)
+
+The `--scrunch` option will compress the
+symbol by moving the left and right columns of pins closer together
+so that their pin labels are pushed under the pins on the top and
+bottom rows. Using `kipart example.csv -s num --ccw --scrunch`
+gives the following symbol:
+
+![image](images/quadpart_ccw_scrunch.png)
 
 ### kilib2csv
 
@@ -375,20 +420,19 @@ the CSV file can be manipulated with a spreadsheet and used as input to
 KiPart. **(Note that any stylized part symbol graphics will be lost in
 the conversion. KiPart only supports boring, box-like part symbols.)**
 
-    usage: kilib2csv [-h] [-v] [-o [file.csv]] [-a] [-w] file.lib [file.lib ...]
+    usage: kilib2csv [-h] [-o OUTPUT] [-w] [-v] input_files [input_files ...]
 
-    Convert a KiCad schematic symbol library file into a CSV file for KiPart.
+    Parse KiCad symbol libraries to CSV files
 
     positional arguments:
-      file.lib              KiCad schematic symbol library.
+    input_files           Input KiCad symbol library files (.kicad_sym)
 
-    optional arguments:
-      -h, --help            show this help message and exit
-      -v, --version         show program's version number and exit
-      -o [file.csv], --output [file.csv]
-                            CSV file created from schematic library file.
-      -a, --append          Append to an existing CSV file.
-      -w, --overwrite       Allow overwriting of an existing CSV file.
+    options:
+    -h, --help            show this help message and exit
+    -o OUTPUT, --output OUTPUT
+                            Output CSV file path
+    -w, --overwrite       Allow overwriting of an existing CSV file
+    -v, --version         show program's version number and exit
 
 This utility handles single and multiple input files in the same manner
 as KiPart and supports some of the same options for overwriting and
