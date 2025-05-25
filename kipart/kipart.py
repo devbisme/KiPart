@@ -800,6 +800,7 @@ def generate_symbol(
     reverse=False,
     default_side="left",
     default_type="passive",
+    default_style="line",
     alt_pin_delim=None,
     push=0.5,
     bundle=False,
@@ -830,6 +831,9 @@ def generate_symbol(
         default_type (str, optional): Default type for pins without a type specified.
                                      Valid values: 'input', 'output', 'bidirectional', etc.
                                      Defaults to 'passive'.
+        default_style (str, optional): Default style for pins without a style specified.
+                                      Valid values: 'line', 'inverted', 'clock', etc.
+                                      Defaults to 'line'.
         alt_pin_delim (str, optional): Delimiter for splitting pin names into
                                       alternatives. Defaults to None (no splitting).
         push (float, optional): When 0, pins start at the top/left-most position on a side.
@@ -967,7 +971,7 @@ def generate_symbol(
             "style": (
                 str_to_style(row[column_map["style"]])
                 if "style" in column_map and row[column_map["style"]].strip()
-                else "line"
+                else default_style
             ),
             "hidden": (
                 yntf_to_yesno(row[column_map["hidden"]].strip())
@@ -1280,6 +1284,7 @@ def generate_symbol_lib(
     reverse=False,
     default_side="left",
     default_type="passive",
+    default_style="line",
     alt_pin_delim=None,
     bundle=False,
     scrunch=False,
@@ -1306,6 +1311,9 @@ def generate_symbol_lib(
         default_type (str, optional): Default type for pins without a type specified.
                                      Valid values: 'input', 'output', 'bidirectional', etc.
                                      Defaults to 'passive'.
+        default_style (str, optional): Default style for pins without a style specified.
+                                      Valid values: 'line', 'inverted', 'clock', etc.
+                                      Defaults to 'line'.
         alt_pin_delim (str, optional): Delimiter for splitting pin names into
                                       alternatives. Defaults to None (no splitting).
         bundle (bool, optional): Bundle identically-named power or ground pins into single pins.
@@ -1340,6 +1348,7 @@ def generate_symbol_lib(
                 reverse=reverse,
                 default_side=default_side,
                 default_type=default_type,
+                default_style=default_style,
                 alt_pin_delim=alt_pin_delim,
                 bundle=bundle,
                 scrunch=scrunch,
@@ -1372,6 +1381,7 @@ def row_file_to_symbol_lib_file(
     reverse=False,
     default_side="left",
     default_type="passive",
+    default_style="line",
     alt_pin_delim=None,
     overwrite=False,
     bundle=False,
@@ -1402,6 +1412,9 @@ def row_file_to_symbol_lib_file(
         default_type (str, optional): Default type for pins without a type specified.
                                      Valid values: 'input', 'output', 'bidirectional', etc.
                                      Defaults to 'passive'.
+        default_style (str, optional): Default style for pins without a style specified.
+                                      Valid values: 'line', 'inverted', 'clock', etc.
+                                      Defaults to 'line'.
         alt_pin_delim (str, optional): Delimiter for splitting pin names into
                                       alternatives. Defaults to None (no splitting).
         overwrite (bool, optional): Allow overwriting or merging with existing output file.
@@ -1445,6 +1458,7 @@ def row_file_to_symbol_lib_file(
         reverse=reverse,
         default_side=default_side,
         default_type=default_type,
+        default_style=default_style,
         alt_pin_delim=alt_pin_delim,
         bundle=bundle,
         scrunch=scrunch,
@@ -1553,7 +1567,7 @@ def kipart():
     Command-line interface for generating KiCad symbol libraries from CSV or Excel files.
 
     Usage:
-        kipart [-h] [-v] [-r] [--side {left,right,top,bottom}] [--type TYPE]
+        kipart [-h] [-v] [-r] [--side {left,right,top,bottom}] [--type TYPE] [--style STYLE]
                [-o OUTPUT] [-w] [-s {row,num,name}] [-a ALT_DELIMITER] [-b] [--scrunch] 
                [--ccw] [--push PUSH] [-m] input_files [input_files ...]
 
@@ -1568,6 +1582,7 @@ def kipart():
         kipart --push 1.0 input.csv     # Position pins at end of each side
         kipart -m existing.csv          # Merge with existing library instead of overwriting
         kipart --type input input.csv   # Set default pin type to 'input' for unspecified pins
+        kipart --style inverted input.csv # Set default pin style to 'inverted' for unspecified pins
 
     Args:
         None (uses sys.argv via argparse).
@@ -1633,6 +1648,11 @@ def kipart():
         help="Default type for pins without a type specifier (e.g., input, output, bidirectional, passive)",
     )
     parser.add_argument(
+        "--style",
+        default="line",
+        help="Default style for pins without a style specifier (e.g., line, inverted, clock)",
+    )
+    parser.add_argument(
         "--push",
         type=float,
         default=0.5,
@@ -1668,6 +1688,14 @@ def kipart():
     except ValueError:
         print(f"Error: Invalid pin type '{args.type}'")
         print("Valid types: input, output, bidirectional, power_in, power_out, passive, etc.")
+        sys.exit(1)
+        
+    # Validate the default style value
+    try:
+        default_style = str_to_style(args.style)
+    except ValueError:
+        print(f"Error: Invalid pin style '{args.style}'")
+        print("Valid styles: line, inverted, clock, inverted_clock, non_logic, etc.")
         sys.exit(1)
 
     if len(args.input_files) == 0:
@@ -1709,6 +1737,7 @@ def kipart():
                 reverse=args.reverse,
                 default_side=args.side,
                 default_type=default_type,
+                default_style=default_style,
                 alt_pin_delim=args.alt_delimiter,
                 overwrite=args.overwrite,
                 bundle=args.bundle,
