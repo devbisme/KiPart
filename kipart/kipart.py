@@ -1659,7 +1659,7 @@ def kipart():
     if args.output:
 
         # Make sure it's a KiCad symbol file.
-        if os.path.splitext(args.output)[1].lower() != ".kicad_sym":
+        if os.path.splitext(args.output)[1] != ".kicad_sym":
             print(f"Error: Output file {args.output} must have a .kicad_sym extension")
             sys.exit(1)
         
