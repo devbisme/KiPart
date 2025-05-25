@@ -803,7 +803,7 @@ def generate_symbol(
     push=0.5,
     bundle=False,
     scrunch=False,
-    circulate=False,
+    ccw=False,
 ):
     """
     Generate a KiCad symbol S-expression from CSV rows.
@@ -834,7 +834,7 @@ def generate_symbol(
         bundle (bool, optional): Bundle identically-named power or ground pins. Defaults to False.
         scrunch (bool, optional): Compress pins of left/right columns underneath top/bottom rows.
                                  Defaults to False.
-        circulate (bool, optional): Reverse the direction and starting point of pins on the top 
+        ccw (bool, optional): Reverse the direction and starting point of pins on the top 
                                    and right sides. Defaults to False.
 
     Returns:
@@ -1175,8 +1175,8 @@ def generate_symbol(
             elif side == "right":
                 ctr_offset = gridify(push * (lr_height - pin_cnt * PIN_HEIGHT))
                 x = x1 + PIN_LENGTH
-                if circulate:
-                    # Start from bottom, go upward when circulate is True
+                if ccw:
+                    # Start from bottom, go upward when ccw is True
                     y = y0 + tb_height + ctr_offset + PIN_HEIGHT / 2
                     dx, dy = 0, PIN_SPACING
                 else:
@@ -1187,8 +1187,8 @@ def generate_symbol(
 
             # Set parameters for placing pins on the top side
             elif side == "top":
-                if circulate:
-                    # Start from right, go leftward when circulate is True
+                if ccw:
+                    # Start from right, go leftward when ccw is True
                     if scrunch:
                         ctr_offset = gridify(push * (unit_width - pin_cnt * PIN_HEIGHT))
                         x = x0 + unit_width - ctr_offset - PIN_HEIGHT / 2
@@ -1278,7 +1278,7 @@ def generate_symbol_lib(
     alt_pin_delim=None,
     bundle=False,
     scrunch=False,
-    circulate=False,
+    ccw=False,
 ):
     """
     Generate a complete KiCad symbol library from CSV or Excel data.
@@ -1303,7 +1303,7 @@ def generate_symbol_lib(
                                Defaults to False.
         scrunch (bool, optional): Compress pins of left/right columns underneath top/bottom rows.
                                  Defaults to False.
-        circulate (bool, optional): Reverse the direction and starting point of pins on the top 
+        ccw (bool, optional): Reverse the direction and starting point of pins on the top 
                                    and right sides. Defaults to False.
 
     Returns:
@@ -1330,7 +1330,7 @@ def generate_symbol_lib(
                 alt_pin_delim=alt_pin_delim,
                 bundle=bundle,
                 scrunch=scrunch,
-                circulate=circulate,
+                ccw=ccw,
             )
             symbol_lib.append(symbol)
         except Exception as e:
@@ -1361,7 +1361,7 @@ def row_file_to_symbol_lib_file(
     overwrite=False,
     bundle=False,
     scrunch=False,
-    circulate=False,
+    ccw=False,
 ):
     """
     Convert a CSV or Excel file to a KiCad symbol library file.
@@ -1391,7 +1391,7 @@ def row_file_to_symbol_lib_file(
                                Defaults to False.
         scrunch (bool, optional): Compress pins of left/right columns underneath top/bottom rows.
                                  Defaults to False.
-        circulate (bool, optional): Reverse the direction and starting point of pins on the top 
+        ccw (bool, optional): Reverse the direction and starting point of pins on the top 
                                    and right sides. Defaults to False.
 
     Returns:
@@ -1425,7 +1425,7 @@ def row_file_to_symbol_lib_file(
         alt_pin_delim=alt_pin_delim,
         bundle=bundle,
         scrunch=scrunch,
-        circulate=circulate,
+        ccw=ccw,
     )
 
     # If the output file already exists and overwrite is True, we need to merge
@@ -1530,7 +1530,7 @@ def kipart():
 
     Usage:
         kipart [-h] [-v] [-r] [--side {left,right,top,bottom}] [-o OUTPUT]
-               [-w] [-s {row,num,name}] [-a ALT_DELIMITER] [-b] [--scrunch] [--circulate] [-m] input_files [input_files ...]
+               [-w] [-s {row,num,name}] [-a ALT_DELIMITER] [-b] [--scrunch] [--ccw] [-m] input_files [input_files ...]
 
     Examples:
         kipart input.csv                # Generate input.kicad_sym
@@ -1538,7 +1538,7 @@ def kipart():
         kipart -s num -r *.csv          # Generate libraries with pins sorted by number (descending)
         kipart -b input.csv             # Bundle identical power/ground pins into single pins
         kipart --scrunch input.csv      # Compress pins of left/right columns under top/bottom rows
-        kipart --circulate input.csv    # Reverse pin direction on top and right sides
+        kipart --ccw input.csv          # Reverse pin direction on top and right sides
         kipart -m existing.csv          # Merge with existing library instead of overwriting
 
     Args:
@@ -1552,28 +1552,25 @@ def kipart():
         1: If errors occur during processing.
     """
     parser = argparse.ArgumentParser(
-        description="Convert CSV or Excel files to KiCad symbol libraries"
+        description="Convert CSV or Excel files into KiCad symbol libraries"
     )
     parser.add_argument(
-        "-v", "--version", action="version", version=f"%(prog)s {__version__}"
+        "input_files", nargs="+", help="Input symbol pin data CSV or Excel files (.csv, .xlsx, .xls)"
     )
     parser.add_argument(
-        "-r", "--reverse", action="store_true", help="Sort pins in reverse order"
-    )
-    parser.add_argument(
-        "--side",
-        choices=["left", "right", "top", "bottom"],
-        default="left",
-        help="Which side to place the pins by default",
-    )
-    parser.add_argument(
-        "-o", "--output", help="Generated KiCad symbol library (.kicad_sym)"
+        "-o", "--output", help="Output KiCad symbol library file (.kicad_sym)"
     )
     parser.add_argument(
         "-w",
         "--overwrite",
         action="store_true",
-        help="Allow overwriting of an existing part library",
+        help="Allow overwriting of an existing symbol library",
+    )
+    parser.add_argument(
+        "-m",
+        "--merge",
+        action="store_true",
+        help="Merge symbols into an existing library rather than overwriting completely",
     )
     parser.add_argument(
         "-s",
@@ -1582,6 +1579,25 @@ def kipart():
         default="row",
         help="Sort the part pins by their entry order in the CSV file (row), "
         "their pin number (num), or their pin name (name)",
+    )
+    parser.add_argument(
+        "-r", "--reverse", action="store_true", help="Sort pins in reverse order"
+    )
+    parser.add_argument(
+        "--ccw",
+        action="store_true",
+        help="Arrange pins counter-clockwise around the symbol",
+    )
+    parser.add_argument(
+        "--scrunch",
+        action="store_true",
+        help="Compress symbol pins on the left/right sides underneath the top/bottom sides",
+    )
+    parser.add_argument(
+        "--side",
+        choices=["left", "right", "top", "bottom"],
+        default="left",
+        help="Default side for pins without a side specifier",
     )
     parser.add_argument(
         "-a",
@@ -1594,26 +1610,10 @@ def kipart():
         "-b",
         "--bundle",
         action="store_true",
-        help="Bundle identically-named power or ground pins into single schematic pins",
+        help="Bundle identically-named power or ground input pins into single schematic pins",
     )
     parser.add_argument(
-        "--scrunch",
-        action="store_true",
-        help="Compress pins of left/right columns underneath top/bottom rows",
-    )
-    parser.add_argument(
-        "--circulate",
-        action="store_true",
-        help="Reverse the direction and starting point of pins on the top and right sides",
-    )
-    parser.add_argument(
-        "-m",
-        "--merge",
-        action="store_true",
-        help="Merge with existing library rather than overwriting completely",
-    )
-    parser.add_argument(
-        "input_files", nargs="+", help="Input CSV or Excel files (.csv, .xlsx, .xls)"
+        "-v", "--version", action="version", version=f"%(prog)s {__version__}"
     )
 
     args = parser.parse_args()
@@ -1644,7 +1644,7 @@ def kipart():
                 overwrite=effective_overwrite,
                 bundle=args.bundle,
                 scrunch=args.scrunch,
-                circulate=args.circulate,
+                ccw=args.ccw,
             )
             print(f"Generated {symbol_lib_file} successfully from {row_file}")
         except Exception as e:
@@ -1684,17 +1684,17 @@ def kilib2csv():
         description="Parse KiCad symbol libraries to CSV files"
     )
     parser.add_argument(
-        "-v", "--version", action="version", version=f"%(prog)s {__version__}"
+        "input_files", nargs="+", help="Input KiCad symbol library files (.kicad_sym)"
     )
     parser.add_argument("-o", "--output", help="Output CSV file path")
     parser.add_argument(
         "-w",
         "--overwrite",
         action="store_true",
-        help="Allow overwriting of an existing output file",
+        help="Allow overwriting of an existing CSV file",
     )
     parser.add_argument(
-        "input_files", nargs="+", help="Input KiCad symbol library files (.kicad_sym)"
+        "-v", "--version", action="version", version=f"%(prog)s {__version__}"
     )
 
     args = parser.parse_args()
