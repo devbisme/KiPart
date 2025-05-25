@@ -12,15 +12,15 @@ from kipart.kipart import (
     symbol_to_csv_rows,
     read_row_file,
     read_symbol_rows,
-    generate_symbol,
+    rows_to_symbol,
     add_quotes,
     rmv_quotes,
     row_file_to_symbol_lib_file,
     symbol_lib_file_to_csv_file,
-    empty_symbol_lib,
+    create_empty_symbol_lib,
     merge_symbol_libs,
 )
-from kipart.random_symbol import generate_random_symbol_lib
+from kipart.random_symbol import create_random_symbol_lib
 from kipart.compare_symbols import symbols_are_equal, symbol_libs_are_equal
 
 
@@ -172,7 +172,7 @@ def test_read_symbol_rows():
         read_symbol_rows([])
 
 
-def test_generate_symbol():
+def test_rows_to_symbol():
     """Test generating a symbol S-expression from CSV rows."""
     symbol_rows = [
         ["my_part", ""],
@@ -181,7 +181,7 @@ def test_generate_symbol():
         ["1", "P1", "input", "left"],
         ["2", "P2", "output", "right"],
     ]
-    symbol = generate_symbol(symbol_rows, sort_by="num")
+    symbol = rows_to_symbol(symbol_rows, sort_by="num")
     add_quotes(symbol)
     sexp_str = str(symbol)
     assert '(symbol "my_part"' in sexp_str
@@ -193,10 +193,10 @@ def test_generate_symbol():
 
     # Test invalid part name
     with pytest.raises(ValueError, match="Invalid part name"):
-        generate_symbol([["", ""], ["pin", "name"], ["1", "P1"]])
+        rows_to_symbol([["", ""], ["pin", "name"], ["1", "P1"]])
 
 
-def test_generate_symbol_library(tmp_path):
+def test_row_file_to_symbol_lib_file(tmp_path):
     """Test generating a KiCad symbol library from a CSV file."""
     # Create a sample CSV file
     csv_content = """my_part,
@@ -387,9 +387,9 @@ def test_kilib2csv_cli(tmp_path):
     assert "Error processing" in result.stdout
 
 
-def test_empty_symbol_lib():
+def test_create_empty_symbol_lib():
     """Test creation of an empty symbol library."""
-    lib = empty_symbol_lib()
+    lib = create_empty_symbol_lib()
 
     # Check that it's a valid Sexp with the expected structure
     assert isinstance(lib, Sexp)
@@ -501,10 +501,10 @@ def test_scrunch_option():
     ]
 
     # Generate symbol with scrunch=False (default)
-    normal_symbol = generate_symbol(symbol_rows, sort_by="num")
+    normal_symbol = rows_to_symbol(symbol_rows, sort_by="num")
 
     # Generate symbol with scrunch=True
-    scrunched_symbol = generate_symbol(symbol_rows, sort_by="num", scrunch=True)
+    scrunched_symbol = rows_to_symbol(symbol_rows, sort_by="num", scrunch=True)
 
     # Convert to strings for easier comparison
     normal_str = str(normal_symbol)
@@ -562,10 +562,10 @@ def test_bundle_option():
     ]
 
     # Generate symbol with bundle=False (default)
-    normal_symbol = generate_symbol(symbol_rows, sort_by="num")
+    normal_symbol = rows_to_symbol(symbol_rows, sort_by="num")
 
     # Generate symbol with bundle=True
-    bundled_symbol = generate_symbol(symbol_rows, sort_by="num", bundle=True)
+    bundled_symbol = rows_to_symbol(symbol_rows, sort_by="num", bundle=True)
 
     # Convert to strings for easier comparison
     normal_str = str(normal_symbol)
@@ -796,8 +796,8 @@ def test_symbols_are_equal():
         ["2", "OUT", "output", "right"],
     ]
 
-    gen_symbol1 = generate_symbol(symbol_rows, sort_by="num")
-    gen_symbol2 = generate_symbol(
+    gen_symbol1 = rows_to_symbol(symbol_rows, sort_by="num")
+    gen_symbol2 = rows_to_symbol(
         symbol_rows, sort_by="name"
     )  # Different sort but same content
     add_quotes(gen_symbol1)
@@ -961,19 +961,19 @@ def test_symbol_libs_are_equal():
     ]
 
     # Generate symbol libraries
-    lib1_generated = empty_symbol_lib()
-    lib2_generated = empty_symbol_lib()
+    lib1_generated = create_empty_symbol_lib()
+    lib2_generated = create_empty_symbol_lib()
 
     # Process each symbol for lib1
     symbol_row_groups1 = read_symbol_rows(rows1)
     for symbol_rows in symbol_row_groups1:
-        symbol = generate_symbol(symbol_rows)
+        symbol = rows_to_symbol(symbol_rows)
         lib1_generated.append(symbol)
 
     # Process each symbol for lib2
     symbol_row_groups2 = read_symbol_rows(rows2)
     for symbol_rows in symbol_row_groups2:
-        symbol = generate_symbol(symbol_rows)
+        symbol = rows_to_symbol(symbol_rows)
         lib2_generated.append(symbol)
 
     add_quotes(lib1_generated)
@@ -1000,7 +1000,7 @@ def test_end_to_end_conversion(tmp_path):
     """
 
     # Step 1: Create a library with 10 random symbols
-    random_symbols_1 = generate_random_symbol_lib(10)
+    random_symbols_1 = create_random_symbol_lib(10)
 
     # Step 2: Store the library to a file
     add_quotes(random_symbols_1)

@@ -2,13 +2,13 @@
 Random Symbol Generator for KiCad
 
 This module provides functions to generate random KiCad symbols for testing purposes.
-It creates random CSV rows and feeds them through the generate_symbol function.
+It creates random CSV rows and feeds them through the rows_to_symbol function.
 """
 
 import random
 import string
 from simp_sexp import Sexp
-from kipart.kipart import generate_symbol, empty_symbol_lib
+from kipart.kipart import rows_to_symbol, create_empty_symbol_lib
 
 # Valid pin types and styles
 PIN_TYPES = [
@@ -60,12 +60,12 @@ def random_choice(items):
     return random.choice(items)
 
 
-def generate_random_symbol(max_pins=50):
+def create_random_symbol(max_pins=50):
     """
     Generate a random KiCad symbol as an Sexp object.
 
     Creates random CSV rows with a part name, reference property, and pin data,
-    then feeds these rows through generate_symbol() to produce a random KiCad symbol.
+    then feeds these rows through rows_to_symbol() to produce a random KiCad symbol.
 
     Args:
         max_pins (int): Maximum number of pins to generate for a symbol.
@@ -138,12 +138,12 @@ def generate_random_symbol(max_pins=50):
     csv_rows.extend(pin_rows)
 
     # Generate the symbol using the CSV rows
-    symbol = generate_symbol(csv_rows)
+    symbol = rows_to_symbol(csv_rows)
 
     return symbol
 
 
-def generate_random_symbol_lib(count=1, max_pins=50):
+def create_random_symbol_lib(count=1, max_pins=50):
     """
     Generate a symbol library containing multiple random KiCad symbols.
 
@@ -154,8 +154,8 @@ def generate_random_symbol_lib(count=1, max_pins=50):
     Returns:
         Sexp: Symbol library containing random symbols.
     """
-    symbol_lib = empty_symbol_lib()
+    symbol_lib = create_empty_symbol_lib()
     for _ in range(count):
-        symbol = generate_random_symbol(max_pins=max_pins)
+        symbol = create_random_symbol(max_pins=max_pins)
         symbol_lib.append(symbol)
     return symbol_lib

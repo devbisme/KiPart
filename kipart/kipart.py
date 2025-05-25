@@ -32,7 +32,7 @@ __all__ = [
     "read_row_file",
     "read_symbol_rows",
     # Symbol library functions
-    "empty_symbol_lib",
+    "create_empty_symbol_lib",
     "merge_symbol_libs",
     "extract_symbols_from_lib",
     # Symbol parsing functions
@@ -40,9 +40,9 @@ __all__ = [
     # Symbol generation functions
     "create_rectangle_outline",
     "create_pin_name_outline",
-    "create_pin_sexp",
-    "generate_symbol",
-    "generate_symbol_lib",
+    "create_pin",
+    "rows_to_symbol",
+    "rows_to_symbol_lib",
     # File conversion functions
     "row_file_to_symbol_lib_file",
     "symbol_lib_file_to_csv_file",
@@ -445,7 +445,7 @@ def read_symbol_rows(rows):
 # ===== Symbol Library Functions =====
 
 
-def empty_symbol_lib():
+def create_empty_symbol_lib():
     """
     Create an empty KiCad symbol library with standard header information.
 
@@ -491,7 +491,7 @@ def merge_symbol_libs(lib1, lib2, overwrite=False):
                    already exist in lib1.
     """
     # Create a new library with the same version, generator, etc. as lib1
-    merged_lib = empty_symbol_lib()
+    merged_lib = create_empty_symbol_lib()
 
     # Copy attributes from lib1 (version, generator, etc.) if they differ from defaults
     lib1_version = None
@@ -716,7 +716,7 @@ def create_pin_name_outline(pin, x, y, orientation, pin_length):
     return create_rectangle_outline(x0, y0, x1, y1)
 
 
-def create_pin_sexp(pin, x, y, orientation, pin_length, alt_pin_delim=None):
+def create_pin(pin, x, y, orientation, pin_length, alt_pin_delim=None):
     """
     Create an S-expression for a pin in a KiCad symbol.
 
@@ -794,7 +794,7 @@ def create_pin_sexp(pin, x, y, orientation, pin_length, alt_pin_delim=None):
 # ===== Symbol Generation Functions =====
 
 
-def generate_symbol(
+def rows_to_symbol(
     symbol_rows,
     sort_by="row",
     reverse=False,
@@ -1233,7 +1233,7 @@ def generate_symbol(
             for pin in pin_list:
                 if pin["number"] != "*":
                     unit_sexp.extend(
-                        create_pin_sexp(
+                        create_pin(
                             pin,
                             x,
                             y,
@@ -1278,7 +1278,7 @@ def generate_symbol(
     return symbol_sexp
 
 
-def generate_symbol_lib(
+def rows_to_symbol_lib(
     rows,
     sort_by="row",
     reverse=False,
@@ -1334,7 +1334,7 @@ def generate_symbol_lib(
     """
 
     # Create the library S-expression container
-    symbol_lib = empty_symbol_lib()
+    symbol_lib = create_empty_symbol_lib()
 
     # Group rows into individual symbols
     symbol_row_groups = read_symbol_rows(rows)
@@ -1342,7 +1342,7 @@ def generate_symbol_lib(
     # Process each symbol and add it to the library
     for symbol_rows in symbol_row_groups:
         try:
-            symbol = generate_symbol(
+            symbol = rows_to_symbol(
                 symbol_rows,
                 sort_by=sort_by,
                 reverse=reverse,
@@ -1452,7 +1452,7 @@ def row_file_to_symbol_lib_file(
     rows = read_row_file(row_file)
 
     # Generate the symbol library from the rows.
-    symbol_lib = generate_symbol_lib(
+    symbol_lib = rows_to_symbol_lib(
         rows,
         sort_by=sort_by,
         reverse=reverse,
