@@ -558,7 +558,12 @@ def test_bundle_option():
         ["2", "GND", "power", "left"],  # Same name, should be bundled
         ["3", "VCC", "power", "left"],
         ["4", "VCC", "power", "left"],  # Same name, should be bundled
-        ["5", "SIG", "input", "right"],  # Different type, should not be bundled
+        ["5", "SIG", "input", "left"],  # Different type, should not be bundled
+        ["6", "SIG", "output", "right"],  # Different type, should not be bundled
+        ["7", "SIG", "bidir", "right"],  # Different type, should not be bundled
+        ["8", "GND", "power", "right"],
+        ["9", "GND", "power", "right"],  # Same name, should be bundled
+        ["10", "VCC", "power", "right"], # Only one, so no bundling
     ]
 
     # Generate symbol with bundle=False (default)
@@ -571,15 +576,17 @@ def test_bundle_option():
     normal_str = str(normal_symbol)
     bundled_str = str(bundled_symbol)
 
-    # Normal should have 5 pins
-    assert normal_str.count("(pin ") == 5
+    # Normal should have 10 pins
+    assert normal_str.count("(pin ") == 10
 
-    # Bundled should have fewer pins (3 pins - one each for GND, VCC, and SIG)
+    # Bundled should have fewer visible pins (7 pins - one for each GND, VCC on each side and 3 non-power pins)
     # But we need to check carefully since the S-expression might have other 'pin' instances
     # Let's count visible pins (ones without hide)
 
-    # Check that input pin doesn't get bundled
+    # Check that non-power pins don't get bundled
     assert bundled_str.count("(pin input ") == 1
+    assert bundled_str.count("(pin output ") == 1
+    assert bundled_str.count("(pin bidirectional ") == 1
 
     # Check that power pins get bundled
     power_pins_count = 0
@@ -594,8 +601,8 @@ def test_bundle_option():
         ):  # If no hide within reasonable distance
             power_pins_count += 1
 
-    # Should have just one visible power_in pin for each group (GND and VCC)
-    assert power_pins_count == 2
+    # Should have just one visible power_in pin for each group (GND and VCC) on each side
+    assert power_pins_count == 4
 
 
 def test_row_file_to_symbol_lib_file_with_merge(tmp_path):
@@ -1038,3 +1045,225 @@ def test_end_to_end_conversion(tmp_path):
     print(f"Successfully performed round-trip conversion for {len(symbols1)} symbols:")
     for name in symbol_names:
         print(f"  - {name}")
+
+
+def test_insert_spacers():
+    """Test insertion of spacers for pins with leading asterisks."""
+    from kipart.kipart import insert_spacers, DEFAULT_TYPE, DEFAULT_STYLE
+    
+    # Case 1: Test with pins containing leading asterisks
+    pins = [
+        {
+            "number": "**1",  # Two spacers followed by pin 1
+            "name": "TEST1",
+            "unit": "1",
+            "side": "left",
+            "type": "input",
+            "style": "line",
+            "hidden": "no",
+            "row_index": 0
+        },
+        {
+            "number": "*2",   # One spacer followed by pin 2
+            "name": "TEST2",
+            "unit": "1",
+            "side": "left",
+            "type": "output",
+            "style": "line",
+            "hidden": "no",
+            "row_index": 1
+        },
+        {
+            "number": "3",    # No spacers
+            "name": "TEST3",
+            "unit": "1",
+            "side": "left",
+            "type": "bidirectional",
+            "style": "line",
+            "hidden": "no",
+            "row_index": 2
+        }
+    ]
+    
+    expanded_pins = insert_spacers(pins)
+    
+    # Should have 6 pins now: 2 spacers + pin 1, 1 spacer + pin 2, and pin 3
+    assert len(expanded_pins) == 6
+    
+    # Check that spacers are created correctly
+    assert expanded_pins[0]["number"] == "*"
+    assert expanded_pins[0]["name"] == ""
+    assert expanded_pins[0]["unit"] == "1"  # Should inherit unit from first pin
+    assert expanded_pins[0]["side"] == "left"  # Should inherit side from first pin
+    
+    assert expanded_pins[1]["number"] == "*"
+    assert expanded_pins[1]["name"] == ""
+    
+    # Check that original pins have asterisks removed from numbers
+    assert expanded_pins[2]["number"] == "1"
+    assert expanded_pins[2]["name"] == "TEST1"
+    
+    assert expanded_pins[3]["number"] == "*"
+    assert expanded_pins[3]["name"] == ""
+    
+    assert expanded_pins[4]["number"] == "2"
+    assert expanded_pins[4]["name"] == "TEST2"
+    
+    assert expanded_pins[5]["number"] == "3"
+    assert expanded_pins[5]["name"] == "TEST3"
+    
+    # Check that row_index values are sequential
+    for i, pin in enumerate(expanded_pins):
+        assert pin["row_index"] == i
+    
+    # Case 2: Test with a pin that is just asterisks (should be all spacers)
+    pins = [
+        {
+            "number": "***",  # Three asterisks only
+            "name": "SPACER",
+            "unit": "1",
+            "side": "left",
+            "type": "input",
+            "style": "line",
+            "hidden": "no",
+            "row_index": 0
+        }
+    ]
+    
+    expanded_pins = insert_spacers(pins)
+    
+    # Should have 3 spacer pins and no regular pins
+    assert len(expanded_pins) == 3
+    for pin in expanded_pins:
+        assert pin["number"] == "*"
+        assert pin["name"] == ""
+    
+    # Case 3: Test with empty input
+    assert insert_spacers([]) == []
+
+
+def test_bundle_pins():
+    """Test bundling of power pins with the same name."""
+    from kipart.kipart import bundle_pins
+    
+    # Case 1: Basic bundling of power pins
+    pins = [
+        {
+            "number": "1",
+            "name": "VCC",
+            "unit": "1",
+            "side": "left",
+            "type": "power_in",
+            "style": "line",
+            "hidden": "no",
+            "row_index": 0
+        },
+        {
+            "number": "2",
+            "name": "VCC",  # Same name as first pin
+            "unit": "1",
+            "side": "left",
+            "type": "power_in",
+            "style": "line",
+            "hidden": "no",
+            "row_index": 1
+        },
+        {
+            "number": "3",
+            "name": "GND",
+            "unit": "1",
+            "side": "left",
+            "type": "power_in",
+            "style": "line",
+            "hidden": "no",
+            "row_index": 2
+        },
+        {
+            "number": "4",
+            "name": "SIG",  # Not a power pin
+            "unit": "1",
+            "side": "right",
+            "type": "input",
+            "style": "line",
+            "hidden": "no",
+            "row_index": 3
+        }
+    ]
+    
+    bundled = bundle_pins(pins)
+    
+    # Should have 3 pins now: bundled VCC, GND, and SIG
+    assert len(bundled) == 3
+    
+    # Find the bundled VCC pin
+    vcc_pin = None
+    for pin in bundled:
+        if pin["name"] == "VCC[2]":  # Name should have count indicator
+            vcc_pin = pin
+            break
+    
+    assert vcc_pin is not None
+    assert vcc_pin["type"] == "power_in"
+    assert isinstance(vcc_pin["number"], list)
+    assert len(vcc_pin["number"]) == 2
+    assert "1" in vcc_pin["number"]
+    assert "2" in vcc_pin["number"]
+    
+    # Check that GND pin is unchanged except for number becoming a list
+    gnd_pin = None
+    for pin in bundled:
+        if pin["name"] == "GND":  # No count indicator (only one pin)
+            gnd_pin = pin
+            break
+    
+    assert gnd_pin is not None
+    assert isinstance(gnd_pin["number"], list)
+    assert len(gnd_pin["number"]) == 1
+    assert gnd_pin["number"][0] == "3"
+    
+    # Check that non-power pin is unchanged
+    sig_pin = None
+    for pin in bundled:
+        if pin["name"] == "SIG":
+            sig_pin = pin
+            break
+    
+    assert sig_pin is not None
+    assert sig_pin["type"] == "input"
+    assert sig_pin["number"] == "4"  # Not converted to a list
+    
+    # Case 2: Test with no power pins
+    pins = [
+        {
+            "number": "1",
+            "name": "SIG1",
+            "unit": "1",
+            "side": "left",
+            "type": "input",
+            "style": "line",
+            "hidden": "no",
+            "row_index": 0
+        },
+        {
+            "number": "2",
+            "name": "SIG2",
+            "unit": "1",
+            "side": "right",
+            "type": "output",
+            "style": "line",
+            "hidden": "no",
+            "row_index": 1
+        }
+    ]
+    
+    bundled = bundle_pins(pins)
+    
+    # Should have same number of pins, all unchanged
+    assert len(bundled) == 2
+    assert bundled[0]["name"] == "SIG1"
+    assert bundled[0]["number"] == "1"
+    assert bundled[1]["name"] == "SIG2"
+    assert bundled[1]["number"] == "2"
+    
+    # Case 3: Test with empty input
+    assert bundle_pins([]) == []
