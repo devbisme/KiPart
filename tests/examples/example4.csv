@@ -1,7 +1,7 @@
 example_part,,,,
 Pin,    Unit,   Type,           Name,    Side
 23,     1,      input,          B1,      left
-*45,    1,      input,          QQ,      left
+**45,    1,      input,          QQ,      left
 90,     1,      output,         A5,      left
 88,     1,      bidirectional,  C3,      left
 *,      1,      ,               ,        left
