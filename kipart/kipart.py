@@ -800,6 +800,69 @@ def create_pin(pin, x, y, orientation, pin_length, alt_pin_delim=None):
 # ===== Symbol Generation Functions =====
 
 
+def insert_spacers(pins):
+    # Spacer pin for copying.
+    spacer_pin = {
+        "number": "*",
+        "name": "",
+        "unit": "",
+        "side": "",
+        "type": DEFAULT_TYPE,
+        "style": DEFAULT_STYLE,
+        "hidden": "no",
+        "row_index": -1,
+    }
+    if pins:
+        # If there are pins, we can use the first pin's unit ID and side as defaults.
+        spacer_pin["unit"] = pins[0]["unit"]
+        spacer_pin["side"] = pins[0]["side"]
+
+    # Expand the pins on a side with any spacers that are found.
+    expanded_pins = []
+    row_index = 0  # Re-do the pin row indexes to account for added spacers.
+    for pin in pins:
+
+        # count the number of asterisks at the beginning of the pin number.
+        pin_num = pin["number"]
+        stripped_pin_num = pin_num.lstrip("*")
+        num_stars = len(pin_num) - len(stripped_pin_num)
+        
+        # Add a spacer pin for each asterisk in the pin number.
+        for _ in range(num_stars):
+            spcr_pin = spacer_pin.copy()
+            spcr_pin["row_index"] = row_index
+            expanded_pins.append(spcr_pin)
+            row_index += 1
+        
+        # If the pin number is not just asterisks, add the original pin after the spacers.
+        if stripped_pin_num:
+            pin["number"] = stripped_pin_num  # Remove any stars from pin number.
+            pin["row_index"] = row_index
+            expanded_pins.append(pin)
+            row_index += 1
+    
+    return expanded_pins
+
+def bundle_pins(pins):
+    bundled_pins = {}
+    single_pins = []
+    for pin in pins:
+        if pin["type"] in ["power_in",]:
+            key = (pin["name"], pin["type"])
+            if key not in bundled_pins:
+                pin["number"] = [pin["number"]]
+                bundled_pins[key] = pin
+            else:
+                bundled_pins[key]["number"].append(pin["number"])
+        else:
+            single_pins.append(pin)
+    for pin in bundled_pins.values():
+        num_bundled_pins = len(pin["number"])
+        if num_bundled_pins > 1:
+            # If there are multiple pins in the bundle, append the number to the pin name.
+            pin["name"] = f"{pin['name']}[{num_bundled_pins}]"
+    return list(bundled_pins.values()) + single_pins
+
 def rows_to_symbol(
     symbol_rows,
     sort_by="row",
@@ -988,41 +1051,6 @@ def rows_to_symbol(
         }
         pins.append(pin_data)
 
-    # Bundle identical power or ground input pins if requested
-    if bundle:
-        # Group pins by name, unit, and type (only for power pins)
-        bundled_pins = {}
-        pins_to_keep = []
-
-        for pin in pins:
-            # Only bundle power pins (power_in or power_out)
-            if pin["type"] in ["power_in"]:
-                key = (pin["name"], pin["unit"], pin["type"], pin["side"])
-                if key not in bundled_pins:
-                    bundled_pins[key] = []
-                bundled_pins[key].append(pin)
-            else:
-                # Keep non-power pins as they are (don't bundle)
-                pins_to_keep.append(pin)
-
-        # For each group of identical power pins, create a single pin with a list of pin numbers
-        for pin_group in bundled_pins.values():
-            if len(pin_group) > 1:
-                # Create a bundled pin using the first pin's data
-                bundled_pin = pin_group[0].copy()
-                # Store bundled pin numbers as a list.
-                bundled_pin["number"] = [
-                    p["number"] for p in pin_group if p["number"] != "*"
-                ]
-                # Append an indicator to the pin's name showing the number of bundled pins
-                bundled_pin["name"] += f"[{len(pin_group)}]"
-                pins_to_keep.append(bundled_pin)
-            else:
-                # Single pins don't need bundling
-                pins_to_keep.append(pin_group[0])
-
-        pins = pins_to_keep
-
     # Validate that at least one valid pin exists
     if not any(pin["number"] != "*" for pin in pins):
         raise ValueError(
@@ -1041,13 +1069,22 @@ def rows_to_symbol(
             raise ValueError(
                 f"Invalid side '{pin['side']}' for pin {pin['number']} in unit {unit_name} of part {part_name}"
             )
-
+        
     # Collect the Sexp for each unit and then add them to the symbol Sexp
     # after the properties are added below.
     unit_sexps = []
 
     # Create the Sexp for each unit and add it to the symbol Sexp.
     for unit_id, unit in units.items():
+
+        for side, pins in unit.items():
+            # Expand any multiple spacer pins into individual pins on each side of each unit.
+            pins = insert_spacers(pins)
+            # Bundle identical power or ground input pins if requested
+            if bundle:
+                pins = bundle_pins(pins)
+            # Replace the unit side's pins with the expanded, bundled pins.
+            unit[side] = pins
 
         # Convert unit name to a number because that's what KiCad wants.
         unit_num = list(units.keys()).index(unit_id) + 1
