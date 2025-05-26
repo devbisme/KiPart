@@ -1074,6 +1074,10 @@ def rows_to_symbol(
     # after the properties are added below.
     unit_sexps = []
 
+    # Store the coords of the top-left corner for each unit so we can place the
+    # properties where they won't run into any of the different-sized units.
+    unit_top_left_corner = []
+
     # Create the Sexp for each unit and add it to the symbol Sexp.
     for unit_id, unit in units.items():
 
@@ -1167,6 +1171,9 @@ def rows_to_symbol(
         )
         # Add the rectangle to the unit Sexp
         unit_sexp.append(rect_sexp)
+
+        # Store the top-left corner of the unit for placing properties later.
+        unit_top_left_corner.append((x0, y1))
 
         if debug:
             # For debugging, show the boxes that contain the pins on each side.
@@ -1298,14 +1305,17 @@ def rows_to_symbol(
 
         unit_sexps.append(unit_sexp)
 
-    # Add completed set of properties to the symbol Sexp
+    # Add completed set of properties to the symbol Sexp at the top-left corner
+    # such that it doesn't overlap any of the different-sized units.
+    tl_x = min(unit_top_left_corner, key=lambda c: c[0])[0]
+    tl_y = max(unit_top_left_corner, key=lambda c: c[1])[1]
     for name, [value, x_offset, y_offset, justify, hide] in properties.items():
         symbol_sexp.append(
             [
                 "property",
                 name,
                 value,
-                ["at", x0 + x_offset, y1 + y_offset, 0],
+                ["at", tl_x + x_offset, tl_y + y_offset, 0],
                 [
                     "effects",
                     ["font", ["size", FONT_SIZE, FONT_SIZE]],
