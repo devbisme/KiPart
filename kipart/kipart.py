@@ -69,6 +69,7 @@ except ImportError:
 DEFAULT_SIDE = "left"  # Default pin side for unspecified pins
 DEFAULT_STYLE = "line"  # Default pin style for unspecified pins
 DEFAULT_TYPE = "passive"  # Default pin type for unspecified pins
+DEFAULT_UNIT_ID = "1"  # Default unit ID for symbols without units
 
 # Constants for layout calculations
 FONT_SIZE = 1.27  # Default font size for pin names and numbers
@@ -749,7 +750,6 @@ def create_pin(pin, x, y, orientation, pin_length, alt_pin_delim=None):
     """
 
     # Handle bundled pins which have multiple pin numbers.
-    pin_numbers = pin["number"]
     if isinstance(pin["number"], str):
         # An unbundled pin has a list of one pin number.
         pin_numbers = [pin["number"]]
@@ -962,7 +962,7 @@ def rows_to_symbol(
             "unit": (
                 row[column_map["unit"]].strip()
                 if "unit" in column_map and row[column_map["unit"]].strip()
-                else "1"
+                else DEFAULT_UNIT_ID
             ),
             "side": (
                 str_to_side(row[column_map["side"]].strip().lower())
@@ -1002,10 +1002,10 @@ def rows_to_symbol(
                     bundled_pins[key] = []
                 bundled_pins[key].append(pin)
             else:
-                # Keep non-power pins as they are
+                # Keep non-power pins as they are (don't bundle)
                 pins_to_keep.append(pin)
 
-        # For each group of identical power pins, create a single pin with combined numbers
+        # For each group of identical power pins, create a single pin with a list of pin numbers
         for pin_group in bundled_pins.values():
             if len(pin_group) > 1:
                 # Create a bundled pin using the first pin's data
@@ -1014,6 +1014,8 @@ def rows_to_symbol(
                 bundled_pin["number"] = [
                     p["number"] for p in pin_group if p["number"] != "*"
                 ]
+                # Append an indicator to the pin's name showing the number of bundled pins
+                bundled_pin["name"] += f"[{len(pin_group)}]"
                 pins_to_keep.append(bundled_pin)
             else:
                 # Single pins don't need bundling
