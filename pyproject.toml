@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "kipart"
-version = "2.0.0"
+version = "2.1.0"
 description = "Utilities for converting rows of CSV pin data into KiCad symbols and back."
 authors = [
     {name = "Dave Vandenbout", email = "dave@vdb.name"}

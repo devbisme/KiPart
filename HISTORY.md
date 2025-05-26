@@ -1,5 +1,13 @@
 # History
 
+## 2.1.0 (2025-05-26)
+
+-   Symbol lpin lengths are now sized to fit the longest pin number.
+-   Symbol properties are now placed so they don't overlap any symbol unit if the units have differing sizes.
+-   Prepending asterisks to a pin number will insert blank pin spaces in the symbol. 
+-   Multiple asterisks can be used to insert multiple blank pin spaces.
+-   Bundled pins now have the number of pins in the bundle appended to the pin name within brackets.
+
 ## 2.0.0 (2025-05-25)
 
 -   Complete rewrite to support modern KiCad symbol libraries based on
