@@ -74,7 +74,7 @@ DEFAULT_UNIT_ID = "1"  # Default unit ID for symbols without units
 # Constants for layout calculations
 FONT_SIZE = 1.27  # Default font size for pin names and numbers
 GRID_SPACING = 1.27  # Grid spacing for aligning pins and symbols
-PIN_LENGTH = 4 * GRID_SPACING  # Standard pin length in KiCad
+MIN_PIN_LENGTH = 4 * GRID_SPACING  # Minimum pin length
 PIN_HEIGHT = 2 * GRID_SPACING  # Standard pin height in KiCad
 PIN_SPACING = 2 * GRID_SPACING  # Standard pin spacing in KiCad
 PIN_NAME_OFFSET = 0.85  # Offset from the end of the pin to the pin name
@@ -142,13 +142,18 @@ def text_width(text, alt_pin_delim=None, font_size=FONT_SIZE):
     Returns:
         float: width of the text in mm.
     """
-    # Approximate character width as 60% of font size for monospaced fonts
+    # Approximate character width as 90% of font size for monospaced fonts
     char_width = font_size * 0.9
+
+    if not alt_pin_delim:
+        # No splitting into alternate pin names, so use the full text
+        alternates = [text]
+    else:
+        # Split into alternate pin names using the specified delimiter
+        alternates = text.split(alt_pin_delim)
 
     # If using alternate pin names, then the bounding box width
     # is the length of the longest alternate name.
-    # Otherwise, the bounding box width is the length of the text.
-    alternates = text.split(alt_pin_delim)
     if not alternates:
         text_len = 0
     else:
@@ -1056,6 +1061,15 @@ def rows_to_symbol(
         raise ValueError(
             f"No valid pins defined for part {part_name} (all pins are placeholders)"
         )
+    
+    # Determine the symbol's pin length based on the longest pin number.
+    pin_length = max(
+        # Strip off any leading spacer stars from the pin number and add spaces for padding.
+        text_width(pin["number"].lstrip("*") + "  ")
+        for pin in pins
+    )
+    pin_length = max(pin_length, MIN_PIN_LENGTH)
+    pin_length = gridify(pin_length, policy="up")
 
     # Group pins by the unit and side of the unit they're in.
     units = {}
@@ -1226,7 +1240,7 @@ def rows_to_symbol(
             # Set parameters for placing pins on the left side
             if side == "left":
                 ctr_offset = gridify(push * (lr_height - pin_cnt * PIN_HEIGHT))
-                x = x0 - PIN_LENGTH
+                x = x0 - pin_length
                 y = y0 + tb_height + lr_height - ctr_offset - PIN_HEIGHT / 2
                 orientation = 0
                 dx, dy = 0, -PIN_SPACING
@@ -1234,7 +1248,7 @@ def rows_to_symbol(
             # Set parameters for placing pins on the right side
             elif side == "right":
                 ctr_offset = gridify(push * (lr_height - pin_cnt * PIN_HEIGHT))
-                x = x1 + PIN_LENGTH
+                x = x1 + pin_length
                 if ccw:
                     # Start from bottom, go upward when ccw is True
                     y = y0 + tb_height + ctr_offset + PIN_HEIGHT / 2
@@ -1265,7 +1279,7 @@ def rows_to_symbol(
                         ctr_offset = gridify(push * (tb_width - pin_cnt * PIN_HEIGHT))
                         x = x0 + lr_width + ctr_offset + PIN_HEIGHT / 2
                     dx, dy = PIN_SPACING, 0
-                y = y1 + PIN_LENGTH
+                y = y1 + pin_length
                 orientation = 270
 
             # Set parameters for placing pins on the bottom side
@@ -1276,7 +1290,7 @@ def rows_to_symbol(
                 else:
                     ctr_offset = gridify(push * (tb_width - pin_cnt * PIN_HEIGHT))
                     x = x0 + lr_width + ctr_offset + PIN_HEIGHT / 2
-                y = -y1 - PIN_LENGTH
+                y = -y1 - pin_length
                 orientation = 90
                 dx, dy = PIN_SPACING, 0
 
@@ -1290,14 +1304,14 @@ def rows_to_symbol(
                             x,
                             y,
                             orientation,
-                            PIN_LENGTH,
+                            pin_length,
                             alt_pin_delim=alt_pin_delim,
                         )
                     )
                     if debug:
                         unit_sexp.append(
                             create_pin_name_outline(
-                                pin, x, y, orientation, PIN_LENGTH
+                                pin, x, y, orientation, pin_length
                             )
                         )
                 x += dx
