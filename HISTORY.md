@@ -2,7 +2,7 @@
 
 ## 2.1.0 (2025-05-26)
 
--   Symbol lpin lengths are now sized to fit the longest pin number.
+-   Symbol pin lengths are now sized to fit the longest pin number.
 -   Symbol properties are now placed so they don't overlap any symbol unit if the units have differing sizes.
 -   Prepending asterisks to a pin number will insert blank pin spaces in the symbol. 
 -   Multiple asterisks can be used to insert multiple blank pin spaces.
