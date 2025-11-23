@@ -3,6 +3,7 @@
 ## 2.2.0 (2025-11-23)
 
 -   Names in the unit column of the CSV are now displayed in the unit name drop-down of the Symbol Editor.
+-   Added `hide-pin-num` to removed pin numbers on generated symbols.
 
 ## 2.1.0 (2025-05-26)
 
