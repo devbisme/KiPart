@@ -7,7 +7,7 @@ clean: $(tests:=.clean)
 # This prevents .kicad_Sym files from being removed after they're made.
 .SECONDARY:
 
-FLAGS= -s num --ccw
+FLAGS= -b
 
 %.kicad_sym: %.csv
 	kipart $(FLAGS) $^ -o $@ -w
