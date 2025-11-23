@@ -112,8 +112,8 @@ def test_symbol_to_csv_rows():
         ["Reference:", "U"],
         ["Value:", "my_part"],
         ["pin", "name", "type", "side", "unit", "style", "hidden"],
-        ["1", "P1", "input", "left", "my_part_1", "line", "no"],
-        ["2", "P2", "output", "right", "my_part_1", "line", "yes"],
+        ["1", "P1", "input", "left", "1", "line", "no"],
+        ["2", "P2", "output", "right", "1", "line", "yes"],
     ]
     rows = symbol_to_csv_rows(Sexp(sexp))
     assert rows == expected_rows
@@ -314,13 +314,13 @@ def test_library_to_csv(tmp_path):
         ["Reference:", "U"],
         ["Value:", "my_part"],
         ["pin", "name", "type", "side", "unit", "style", "hidden"],
-        ["1", "P1", "input", "left", "my_part_1", "line", "no"],
+        ["1", "P1", "input", "left", "1", "line", "no"],
         [],
         ["part2", ""],
         ["Reference:", "U"],
         ["Value:", "part2"],
         ["pin", "name", "type", "side", "unit", "style", "hidden"],
-        ["1", "OUT", "output", "left", "part2_1", "line", "no"],
+        ["1", "OUT", "output", "left", "1", "line", "no"],
     ]
     with open(output_path) as f:
         reader = csv.reader(f)

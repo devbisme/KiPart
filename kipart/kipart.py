@@ -612,8 +612,13 @@ def symbol_to_csv_rows(symbol):
     rows.append(["pin", "name", "type", "side", "unit", "style", "hidden"])
 
     # Process units and pins
-    for unit_id, unit in enumerate(units, 1):
-        unit_id = symbol_name + "_" + str(unit_id)
+    for unit_index, unit in enumerate(units, 1):
+        # Check if the unit has a custom unit_name, otherwise use unit number
+        unit_name_search = unit.search("/symbol/unit_name", ignore_case=True)
+        if unit_name_search:
+            unit_id = unit_name_search[0][1]
+        else:
+            unit_id = str(unit_index)
         pins = unit.search("/symbol/pin", ignore_case=True)
         for pin in pins:
             number = pin.search("/pin/number", ignore_case=True)[0][1]
@@ -1110,6 +1115,11 @@ def rows_to_symbol(
 
         # Begin instantiating the Sexp for this unit of the symbol.
         unit_sexp = Sexp(["symbol", total_unit_name])
+        
+        # If the unit has a custom name defined in the CSV and it's a multi-unit symbol,
+        # add the unit_name to the KiCad symbol definition
+        if len(units) > 1 and unit_id != DEFAULT_UNIT_ID:
+            unit_sexp.append(["unit_name", unit_id])
 
         # Calculate dimensions for each side of the symbol unit based on pin counts and text sizes.
         # At this point, we assume each side is oriented vertically with horizontal pins
