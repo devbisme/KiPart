@@ -1769,7 +1769,7 @@ def kipart():
     parser.add_argument(
         "--hide-pin-num",
         action="store_true",
-        help="Hide pin mubers",
+        help="Hide pin numbers",
     )
     parser.add_argument(
         "-v", "--version", action="version", version=f"%(prog)s {__version__}"
