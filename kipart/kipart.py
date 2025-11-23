@@ -74,7 +74,7 @@ DEFAULT_UNIT_ID = "1"  # Default unit ID for symbols without units
 # Constants for layout calculations
 FONT_SIZE = 1.27  # Default font size for pin names and numbers
 GRID_SPACING = 1.27  # Grid spacing for aligning pins and symbols
-MIN_PIN_LENGTH = 4 * GRID_SPACING  # Minimum pin length
+MIN_PIN_LENGTH = 2 * GRID_SPACING  # Minimum pin length
 PIN_HEIGHT = 2 * GRID_SPACING  # Standard pin height in KiCad
 PIN_SPACING = 2 * GRID_SPACING  # Standard pin spacing in KiCad
 PIN_NAME_OFFSET = 0.85  # Offset from the end of the pin to the pin name
@@ -885,6 +885,7 @@ def rows_to_symbol(
     bundle=False,
     scrunch=False,
     ccw=False,
+    hide_pin_num=False,
 ):
     """
     Generate a KiCad symbol S-expression from CSV rows.
@@ -923,6 +924,7 @@ def rows_to_symbol(
                                  Defaults to False.
         ccw (bool, optional): Reverse the direction and starting point of pins on the top 
                                    and right sides. Defaults to False.
+        hide_pin_num (bool, optional): Hide pin number. Defaults to False.
 
     Returns:
         Sexp: KiCad symbol as an Sexp object, ready to be included in a library.
@@ -940,6 +942,10 @@ def rows_to_symbol(
 
     # Begin constructing Sexp object
     symbol_sexp = Sexp(["symbol", part_name])
+
+    # Hide pin number if having --hide-pin-num option
+    if hide_pin_num:
+        symbol_sexp.append(["pin_numbers", ["hide", "yes"]])
 
     # Add basic symbol attributes
     symbol_sexp.append(["exclude_from_sim", "no"])
@@ -1066,15 +1072,19 @@ def rows_to_symbol(
         raise ValueError(
             f"No valid pins defined for part {part_name} (all pins are placeholders)"
         )
-    
-    # Determine the symbol's pin length based on the longest pin number.
-    pin_length = max(
-        # Strip off any leading spacer stars from the pin number and add spaces for padding.
-        text_width(pin["number"].lstrip("*") + "  ")
-        for pin in pins
-    )
-    pin_length = max(pin_length, MIN_PIN_LENGTH)
-    pin_length = gridify(pin_length, policy="up")
+
+    # Use MIN?PIN_LENGTH when pin numbers are hidden.
+    if hide_pin_num:
+        pin_length = MIN_PIN_LENGTH
+    else:
+        # Determine the symbol's pin length based on the longest pin number.
+        pin_length = max(
+            # Strip off any leading spacer stars from the pin number and add spaces for padding.
+            text_width(pin["number"].lstrip("*") + "  ")
+            for pin in pins
+        )
+        pin_length = max(pin_length, MIN_PIN_LENGTH)
+        pin_length = gridify(pin_length, policy="up")
 
     # Group pins by the unit and side of the unit they're in.
     units = {}
@@ -1369,6 +1379,7 @@ def rows_to_symbol_lib(
     scrunch=False,
     ccw=False,
     push=DEFAULT_PUSH,
+    hide_pin_num=False,
 ):
     """
     Generate a complete KiCad symbol library from CSV or Excel data.
@@ -1404,6 +1415,7 @@ def rows_to_symbol_lib(
         push (float, optional): Controls position of pin groups on each side.
                                0.0 places pins at start of side, 1.0 at end of side,
                                0.5 (default) centers the pins.
+        hide_pin_num (bool, optional): Hide pin number. Defaults to False.
 
     Returns:
         Sexp: Complete KiCad symbol library as an Sexp object, ready to write to file.
@@ -1433,6 +1445,7 @@ def rows_to_symbol_lib(
                 scrunch=scrunch,
                 ccw=ccw,
                 push=push,
+                hide_pin_num=hide_pin_num,
             )
             symbol_lib.append(symbol)
         except Exception as e:
@@ -1467,6 +1480,7 @@ def row_file_to_symbol_lib_file(
     scrunch=False,
     ccw=False,
     push=DEFAULT_PUSH,
+    hide_pin_num=False,
 ):
     """
     Convert a CSV or Excel file to a KiCad symbol library file.
@@ -1507,6 +1521,7 @@ def row_file_to_symbol_lib_file(
         push (float, optional): Controls position of pin groups on each side.
                                0.0 places pins at start of side, 1.0 at end of side,
                                0.5 (default) centers the pins.
+        hide_pin_num (bool, optional): Hide pin number. Defaults to False.
 
     Returns:
         str: Path to the generated .kicad_sym file.
@@ -1543,6 +1558,7 @@ def row_file_to_symbol_lib_file(
         scrunch=scrunch,
         ccw=ccw,
         push=push,
+        hide_pin_num=hide_pin_num,
     )
 
     # If the output file already exists and overwrite is True, we need to merge
@@ -1751,6 +1767,11 @@ def kipart():
         help="Bundle identically-named power or ground input pins into single schematic pins",
     )
     parser.add_argument(
+        "--hide-pin-num",
+        action="store_true",
+        help="Hide pin mubers",
+    )
+    parser.add_argument(
         "-v", "--version", action="version", version=f"%(prog)s {__version__}"
     )
 
@@ -1823,6 +1844,7 @@ def kipart():
                 scrunch=args.scrunch,
                 ccw=args.ccw,
                 push=args.push,
+                hide_pin_num=args.hide_pin_num
             )
 
             if args.merge:

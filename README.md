@@ -89,6 +89,7 @@ KiPart is mainly intended to be used as a script:
     -a ALT_DELIMITER, --alt-delimiter ALT_DELIMITER
                             Delimiter character for splitting pin names into alternatives
     -b, --bundle          Bundle identically-named power or ground input pins into single schematic pins
+    --hide_pin_num        Hide pin numbers
     -v, --version         show program's version number and exit
 
 The input to `kipart` is one or more CSV or Excel files.
@@ -228,6 +229,8 @@ The `-m` option is used to merge parts into an existing library. If a part
 with the same name already exists, the new part will only overwrite it
 if the `-w` flag is also used. Any existing parts in the library that
 are not overwritten are retained.
+
+The `--hide_pin_num` option is used to hide pin numbers.
 
 #### Examples
 
