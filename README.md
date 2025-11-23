@@ -63,34 +63,36 @@ This will install two command-line utilities:
 
 KiPart is mainly intended to be used as a script:
 
-    usage: kipart [-h] [-o OUTPUT] [-w] [-m] [-s {row,num,name}] [-r] [--ccw] [--scrunch] [--side {left,right,top,bottom}] [--type TYPE] [--style STYLE] [--push PUSH] [-a ALT_DELIMITER] [-b] [-v] input_files [input_files ...]
+usage: kipart [-h] [-o OUTPUT] [-w] [-m] [-s {row,num,name}] [-r] [--ccw] [--scrunch]
+              [--side {left,right,top,bottom}] [--type TYPE] [--style STYLE]
+              [--push PUSH] [-a ALT_DELIMITER] [-b] [--hide-pin-num] [-v]
+              input_files [input_files ...]
 
-    Convert CSV or Excel files into KiCad symbol libraries
+Convert CSV or Excel files into KiCad symbol libraries
 
-    positional arguments:
-    input_files           Input symbol pin data CSV or Excel files (.csv, .xlsx, .xls)
+positional arguments:
+  input_files           Input symbol pin data CSV or Excel files (.csv, .xlsx, .xls)
 
-    options:
-    -h, --help            show this help message and exit
-    -o OUTPUT, --output OUTPUT
-                            Output KiCad symbol library file (.kicad_sym)
-    -w, --overwrite       Allow overwriting of an existing symbol library
-    -m, --merge           Merge symbols into an existing library rather than overwriting completely
-    -s {row,num,name}, --sort {row,num,name}
-                            Sort the part pins by their entry order in the CSV file (row), their pin number (num), or their pin name (name)
-    -r, --reverse         Sort pins in reverse order
-    --ccw                 Arrange pins counter-clockwise around the symbol
-    --scrunch             Compress symbol pins on the left/right sides underneath the top/bottom sides
-    --side {left,right,top,bottom}
-                            Default side for pins without a side specifier
-    --type TYPE           Default type for pins without a type specifier (e.g., input, output, bidirectional, passive)
-    --style STYLE         Default style for pins without a style specifier (e.g., line, inverted, clock)
-    --push PUSH           Position of pin groups on each side (0.0=start, 0.5=centered, 1.0=end)
-    -a ALT_DELIMITER, --alt-delimiter ALT_DELIMITER
-                            Delimiter character for splitting pin names into alternatives
-    -b, --bundle          Bundle identically-named power or ground input pins into single schematic pins
-    --hide_pin_num        Hide pin numbers
-    -v, --version         show program's version number and exit
+options:
+  -h, --help            show this help message and exit
+  -o, --output OUTPUT   Output KiCad symbol library file (.kicad_sym)
+  -w, --overwrite       Allow overwriting of an existing symbol library
+  -m, --merge           Merge symbols into an existing library rather than overwriting completely
+  -s, --sort {row,num,name}
+                        Sort the part pins by their entry order in the CSV file (row), their pin number (num), or their pin name (name)
+  -r, --reverse         Sort pins in reverse order
+  --ccw                 Arrange pins counter-clockwise around the symbol
+  --scrunch             Compress symbol pins on the left/right sides underneath the top/bottom sides
+  --side {left,right,top,bottom}
+                        Default side for pins without a side specifier
+  --type TYPE           Default type for pins without a type specifier (e.g., input, output, bidirectional, passive)
+  --style STYLE         Default style for pins without a style specifier (e.g., line, inverted, clock)
+  --push PUSH           Position of pin groups on each side (0.0=start, 0.5=centered, 1.0=end)
+  -a, --alt-delimiter ALT_DELIMITER
+                        Delimiter character for splitting pin names into alternatives
+  -b, --bundle          Bundle identically-named power or ground input pins into single schematic pins
+  --hide-pin-num        Hide pin numbers
+  -v, --version         show program's version number and exit
 
 The input to `kipart` is one or more CSV or Excel files.
 These contain the following items:
