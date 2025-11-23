@@ -1,5 +1,9 @@
 # History
 
+## 2.2.0 (2025-11-23)
+
+-   Names in the unit column of the CSV are now displayed in the unit name drop-down of the Symbol Editor.
+
 ## 2.1.0 (2025-05-26)
 
 -   Symbol pin lengths are now sized to fit the longest pin number.
