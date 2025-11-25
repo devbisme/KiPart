@@ -773,6 +773,17 @@ def create_pin(pin, x, y, orientation, pin_length, alt_pin_delim=None):
 
     # Iterate through the pins. Only the first pin of a bundle is visible (not hidden)
     for hide, pin_number in enumerate(pin_numbers, 0):
+        # Push hidden NC pins off-grid and offset to each other so they don't get connected
+        if hide and pin["type"] == "no_connect":
+            u_shift = 0.01 if orientation < 180 else -0.01
+            v_shift = u_shift if hide == 1 else 0
+            if orientation in (0, 180):
+                x += u_shift
+                y += v_shift
+            else:
+                x += v_shift
+                y += u_shift
+
         pin_sexp = Sexp(["pin", pin["type"], pin["style"]])
         pin_sexp.append(["at", x, y, orientation])
         pin_sexp.append(["length", pin_length])
@@ -853,11 +864,14 @@ def insert_spacers(pins):
     
     return expanded_pins
 
-def bundle_pins(pins):
+def bundle_pins(mode, pins):
+    types = ["power_in"]
+    if mode > 1:
+        types.append("no_connect")
     bundled_pins = {}
     single_pins = []
     for pin in pins:
-        if pin["type"] in ["power_in",]:
+        if pin["type"] in types:
             key = (pin["name"], pin["type"])
             if key not in bundled_pins:
                 pin["number"] = [pin["number"]]
@@ -919,7 +933,7 @@ def rows_to_symbol(
         push (float, optional): When 0, pins start at the top/left-most position on a side.
                                 When 1, pins start at the bottom/right-most position.
                                 Defaults to 0.5 (pins are centered).
-        bundle (bool, optional): Bundle identically-named power or ground pins. Defaults to False.
+        bundle (int, optional): Bundle identically-named power or ground pins. Defaults to 0.
         scrunch (bool, optional): Compress pins of left/right columns underneath top/bottom rows.
                                  Defaults to False.
         ccw (bool, optional): Reverse the direction and starting point of pins on the top 
@@ -1115,7 +1129,7 @@ def rows_to_symbol(
             pins = insert_spacers(pins)
             # Bundle identical power or ground input pins if requested
             if bundle:
-                pins = bundle_pins(pins)
+                pins = bundle_pins(bundle, pins)
             # Replace the unit side's pins with the expanded, bundled pins.
             unit[side] = pins
 
@@ -1512,8 +1526,9 @@ def row_file_to_symbol_lib_file(
                                       alternatives. Defaults to None (no splitting).
         overwrite (bool, optional): Allow overwriting or merging with existing output file.
                                    Defaults to False.
-        bundle (bool, optional): Bundle identically-named power or ground pins into single pins.
-                               Defaults to False.
+        bundle (int, optional): Bundle identically-named power or ground pins into single pins.
+                                If bundle > 1, bundles NC pins as well.
+                                Defaults to 0.
         scrunch (bool, optional): Compress pins of left/right columns underneath top/bottom rows.
                                  Defaults to False.
         ccw (bool, optional): Reverse the direction and starting point of pins on the top 
@@ -1763,7 +1778,7 @@ def kipart():
     parser.add_argument(
         "-b",
         "--bundle",
-        action="store_true",
+        action="count",
         help="Bundle identically-named power or ground input pins into single schematic pins",
     )
     parser.add_argument(
