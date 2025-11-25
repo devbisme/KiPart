@@ -417,7 +417,7 @@ def read_row_file(input_file):
     return rows
 
 
-def read_symbol_rows(rows):
+def read_symbol_rows(rows, ignore_blank_rows=False):
     """
     Group CSV rows into separate symbols based on blank lines.
 
@@ -427,6 +427,7 @@ def read_symbol_rows(rows):
 
     Args:
         rows (list of list): Raw CSV rows from the input file.
+        ignore_blank_rows: Skips blank rows rather than starting a new symbol.
 
     Returns:
         list of list: List of symbol data, where each item is a list of rows for a symbol.
@@ -439,9 +440,10 @@ def read_symbol_rows(rows):
     current_symbol_rows = []
     for row in rows:
         if not row or all(cell.strip() == "" for cell in row):
-            if current_symbol_rows:
-                symbols.append(current_symbol_rows)
-            current_symbol_rows = []
+            if not ignore_blank_rows:
+                if current_symbol_rows:
+                    symbols.append(current_symbol_rows)
+                current_symbol_rows = []
         else:
             current_symbol_rows.append(row)
 
@@ -1380,6 +1382,7 @@ def rows_to_symbol_lib(
     ccw=False,
     push=DEFAULT_PUSH,
     hide_pin_num=False,
+    one_symbol=False,
 ):
     """
     Generate a complete KiCad symbol library from CSV or Excel data.
@@ -1416,6 +1419,8 @@ def rows_to_symbol_lib(
                                0.0 places pins at start of side, 1.0 at end of side,
                                0.5 (default) centers the pins.
         hide_pin_num (bool, optional): Hide pin number. Defaults to False.
+        one_symbol (bool, optional): Ignore empty lines rather than starting a new symbol.
+                                          Defaults to False.
 
     Returns:
         Sexp: Complete KiCad symbol library as an Sexp object, ready to write to file.
@@ -1428,7 +1433,7 @@ def rows_to_symbol_lib(
     symbol_lib = create_empty_symbol_lib()
 
     # Group rows into individual symbols
-    symbol_row_groups = read_symbol_rows(rows)
+    symbol_row_groups = read_symbol_rows(rows, one_symbol)
 
     # Process each symbol and add it to the library
     for symbol_rows in symbol_row_groups:
@@ -1481,6 +1486,7 @@ def row_file_to_symbol_lib_file(
     ccw=False,
     push=DEFAULT_PUSH,
     hide_pin_num=False,
+    one_symbol=False,
 ):
     """
     Convert a CSV or Excel file to a KiCad symbol library file.
@@ -1522,6 +1528,8 @@ def row_file_to_symbol_lib_file(
                                0.0 places pins at start of side, 1.0 at end of side,
                                0.5 (default) centers the pins.
         hide_pin_num (bool, optional): Hide pin number. Defaults to False.
+        one_symbol (bool, optional): Ignore empty lines rather than starting a new symbol.
+                                          Defaults to False.
 
     Returns:
         str: Path to the generated .kicad_sym file.
@@ -1559,6 +1567,7 @@ def row_file_to_symbol_lib_file(
         ccw=ccw,
         push=push,
         hide_pin_num=hide_pin_num,
+        one_symbol=one_symbol,
     )
 
     # If the output file already exists and overwrite is True, we need to merge
@@ -1711,6 +1720,12 @@ def kipart():
         help="Merge symbols into an existing library rather than overwriting completely",
     )
     parser.add_argument(
+        "-1",
+        "--one-symbol",
+        action="store_true",
+        help="Ignore blank lines rather than starting a new symbol",
+    )
+    parser.add_argument(
         "-s",
         "--sort",
         choices=["row", "num", "name"],
@@ -1844,7 +1859,8 @@ def kipart():
                 scrunch=args.scrunch,
                 ccw=args.ccw,
                 push=args.push,
-                hide_pin_num=args.hide_pin_num
+                hide_pin_num=args.hide_pin_num,
+                one_symbol=args.one_symbol,
             )
 
             if args.merge:
