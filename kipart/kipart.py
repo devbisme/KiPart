@@ -1826,6 +1826,10 @@ def kipart():
             )
             sys.exit(1)
 
+        # Clear out the file if it exists and we're not merging
+        if os.path.exists(args.output) and not args.merge:
+            os.truncate(args.output, 0)
+
     # Process each input file containing rows of symbol pin data
     error_flag = False
     for row_file in args.input_files:
