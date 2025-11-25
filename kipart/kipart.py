@@ -773,7 +773,9 @@ def create_pin(pin, x, y, orientation, pin_length, alt_pin_delim=None):
 
     # Iterate through the pins. Only the first pin of a bundle is visible (not hidden)
     for hide, pin_number in enumerate(pin_numbers, 0):
-        pin_sexp = Sexp(["pin", pin["type"], pin["style"]])
+        # Hidden power_in pins become global nets, so make those passive
+        pin_type = pin["type"] if pin["type"] != "power_in" or not hide else "passive"
+        pin_sexp = Sexp(["pin", pin_type, pin["style"]])
         pin_sexp.append(["at", x, y, orientation])
         pin_sexp.append(["length", pin_length])
         if hide or pin["hidden"].lower() in ["1", "true", "yes"]:
