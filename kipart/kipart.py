@@ -1355,9 +1355,11 @@ def rows_to_symbol(
     # such that it doesn't overlap any of the different-sized units.
     tl_x = min(unit_top_left_corner, key=lambda c: c[0])[0]
     tl_y = max(unit_top_left_corner, key=lambda c: c[1])[1]
+    br_x = max(unit_bottom_right_corner, key=lambda c: c[0])[0]
     br_y = min(unit_bottom_right_corner, key=lambda c: c[1])[1]
     for name, [value, x_offset, y_offset, justify, hide] in properties.items():
-        anchor_y = tl_y if y_offset >= 0 else br_y
+        size = FONT_SIZE
+        anchor_y = tl_y + size / 2 if y_offset >= 0 else br_y - size / 2
         symbol_sexp.append(
             [
                 "property",
@@ -1366,7 +1368,7 @@ def rows_to_symbol(
                 ["at", tl_x + x_offset, anchor_y + y_offset, 0],
                 [
                     "effects",
-                    ["font", ["size", FONT_SIZE, FONT_SIZE]],
+                    ["font", ["size", size, size]],
                     ["justify", justify],
                     ["hide", hide],
                 ],
