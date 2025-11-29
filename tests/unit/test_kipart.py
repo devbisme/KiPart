@@ -1190,7 +1190,7 @@ def test_bundle_pins():
         }
     ]
     
-    bundled = bundle_pins(pins)
+    bundled = bundle_pins(0, pins)
     
     # Should have 3 pins now: bundled VCC, GND, and SIG
     assert len(bundled) == 3
@@ -1256,7 +1256,7 @@ def test_bundle_pins():
         }
     ]
     
-    bundled = bundle_pins(pins)
+    bundled = bundle_pins(0, pins)
     
     # Should have same number of pins, all unchanged
     assert len(bundled) == 2
@@ -1266,4 +1266,4 @@ def test_bundle_pins():
     assert bundled[1]["number"] == "2"
     
     # Case 3: Test with empty input
-    assert bundle_pins([]) == []
+    assert bundle_pins(0, []) == []
