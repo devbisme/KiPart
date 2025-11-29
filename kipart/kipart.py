@@ -868,7 +868,7 @@ def insert_spacers(pins):
     
     return expanded_pins
 
-def bundle_pins(mode, pins):
+def bundle_pins(mode, pins, bundle_style="count"):
     types = ["power_in", "power_out"]
     if mode > 1:
         types.append("no_connect")
@@ -888,7 +888,10 @@ def bundle_pins(mode, pins):
         num_bundled_pins = len(pin["number"])
         if num_bundled_pins > 1:
             # If there are multiple pins in the bundle, append the number to the pin name.
-            pin["name"] = f"{pin['name']}[{num_bundled_pins}]"
+            if bundle_style == "count":
+                pin["name"] += f"[{num_bundled_pins}]"
+            elif bundle_style == "range":
+                pin["name"] += f"[{num_bundled_pins-1}:0]"
     return list(bundled_pins.values()) + single_pins
 
 def rows_to_symbol(
@@ -904,6 +907,7 @@ def rows_to_symbol(
     scrunch=False,
     ccw=False,
     hide_pin_num=False,
+    bundle_style="count",
 ):
     """
     Generate a KiCad symbol S-expression from CSV rows.
@@ -943,6 +947,8 @@ def rows_to_symbol(
         ccw (bool, optional): Reverse the direction and starting point of pins on the top 
                                    and right sides. Defaults to False.
         hide_pin_num (bool, optional): Hide pin number. Defaults to False.
+        bundle_style (str, optional): When bundling pins, selects what is appended to the net name.
+                               Can be none, count, or range. Defaults to count.
 
     Returns:
         Sexp: KiCad symbol as an Sexp object, ready to be included in a library.
@@ -1133,7 +1139,7 @@ def rows_to_symbol(
             pins = insert_spacers(pins)
             # Bundle identical power or ground input pins if requested
             if bundle:
-                pins = bundle_pins(bundle, pins)
+                pins = bundle_pins(bundle, pins, bundle_style)
             # Replace the unit side's pins with the expanded, bundled pins.
             unit[side] = pins
 
@@ -1399,6 +1405,7 @@ def rows_to_symbol_lib(
     push=DEFAULT_PUSH,
     hide_pin_num=False,
     one_symbol=False,
+    bundle_style="count",
 ):
     """
     Generate a complete KiCad symbol library from CSV or Excel data.
@@ -1437,6 +1444,8 @@ def rows_to_symbol_lib(
         hide_pin_num (bool, optional): Hide pin number. Defaults to False.
         one_symbol (bool, optional): Ignore empty lines rather than starting a new symbol.
                                           Defaults to False.
+        bundle_style (str, optional): When bundling pins, selects what is appended to the net name.
+                               Can be none, count, or range. Defaults to count.
 
     Returns:
         Sexp: Complete KiCad symbol library as an Sexp object, ready to write to file.
@@ -1467,6 +1476,7 @@ def rows_to_symbol_lib(
                 ccw=ccw,
                 push=push,
                 hide_pin_num=hide_pin_num,
+                bundle_style=bundle_style,
             )
             symbol_lib.append(symbol)
         except Exception as e:
@@ -1503,6 +1513,7 @@ def row_file_to_symbol_lib_file(
     push=DEFAULT_PUSH,
     hide_pin_num=False,
     one_symbol=False,
+    bundle_style="count",
 ):
     """
     Convert a CSV or Excel file to a KiCad symbol library file.
@@ -1547,6 +1558,8 @@ def row_file_to_symbol_lib_file(
         hide_pin_num (bool, optional): Hide pin number. Defaults to False.
         one_symbol (bool, optional): Ignore empty lines rather than starting a new symbol.
                                           Defaults to False.
+        bundle_style (str, optional): When bundling pins, selects what is appended to the net name.
+                               Can be none, count, or range. Defaults to count.
 
     Returns:
         str: Path to the generated .kicad_sym file.
@@ -1585,6 +1598,7 @@ def row_file_to_symbol_lib_file(
         push=push,
         hide_pin_num=hide_pin_num,
         one_symbol=one_symbol,
+        bundle_style=bundle_style,
     )
 
     # If the output file already exists and overwrite is True, we need to merge
@@ -1799,6 +1813,12 @@ def kipart():
         help="Bundle identically-named power or ground input pins into single schematic pins",
     )
     parser.add_argument(
+        "--bundle-style",
+        choices=["none", "count", "range"],
+        default="count",
+        help="When bundling pins, selects what is appended to the net name",
+    )
+    parser.add_argument(
         "--hide-pin-num",
         action="store_true",
         help="Hide pin numbers",
@@ -1882,6 +1902,7 @@ def kipart():
                 push=args.push,
                 hide_pin_num=args.hide_pin_num,
                 one_symbol=args.one_symbol,
+                bundle_style=args.bundle_style,
             )
 
             if args.merge:
