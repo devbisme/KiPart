@@ -991,6 +991,7 @@ def rows_to_symbol(
 
     # Extract user-specified properties between part name and pin data column names
     row_idx = 1
+    custom_props = 0
     for row in symbol_rows[1:]:
         if len(row) == 2 and row[0].strip().endswith(":"):
             row_idx += 1
@@ -1018,7 +1019,16 @@ def rows_to_symbol(
                     "fp_filters": "ki_fp_filters",
                 }[label.lower()]
             except KeyError:
-                raise KeyError(f"Invalid property label '{label}' in part {part_name}")
+                # Custom properties go below the symbol
+                if "*" in label:
+                    hide = "yes"
+                    y = 0
+                    label = label.replace("*", "")
+                else:
+                    hide = "no"
+                    y = -GRID_SPACING * (custom_props * 2 + 0.5)
+                    custom_props += 1
+                properties[label] = [None, 0, y, "right", hide]
             properties[label][0] = value
         else:
             # End of property rows, break out of the loop
@@ -1127,9 +1137,10 @@ def rows_to_symbol(
     # after the properties are added below.
     unit_sexps = []
 
-    # Store the coords of the top-left corner for each unit so we can place the
+    # Store the coords of the corners for each unit so we can place the
     # properties where they won't run into any of the different-sized units.
     unit_top_left_corner = []
+    unit_bottom_right_corner = []
 
     # Create the Sexp for each unit and add it to the symbol Sexp.
     for unit_id, unit in units.items():
@@ -1230,8 +1241,9 @@ def rows_to_symbol(
         # Add the rectangle to the unit Sexp
         unit_sexp.append(rect_sexp)
 
-        # Store the top-left corner of the unit for placing properties later.
+        # Store the corners of the unit for placing properties later.
         unit_top_left_corner.append((x0, y1))
+        unit_bottom_right_corner.append((x1, y0))
 
         if debug:
             # For debugging, show the boxes that contain the pins on each side.
@@ -1367,16 +1379,20 @@ def rows_to_symbol(
     # such that it doesn't overlap any of the different-sized units.
     tl_x = min(unit_top_left_corner, key=lambda c: c[0])[0]
     tl_y = max(unit_top_left_corner, key=lambda c: c[1])[1]
+    br_x = max(unit_bottom_right_corner, key=lambda c: c[0])[0]
+    br_y = min(unit_bottom_right_corner, key=lambda c: c[1])[1]
     for name, [value, x_offset, y_offset, justify, hide] in properties.items():
+        size = FONT_SIZE
+        anchor_y = tl_y + size / 2 if y_offset >= 0 else br_y - size / 2
         symbol_sexp.append(
             [
                 "property",
                 name,
                 value,
-                ["at", tl_x + x_offset, tl_y + y_offset, 0],
+                ["at", tl_x + x_offset, anchor_y + y_offset, 0],
                 [
                     "effects",
-                    ["font", ["size", FONT_SIZE, FONT_SIZE]],
+                    ["font", ["size", size, size]],
                     ["justify", justify],
                     ["hide", hide],
                 ],
