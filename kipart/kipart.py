@@ -866,7 +866,7 @@ def insert_spacers(pins):
     
     return expanded_pins
 
-def bundle_pins(pins):
+def bundle_pins(mode, pins):
     types = ["power_in", "power_out"]
     if mode > 1:
         types.append("no_connect")
