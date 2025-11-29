@@ -908,6 +908,7 @@ def rows_to_symbol(
     ccw=False,
     hide_pin_num=False,
     bundle_style="count",
+    justify="right",
 ):
     """
     Generate a KiCad symbol S-expression from CSV rows.
@@ -949,6 +950,8 @@ def rows_to_symbol(
         hide_pin_num (bool, optional): Hide pin number. Defaults to False.
         bundle_style (str, optional): When bundling pins, selects what is appended to the net name.
                                Can be none, count, or range. Defaults to count.
+        justify (str, optional): Sets the justification on visible properties.
+                               Can be left, center, or right. Defaults to right.
 
     Returns:
         Sexp: KiCad symbol as an Sexp object, ready to be included in a library.
@@ -979,8 +982,8 @@ def rows_to_symbol(
     # Enter default properties. User-specified property values will override these.
     # The entries in the property list are [value, x_offset, y_offset, text justification, hidden].
     properties = {
-        "Reference": ["U", 0, 2.5 * GRID_SPACING, "right", "no"],
-        "Value": [part_name, 0, 0.5 * GRID_SPACING, "right", "no"],
+        "Reference": ["U", 0, 2.5 * GRID_SPACING, justify, "no"],
+        "Value": [part_name, 0, 0.5 * GRID_SPACING, justify, "no"],
         "Footprint": ["", 0, 0, "right", "yes"],
         "Datasheet": ["", 0, 0, "right", "yes"],
         "Description": ["", 0, 0, "left", "yes"],
@@ -1422,6 +1425,7 @@ def rows_to_symbol_lib(
     hide_pin_num=False,
     one_symbol=False,
     bundle_style="count",
+    justify="right",
 ):
     """
     Generate a complete KiCad symbol library from CSV or Excel data.
@@ -1462,6 +1466,8 @@ def rows_to_symbol_lib(
                                           Defaults to False.
         bundle_style (str, optional): When bundling pins, selects what is appended to the net name.
                                Can be none, count, or range. Defaults to count.
+        justify (str, optional): Sets the justification on visible properties.
+                               Can be left, center, or right. Defaults to right.
 
     Returns:
         Sexp: Complete KiCad symbol library as an Sexp object, ready to write to file.
@@ -1493,6 +1499,7 @@ def rows_to_symbol_lib(
                 push=push,
                 hide_pin_num=hide_pin_num,
                 bundle_style=bundle_style,
+                justify=justify,
             )
             symbol_lib.append(symbol)
         except Exception as e:
@@ -1530,6 +1537,7 @@ def row_file_to_symbol_lib_file(
     hide_pin_num=False,
     one_symbol=False,
     bundle_style="count",
+    justify="right",
 ):
     """
     Convert a CSV or Excel file to a KiCad symbol library file.
@@ -1576,6 +1584,8 @@ def row_file_to_symbol_lib_file(
                                           Defaults to False.
         bundle_style (str, optional): When bundling pins, selects what is appended to the net name.
                                Can be none, count, or range. Defaults to count.
+        justify (str, optional): Sets the justification on visible properties.
+                               Can be left, center, or right. Defaults to right.
 
     Returns:
         str: Path to the generated .kicad_sym file.
@@ -1615,6 +1625,7 @@ def row_file_to_symbol_lib_file(
         hide_pin_num=hide_pin_num,
         one_symbol=one_symbol,
         bundle_style=bundle_style,
+        justify=justify,
     )
 
     # If the output file already exists and overwrite is True, we need to merge
@@ -1840,6 +1851,13 @@ def kipart():
         help="Hide pin numbers",
     )
     parser.add_argument(
+        "-j",
+        "--justify",
+        choices=["left", "center", "right"],
+        default="right",
+        help="Sets the justification on visible properties",
+    )
+    parser.add_argument(
         "-v", "--version", action="version", version=f"%(prog)s {__version__}"
     )
 
@@ -1919,6 +1937,7 @@ def kipart():
                 hide_pin_num=args.hide_pin_num,
                 one_symbol=args.one_symbol,
                 bundle_style=args.bundle_style,
+                justify=args.justify,
             )
 
             if args.merge:
