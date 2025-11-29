@@ -122,7 +122,11 @@ def gridify(value, grid_spacing=GRID_SPACING, policy="round"):
     elif policy == "down":
         return math.floor(value / grid_spacing) * grid_spacing
     elif policy == "round":
-        return round(value / grid_spacing) * grid_spacing
+        # Round from zero (round() does round-to-even which looks bad)
+        if value > 0:
+            return math.floor(value / grid_spacing + 0.5) * grid_spacing
+        else:
+            return math.ceil(value / grid_spacing - 0.5) * grid_spacing
     else:
         raise ValueError(
             f"Invalid gridify policy '{policy}'. Use 'up', 'down', or 'round'."
