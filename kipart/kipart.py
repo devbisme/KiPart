@@ -1534,6 +1534,7 @@ def row_file_to_symbol_lib_file(
     default_style=DEFAULT_STYLE,
     alt_pin_delim=None,
     overwrite=False,
+    merge=False,
     bundle=False,
     scrunch=False,
     ccw=False,
@@ -1573,6 +1574,8 @@ def row_file_to_symbol_lib_file(
                                       alternatives. Defaults to None (no splitting).
         overwrite (bool, optional): Allow overwriting or merging with existing output file.
                                    Defaults to False.
+        merge (bool, optional): If overwriting, merge new symbols with existing library.
+                               Defaults to False.
         bundle (int, optional): Bundle identically-named power or ground pins into single pins.
                                 If bundle > 1, bundles NC pins as well.
                                 Defaults to 0.
@@ -1600,15 +1603,23 @@ def row_file_to_symbol_lib_file(
         FileNotFoundError: If the input file doesn't exist.
     """
 
-    # Determine output filename for the symbol library
     if not symbol_lib_file:
+        # If there's no output file specified, use the input filename with .kicad_sym extension
         symbol_lib_file = os.path.splitext(row_file)[0] + ".kicad_sym"
+    else:
+        # Make sure given symbol file is a KiCad symbol file
+        if os.path.splitext(symbol_lib_file)[1] != ".kicad_sym":
+            raise ValueError(f"Output file {symbol_lib_file} must have a .kicad_sym extension")
 
-    # Check for an existing file
-    if os.path.exists(symbol_lib_file) and not overwrite:
-        raise ValueError(
-            f"Output file {symbol_lib_file} already exists and overwriting has not been enabled."
-        )
+    # Check overwriting and merging operations for an existing file
+    if os.path.exists(symbol_lib_file):
+        if not overwrite:
+            raise ValueError(
+                f"Output file {symbol_lib_file} already exists and overwriting has not been enabled."
+            )
+        if not merge:
+            # Clear out the file if it exists and we're not merging
+            os.truncate(symbol_lib_file, 0)
 
     # Read rows of symbol pin data from CSV or Excel file.
     rows = read_row_file(row_file)
@@ -1642,7 +1653,7 @@ def row_file_to_symbol_lib_file(
             # Merge the existing library with the new one
             symbol_lib = merge_symbol_libs(existing_lib, symbol_lib, overwrite=True)
         except Exception as e:
-            print(f"Warning: Could not merge with existing library: {str(e)}")
+            print(f"Warning: Could not merge {row_file} with existing library {symbol_lib_file}: {str(e)}")
             print("Creating a new library instead.")
             # Continue with the original symbol_lib
 
@@ -1652,6 +1663,10 @@ def row_file_to_symbol_lib_file(
     # Store the symbol library as an S-expression in the output file.
     with open(symbol_lib_file, "w") as f:
         f.write(str(symbol_lib))
+        if merge:
+            print(f"Merged symbols from {row_file} into existing symbol library {symbol_lib_file}")
+        else:
+            print(f"Created symbol library {symbol_lib_file} from {row_file}")
 
     return symbol_lib_file
 
@@ -1901,27 +1916,8 @@ def kipart():
     if args.merge and not args.output:
         args.output = os.path.splitext(args.input_files[0])[0] + ".kicad_sym"
 
-    # Do some checks on the output file if given.
-    if args.output:
-
-        # Make sure it's a KiCad symbol file.
-        if os.path.splitext(args.output)[1] != ".kicad_sym":
-            print(f"Error: Output file {args.output} must have a .kicad_sym extension")
-            sys.exit(1)
-        
-        # If the output file already exists and we're not overwriting, exit.
-        if os.path.exists(args.output) and not args.overwrite:
-            print(
-                f"Error: Output file {args.output} already exists. Use -w to allow changes to it."
-            )
-            sys.exit(1)
-
-        # Clear out the file if it exists and we're not merging
-        if os.path.exists(args.output) and not args.merge:
-            os.truncate(args.output, 0)
-
     # Process each input file containing rows of symbol pin data
-    error_flag = False
+    num_errors = 0
     for row_file in args.input_files:
         try:
             symbol_lib_file = row_file_to_symbol_lib_file(
@@ -1934,6 +1930,7 @@ def kipart():
                 default_style=default_style,
                 alt_pin_delim=args.alt_delimiter,
                 overwrite=args.overwrite,
+                merge=args.merge,
                 bundle=args.bundle,
                 scrunch=args.scrunch,
                 ccw=args.ccw,
@@ -1944,12 +1941,6 @@ def kipart():
                 justify=args.justify,
             )
 
-            if args.merge:
-                print(f"Merged symbols from {row_file} into {symbol_lib_file}")
-                args.overwrite = True  # Allow overwriting for subsequent files
-            else:
-                print(f"Created {symbol_lib_file} successfully from {row_file}")
-            
             # If output is going to a single file, any subsequent files
             # will be merged into it. So set the merge flag to True.
             if args.output:
@@ -1959,11 +1950,11 @@ def kipart():
         except Exception as e:
             # raise
             print(f"Error: Failed while processing file '{row_file}': {str(e)}")
-            error_flag = True
+            num_errors += 1
             continue
 
-    if error_flag:
-        print("Errors occurred during processing. Please check the output above.")
+    if num_errors:
+        print(f"A total of {num_errors} errors occurred during processing. Please check the output above.")
         sys.exit(1)
 
 
