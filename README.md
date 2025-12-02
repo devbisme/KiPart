@@ -63,6 +63,7 @@ This will install two command-line utilities:
 
 KiPart is mainly intended to be used as a script:
 
+```
 usage: kipart [-h] [-o OUTPUT] [-w] [-m] [-s {row,num,name}] [-r] [--ccw] [--scrunch]
               [--side {left,right,top,bottom}] [--type TYPE] [--style STYLE]
               [--push PUSH] [-a ALT_DELIMITER] [-b] [--hide-pin-num] [-v]
@@ -93,6 +94,7 @@ options:
   -b, --bundle          Bundle identically-named power or ground input pins into single schematic pins
   --hide-pin-num        Hide pin numbers
   -v, --version         show program's version number and exit
+```
 
 The input to `kipart` is one or more CSV or Excel files.
 These contain the following items:
