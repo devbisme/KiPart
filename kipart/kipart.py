@@ -1035,7 +1035,7 @@ def rows_to_symbol(
                     hide = "no"
                     y = -GRID_SPACING * (custom_props * 2 + 0.5)
                     custom_props += 1
-                properties[label] = [None, 0, y, "right", hide]
+                properties[label] = [None, 0, y, justify, hide]
             properties[label][0] = value
         else:
             # End of property rows, break out of the loop
