@@ -249,7 +249,7 @@ pin,name,type,side
         text=True,
     )
     assert result.returncode == 0
-    assert f"Created {output_path}" in result.stdout
+    assert f"Created symbol library {output_path}" in result.stdout
     assert os.path.exists(output_path)
 
     # Test invalid input
@@ -642,7 +642,7 @@ pin,name,type,side
         f.write(csv_content2)
 
     # Update the library with overwrite=True to test merge
-    row_file_to_symbol_lib_file(csv_path2, symbol_lib_file=output_path, overwrite=True)
+    row_file_to_symbol_lib_file(csv_path2, symbol_lib_file=output_path, overwrite=True, merge=True)
 
     # Read the resulting library
     with open(output_path) as f:
