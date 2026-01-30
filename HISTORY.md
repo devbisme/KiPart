@@ -1,22 +1,41 @@
 # History
 
+## 2.3.0 (2026-01-30)
+
+-   Added `--justify` parameter for controlling text justification on symbols.
+-   Added support for custom properties that are placed below the symbol body.
+-   Added `--bundle-style` option for choosing a suffix for bundled pins.
+-   Added `-1`/`--one-symbol` option for ignoring empty rows in CSV files.
+-   Added ability to bundle NC (no-connect) pins when `-b` flag is specified twice.
+-   Enable bundling of power_out pins.
+-   Fixed bundled power_in pins becoming global nets.
+-   Fixed truncation behavior: `-w` without `-m` now properly truncates the destination file.
+-   Moved validation of overwrite and merge operations into the row_file_to_symbol_file function.
+-   Improved spacing and breathing room on symbol properties.
+-   Fixed gridify rounding to round from zero.
+-   Updated tests to account for changes in overwrite/merge flag handling and output status messages.
+-   Fixed unit tests for bundle_pins() changes.
+-   Improved usage text formatting with code fencing.
+-   Fixed handling of rows of symbol properties.
+
 ## 2.2.0 (2025-11-23)
 
 -   Names in the unit column of the CSV are now displayed in the unit name drop-down of the Symbol Editor.
--   Added `hide-pin-num` to removed pin numbers on generated symbols.
+-   Added `hide-pin-num` to remove pin numbers on generated symbols.
 
 ## 2.1.0 (2025-05-26)
 
 -   Symbol pin lengths are now sized to fit the longest pin number.
+-   Symbol property names and values can now be placed on rows between the symbol name row and the pin rows.
 -   Symbol properties are now placed so they don't overlap any symbol unit if the units have differing sizes.
 -   Prepending asterisks to a pin number will insert blank pin spaces in the symbol. 
 -   Multiple asterisks can be used to insert multiple blank pin spaces.
 -   Bundled pins now have the number of pins in the bundle appended to the pin name within brackets.
+-   Added `--alt-delimiter` option to split pin names using a given delimiter and assign them as alternate pin names.
 
 ## 2.0.0 (2025-05-25)
 
--   Complete rewrite to support modern KiCad symbol libraries based on
-    S-expressions.
+-   Complete rewrite to support modern KiCad symbol libraries based on S-expressions.
 
 ## 1.4.2 (2023-07-26)
 
@@ -24,7 +43,7 @@
 
 ## 1.4.1 (2023-01-05)
 
--   Swapped test on -a and -w flags so appending with overwrite doesn\'t
+-   Swapped test on -a and -w flags so appending with overwrite doesn't
     erase all the existing parts.
 
 ## 1.4.0 (2022-11-23)
