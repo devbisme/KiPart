@@ -64,9 +64,8 @@ This will install two command-line utilities:
 KiPart is mainly intended to be used as a script:
 
 ```
-usage: kipart [-h] [-o OUTPUT] [-w] [-m] [-s {row,num,name}] [-r] [--ccw] [--scrunch]
-              [--side {left,right,top,bottom}] [--type TYPE] [--style STYLE]
-              [--push PUSH] [-a ALT_DELIMITER] [-b] [--hide-pin-num] [-v]
+usage: kipart [-h] [-o OUTPUT] [-w] [-m] [-1] [-s {row,num,name}] [-r] [--ccw] [--scrunch] [--side {left,right,top,bottom}] [--type TYPE] [--style STYLE] [--push PUSH] [-a ALT_DELIMITER] [-b]
+              [--bundle-style {none,count,range}] [--hide-pin-num] [-j {left,center,right}] [-v]
               input_files [input_files ...]
 
 Convert CSV or Excel files into KiCad symbol libraries
@@ -79,6 +78,7 @@ options:
   -o, --output OUTPUT   Output KiCad symbol library file (.kicad_sym)
   -w, --overwrite       Allow overwriting of an existing symbol library
   -m, --merge           Merge symbols into an existing library rather than overwriting completely
+  -1, --one-symbol      Ignore blank lines rather than starting a new symbol
   -s, --sort {row,num,name}
                         Sort the part pins by their entry order in the CSV file (row), their pin number (num), or their pin name (name)
   -r, --reverse         Sort pins in reverse order
@@ -92,7 +92,11 @@ options:
   -a, --alt-delimiter ALT_DELIMITER
                         Delimiter character for splitting pin names into alternatives
   -b, --bundle          Bundle identically-named power or ground input pins into single schematic pins
+  --bundle-style {none,count,range}
+                        When bundling pins, selects what is appended to the net name
   --hide-pin-num        Hide pin numbers
+  -j, --justify {left,center,right}
+                        Sets the justification on visible properties
   -v, --version         show program's version number and exit
 ```
 
@@ -102,7 +106,7 @@ These contain the following items:
 1.  The part name or number stands alone in the first column of a row.
 2.  Part properties are listed on the following rows. Each property begins
     with a property name followed by a colon and the property value. The
-    allowable properties are:
+    standard properties are:
 
     -   `Reference`: The reference designator such as `U`.
     -   `Value`: The part value (often the same as the name).
@@ -112,6 +116,8 @@ These contain the following items:
     -   `Keywords`: Keywords for searching for the part.
     -   `Filters`: The footprint filters for the part.
     -   `Locked`: I have no idea what this does...
+
+    You can also list part properties with arbitrary names of your own choosing.
 
 3.  After the properties, the next row contains the column headers. The required
     headers are `Pin` and `Name`. Optional columns are `Unit`,
@@ -130,7 +136,10 @@ These contain the following items:
         (This only works when the `-s row` sorting option is selected.)
 
     -   Pin names can be any combination of letters, numbers and special
-        characters (except a comma).
+        characters (except a comma). If the pin name contains one or more
+        delimiter characters specified with the `-a` option, then the name
+        will be split at each delimiter and the resulting substrings will
+        be entered as alternate pin functions.
 
     -   The unit identifier can be blank or any combination of letters,
         numbers and special characters (except a comma). A separate unit
@@ -178,8 +187,8 @@ These contain the following items:
         This can be one of 'y', 'yes', 't', 'true', or
         '1' to make it invisible, anything else makes it visible.
 
-6.  A blank row ends the list of pins for the part.
-7.  Multiple parts (each consisting of a name, properties, column header
+5.  A blank row ends the list of pins for the part.
+6.  Multiple parts (each consisting of a name, properties, column header
     and pin data rows) separated by blank lines are allowed in a single CSV file.
     Each part will become a separate symbol in the KiCad library.
 
@@ -224,7 +233,7 @@ GND pins found on many high pin-count devices.
 The `-a` option specifies a delimiter for splitting pin names
 into alternates. This is useful for parts with pins having multiple
 functions. For example, `-a /` will split the pin name `IO1/SDA/MOSI` into
-a pin named `IO1` with two alternates names of `SDA` and `MOSI`.
+a pin named `IO1` with two alternate names of `SDA` and `MOSI`.
 
 The `-w` option is used to overwrite an existing library with any new
 parts from the file. The old contents of the library are lost.
