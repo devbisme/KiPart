@@ -1000,7 +1000,7 @@ def rows_to_symbol(
     row_idx = 1
     custom_props = 0
     for row in symbol_rows[1:]:
-        if len(row) == 2 and row[0].strip().endswith(":"):
+        if len(row) >= 2 and row[0].strip().endswith(":"):
             row_idx += 1
             label = row[0].strip()[:-1]  # Remove trailing ':'
             value = row[1].strip()
@@ -1014,7 +1014,6 @@ def rows_to_symbol(
                     "footprint": "Footprint",
                     "fp": "Footprint",
                     "datasheet": "Datasheet",
-                    "description": "Description",
                     "description": "Description",
                     "desc": "Description",
                     "ki_keywords": "ki_keywords",
@@ -1114,7 +1113,7 @@ def rows_to_symbol(
             f"No valid pins defined for part {part_name} (all pins are placeholders)"
         )
 
-    # Use MIN?PIN_LENGTH when pin numbers are hidden.
+    # Use MIN_PIN_LENGTH when pin numbers are hidden.
     if hide_pin_num:
         pin_length = MIN_PIN_LENGTH
     else:
