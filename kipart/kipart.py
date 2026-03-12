@@ -1778,7 +1778,9 @@ def kipart():
         description="Convert CSV or Excel files into KiCad symbol libraries"
     )
     parser.add_argument(
-        "input_files", nargs="+", help="Input symbol pin data CSV or Excel files (.csv, .xlsx, .xls)"
+        "input_files",
+        nargs="*",
+        help="Input symbol pin data CSV or Excel files (.csv, .xlsx, .xls). If no files are given, reads from stdin."
     )
     parser.add_argument(
         "-o", "--output", help="Output KiCad symbol library file (.kicad_sym)"
@@ -1902,9 +1904,21 @@ def kipart():
         print("Valid styles: line, inverted, clock, inverted_clock, non_logic, etc.")
         sys.exit(1)
 
+    # If no input files given, read from stdin
     if len(args.input_files) == 0:
-        print("Error: No input files specified")
-        sys.exit(1)
+        # Read all stdin content first to check if there's any data
+        stdin_content = sys.stdin.read()
+        if not stdin_content.strip():
+            print("Error: No input files specified and no data provided via stdin")
+            sys.exit(1)
+        # Write stdin content to a temporary file
+        import tempfile
+        with tempfile.NamedTemporaryFile(mode='w', suffix='.csv', delete=False) as tmp:
+            tmp.write(stdin_content)
+            args.input_files = [tmp.name]
+        # Set a default output name since we don't have a real filename
+        if not args.output:
+            args.output = "output.kicad_sym"
 
     # Merging automatically allows overwriting so further symbols can be added.
     if args.merge:
