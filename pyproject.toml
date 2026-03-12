@@ -50,6 +50,7 @@ dependencies = [
 [project.scripts]
 kipart = "kipart.kipart:kipart"
 kilib2csv = "kipart.kipart:kilib2csv"
+sdt2csv = "kipart.sdt2csv:main"
 
 [project.optional-dependencies]
 dev = [
