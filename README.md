@@ -20,6 +20,8 @@ Excel file.
     connection.
 -   Also includes `kilib2csv` for converting schematic part libraries
     into CSV files suitable for input to KiPart.
+-   Also includes `sdt2csv` for converting SDT symbol description files
+    to CSV format.
 
 ## Example Use Case
 
@@ -49,13 +51,15 @@ Simple enough:
 
     pip install kipart
 
-This will install two command-line utilities:
+This will install three command-line utilities:
 
 -   `kipart`: The main utility for generating schematic symbols from rows of pin data
         stored in CSV or Excel files.
 -   `kilib2csv`: A utility for converting existing KiCad libraries into
         CSV files. This is useful for converting existing libraries into a format that
         can be used with KiPart.
+-   `sdt2csv`: A utility for converting SDT (Schematic Design Tool) symbol description
+        files to CSV format for use with KiPart.
 
 ## Usage
 
@@ -460,4 +464,74 @@ appending to the output CSV file:
 Then you can generate a consistent library from the CSV file:
 
     kipart my_library.csv -o my_library_new.lib
+
+### sdt2csv
+
+If you have existing symbol definitions in SDT (Schematic Design Tool) format
+(used by OrCAD and similar EDA tools), you can convert them to CSV using the
+`sdt2csv` utility. SDT format uses a simple text format to define symbols:
+
+    ; Comment
+    device part_name width height
+    left
+    type  pin_name  pin_number
+    right
+    type  pin_name  pin_number
+    top
+    ...
+    bottom
+    ...
+
+The side directives (`left`, `right`, `top`, `bottom`) control where subsequent
+pins are placed. Empty lines can be used to skip pin positions. Multiple pin
+numbers can be provided for a single pin name to create multiple pins (useful
+for buses like address or data lines).
+
+**Pin type codes:**
+
+| Code | KiCad Type |
+|------|------------|
+| a    | passive    |
+| i    | input      |
+| o    | output     |
+| h    | power_in   |
+| t    | tri_state  |
+| b, u, io | bidirectional |
+| c    | open_collector |
+| e    | open_emitter |
+| x, n | no_connect |
+
+    usage: sdt2csv [-h] [-o OUTPUT] [-m] input_files [input_files ...]
+
+    Convert SDT symbol description files to CSV format for kipart
+
+    positional arguments:
+      input_files           Input SDT format files
+
+    options:
+      -h, --help            show this help message and exit
+      -o OUTPUT, --output OUTPUT
+                            Output CSV file path
+      -m, --merge           Append to output file instead of overwriting
+
+**Example SDT file (rt9818.sdt):**
+
+    ;
+    ; RT9818 reset (SOT-23)
+    ;
+    device rt9818 4 4
+    left
+    a       vcc     3
+    a       gnd     2
+    right
+    h       rst#    1
+
+Convert and generate the symbol:
+
+    sdt2csv rt9818.sdt -o rt9818.csv
+    kipart rt9818.csv -o rt9818.kicad_sym
+
+Or pipe directly to kipart:
+
+    sdt2csv rt9818.sdt | kipart -o rt9818.kicad_sym
 
