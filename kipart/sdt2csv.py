@@ -121,20 +121,26 @@ def convert_sdt_symbol(lines: list[str]) -> list[list[str]]:
         pin_type = SDT_TYPE_MAP.get(pin_type_code, 'passive')
 
         # Create a row for each pin number (for repetitive pins)
-        # If pin name ends with a number (e.g., "a5") and there are multiple
-        # pin numbers, increment the suffix (a5, a6, a7...)
-        # If only one pin number, keep name as-is
+        # If there is only one pin number, keep name as-is
+        # If there are multiple pin numbers, we need to handle naming:
+        #   - If pin name ends with a number (e.g., "a5"), then start incrementing
+        #     from that number for each pin number (a5, a6, a7...).
+        #   - If pin name does not end with a number, then start incrementing from 0.
         num_pin_numbers = len(pin_numbers)
-        suffix_match = re.search(r'(\D+)(\d+)$', pin_name)
+        start_index_match = re.search(r'(\D+)(\d+)$', pin_name)
 
-        if num_pin_numbers == 1 or not suffix_match:
-            # Single pin number or no numeric suffix - use name as-is
+        if num_pin_numbers == 1:
+            # Single pin number - use name as-is
             for pin_num in pin_numbers:
                 csv_rows.append([pin_num, pin_type, pin_name, current_side])
         else:
-            # Multiple pin numbers with numeric suffix - increment the number
-            pin_name = suffix_match.group(1)
-            start_index = int(suffix_match.group(2))
+            # Multiple pin numbers - determine starting index for naming
+            if start_index_match:
+                pin_name = start_index_match.group(1)
+                start_index = int(start_index_match.group(2))
+            else:
+                start_index = 0  # default starting index if not given
+            # Create a row for each pin number with incremented index
             for index, pin_num in enumerate(pin_numbers, start_index):
                 csv_rows.append([pin_num, pin_type, f"{pin_name}{index}", current_side])
 
