@@ -1,0 +1,37 @@
+; 74HC00 quad NAND gate
+device 74hc00 6 6
+left
+i       a1      1
+i       b1      2
+i       a2      4
+i       b2      5
+i       a3      9
+i       b3     10
+right
+o       y1      3
+o       y2      6
+o       y3      8
+o       y4     11
+
+h       gnd     7
+h       vcc    14
+
+; 74HC04 hex inverter
+device 74hc04 6 6
+left
+i       a1      1
+i       a2      3
+i       a3      5
+i       a4      9
+i       a5     11
+i       a6     13
+right
+o       y1      2
+o       y2      4
+o       y3      6
+o       y4      8
+o       y5     10
+o       y6     12
+
+h       gnd     7
+h       vcc    14

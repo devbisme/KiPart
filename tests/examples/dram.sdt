@@ -1,0 +1,10 @@
+; DRAM with address and data buses
+device dram 8 6
+left
+i       a        k4 l8 l4 k3 l9 l3 m9 m3 n9 m4
+i       a10      j4 j8 j3 k9 l3 m8 n3 n8
+right
+b      d       a1 b1 c1 d1
+b      d4      a2 b2 c2 d2
+bottom
+i       clk     e1

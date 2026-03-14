@@ -1,0 +1,18 @@
+; Device with all pin types
+device mixed_types 12 8
+left
+a       passive1    1
+i       input1      2
+o       output1     3
+h       power1      4
+t       tristate1   5
+b       bidir1      6
+c       opencoll1   7
+e       openemit1   8
+p       pull1       9
+s       source1    10
+u       bidir2     11
+x       noconn1    12
+right
+n       nc1        13
+io      io1        14

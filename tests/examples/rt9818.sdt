@@ -1,0 +1,12 @@
+; Simple 4-pin device (SOT-23 style)
+; RT9818 reset IC
+device rt9818 4 4
+left
+a       vcc     3
+
+a       gnd     2
+
+right
+
+
+h       rst#    1
