@@ -1,5 +1,11 @@
 # History
 
+## 2.4.0 (2026-03-14)
+
+-   Added `sdt2csv` command-line utility for converting SDT (Schematic Design Tool) symbol description format to CSV for use with kipart.
+-   Added multi-unit symbol support in SDT files via the `unit <name>` directive.
+-   Added ability for kipart to read CSV from stdin when no input files are given.
+
 ## 2.3.0 (2026-01-30)
 
 -   Added `--justify` parameter for controlling text justification on symbols.
