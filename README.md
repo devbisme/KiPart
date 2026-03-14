@@ -455,6 +455,26 @@ pins are placed. Empty lines can be used to skip pin positions. Multiple pin
 numbers can be provided for a single pin name to create multiple pins (useful
 for address and data buses).
 
+**Multi-Unit Symbols:**
+
+SDT files can define symbols with multiple units using the `unit` directive:
+
+    device mypart 8 6
+    unit A
+    left
+    i       a       1 2 3
+    right
+    o       y       4 5 6
+    unit B
+    left
+    i       b       7 8 9
+    right
+    o       z       10 11 12
+
+The `unit <name>` directive assigns subsequent pins to that unit. Each unit
+becomes a separate section in the KiCad symbol. If no `unit` directive is
+present, the CSV output does not include a Unit column (single-unit symbol).
+
 **Pin type codes:**
 
 | Code | KiCad Type     |
@@ -493,9 +513,16 @@ for address and data buses).
     device rt9818 4 4
     left
     a       vcc     3
+
     a       gnd     2
+
     right
+
+
     h       rst#    1
+
+Note: Empty lines between pin definitions create spacers (skipped pin positions)
+in the symbol.
 
 Convert and generate the symbol:
 
