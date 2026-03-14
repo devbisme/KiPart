@@ -38,6 +38,7 @@ def parse_sdt_file(filepath: Path) -> list[list[str]]:
     # Split into symbol definitions (separated by 'device' keyword)
     symbols = []
     current_symbol_lines = []
+    empty_lines = []
     in_symbol = False
 
     for line in content.split('\n'):
@@ -45,8 +46,8 @@ def parse_sdt_file(filepath: Path) -> list[list[str]]:
 
         # Skip empty lines
         if not stripped:
-            if in_symbol:
-                current_symbol_lines.append('')
+            # Keep empty lines within a symbol definition (they indicate skipped pin positions)
+            empty_lines.append('')
             continue
 
         # Skip pure comment lines
@@ -58,9 +59,14 @@ def parse_sdt_file(filepath: Path) -> list[list[str]]:
             # Save previous symbol if exists
             if current_symbol_lines:
                 symbols.append(current_symbol_lines)
+            empty_lines = []
             current_symbol_lines = [stripped]
             in_symbol = True
         elif in_symbol:
+            # Insert any preceding empty lines.
+            current_symbol_lines.extend(empty_lines)
+            empty_lines = []
+            # Append the current, non-empty line to the current symbol definition
             current_symbol_lines.append(stripped)
 
     # Add the last symbol
@@ -85,22 +91,49 @@ def convert_sdt_symbol(lines: list[str]) -> list[list[str]]:
     # Part name row
     csv_rows.append([part_name, ''])
 
-    # Header row - always include Side column since SDT specifies sides
-    csv_rows.append(['Pin', 'Type', 'Name', 'Side'])
+    # Parse remaining lines for pins to determine if units are used
+    current_unit = None
+    has_units = False
 
-    # Parse remaining lines for pins
+    # First pass: determine if any unit is specified
+    for line in lines[1:]:
+        stripped = line.strip().lower()
+        if stripped.startswith('unit '):
+            has_units = True
+            break
+
+    # Header row
+    if has_units:
+        csv_rows.append(['Pin', 'Type', 'Name', 'Side', 'Unit'])
+    else:
+        csv_rows.append(['Pin', 'Type', 'Name', 'Side'])
+
+    # Second pass: process pins
     current_side = 'left'  # default
+    current_unit = None
 
     for line in lines[1:]:
         stripped = line.strip()
 
         # Skip empty lines (they're used to skip pin positions in SDT)
         if not stripped:
+            if has_units:
+                csv_rows.append(["*", '', '', current_side, current_unit])  # Blank row for skipped pin with unit column
+            else:
+                csv_rows.append(["*", '', '', current_side])  # Blank row for skipped pin
             continue
 
         # Check if this is a side directive
         if stripped.lower() in ('left', 'right', 'top', 'bottom'):
             current_side = stripped.lower()
+            continue
+
+        # Check if this is a unit directive
+        if stripped.lower().startswith('unit '):
+            try:
+                current_unit = stripped.split()[1]
+            except IndexError:
+                pass  # If no unit name is given, just keep whatever unit was active before
             continue
 
         # Skip comment blocks
@@ -132,17 +165,31 @@ def convert_sdt_symbol(lines: list[str]) -> list[list[str]]:
         if num_pin_numbers == 1:
             # Single pin number - use name as-is
             for pin_num in pin_numbers:
-                csv_rows.append([pin_num, pin_type, pin_name, current_side])
+                if has_units:
+                    csv_rows.append(
+                        [pin_num, pin_type, pin_name, current_side, current_unit]
+                    )
+                else:
+                    csv_rows.append([pin_num, pin_type, pin_name, current_side])
         else:
             # Multiple pin numbers - determine starting index for naming
             if start_index_match:
-                pin_name = start_index_match.group(1)
+                pin_name_base = start_index_match.group(1)
                 start_index = int(start_index_match.group(2))
             else:
+                pin_name_base = pin_name
                 start_index = 0  # default starting index if not given
             # Create a row for each pin number with incremented index
             for index, pin_num in enumerate(pin_numbers, start_index):
-                csv_rows.append([pin_num, pin_type, f"{pin_name}{index}", current_side])
+                if has_units:
+                    csv_rows.append(
+                        [pin_num, pin_type, f"{pin_name_base}{index}",
+                         current_side, current_unit]
+                    )
+                else:
+                    csv_rows.append(
+                        [pin_num, pin_type, f"{pin_name_base}{index}", current_side]
+                    )
 
     return csv_rows
 
