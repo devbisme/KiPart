@@ -12,20 +12,18 @@ from pathlib import Path
 
 # Map SDT pin types to kipart types
 SDT_TYPE_MAP = {
-    'a': 'passive',
+    'a': 'power_in',
+    's': 'power_out',
     'i': 'input',
     'o': 'output',
-    'h': 'power_in',      # power/hi
-    't': 'tri_state',
     'b': 'bidirectional',
+    't': 'tri_state',
+    'h': 'open_collector',
     'c': 'open_collector',
     'e': 'open_emitter',
-    'p': 'passive',       # pull-up/down
-    's': 'output',        # source
-    'u': 'bidirectional',
+    'p': 'passive',
+    'u': 'unspecified',
     'x': 'no_connect',
-    'n': 'no_connect',    # noconnect
-    'io': 'bidirectional',  # bidirectional (from SDT)
 }
 
 

@@ -2,8 +2,8 @@
 
 [![image](https://img.shields.io/pypi/v/kipart.svg)](https://pypi.python.org/pypi/kipart)
 
-Generate multi-unit schematic symbols for KiCad from a CSV, text, or
-Excel file.
+Generate multi-unit schematic symbols for KiCad from a CSV, text,
+Excel, or SDT file.
 
 ## Features
 
@@ -18,10 +18,10 @@ Excel file.
 -   Pins with the same name (e.g., GND) can be placed at the
     same location so they can all be tied to a net with a single
     connection.
+-   Also includes `sdt2csv` for converting SDT symbol description files
+    to CSV format which can then be turned into schematic part libraries.
 -   Also includes `kilib2csv` for converting schematic part libraries
     into CSV files suitable for input to KiPart.
--   Also includes `sdt2csv` for converting SDT symbol description files
-    to CSV format.
 
 ## Example Use Case
 
@@ -432,38 +432,6 @@ gives the following symbol:
 
 ![image](images/quadpart_ccw_scrunch.png)
 
-### kilib2csv
-
-Sometimes you have existing libraries that you want to manage with a
-spreadsheet instead of the KiCad symbol editor. The kilib2csv utility
-takes one or more library files and converts them into a CSV file. Then
-the CSV file can be manipulated with a spreadsheet and used as input to
-KiPart. **(Note that any stylized part symbol graphics will be lost in
-the conversion. KiPart only supports boring, box-like part symbols.)**
-
-    usage: kilib2csv [-h] [-o OUTPUT] [-w] [-v] input_files [input_files ...]
-
-    Parse KiCad symbol libraries to CSV files
-
-    positional arguments:
-    input_files           Input KiCad symbol library files (.kicad_sym)
-
-    options:
-    -h, --help            show this help message and exit
-    -o OUTPUT, --output OUTPUT
-                            Output CSV file path
-    -w, --overwrite       Allow overwriting of an existing CSV file
-    -v, --version         show program's version number and exit
-
-This utility handles single and multiple input files in the same manner
-as KiPart and supports some of the same options for overwriting and
-appending to the output CSV file:
-
-    kilib2csv my_lib1.lib my_lib2.lib -o my_library.csv
-
-Then you can generate a consistent library from the CSV file:
-
-    kipart my_library.csv -o my_library_new.lib
 
 ### sdt2csv
 
@@ -485,21 +453,24 @@ If you have existing symbol definitions in SDT (Schematic Design Tool) format
 The side directives (`left`, `right`, `top`, `bottom`) control where subsequent
 pins are placed. Empty lines can be used to skip pin positions. Multiple pin
 numbers can be provided for a single pin name to create multiple pins (useful
-for buses like address or data lines).
+for address and data buses).
 
 **Pin type codes:**
 
-| Code | KiCad Type |
-|------|------------|
-| a    | passive    |
-| i    | input      |
-| o    | output     |
-| h    | power_in   |
-| t    | tri_state  |
-| b, u, io | bidirectional |
+| Code | KiCad Type     |
+|------|----------------|
+| a    | power_in       |
+| s    | power_out      |
+| i    | input          |
+| o    | output         |
+| b    | bidirectional  |
+| t    | tri_state      |
+| h    | open_collector |
 | c    | open_collector |
-| e    | open_emitter |
-| x, n | no_connect |
+| e    | open_emitter   |
+| p    | passive        |
+| u    | unspecified    |
+| x    | no_connect     |
 
     usage: sdt2csv [-h] [-o OUTPUT] [-m] input_files [input_files ...]
 
@@ -535,3 +506,36 @@ Or pipe directly to kipart:
 
     sdt2csv rt9818.sdt | kipart -o rt9818.kicad_sym
 
+
+### kilib2csv
+
+Sometimes you have existing libraries that you want to manage with a
+spreadsheet instead of the KiCad symbol editor. The kilib2csv utility
+takes one or more library files and converts them into a CSV file. Then
+the CSV file can be manipulated with a spreadsheet and used as input to
+KiPart. **(Note that any stylized part symbol graphics will be lost in
+the conversion. KiPart only supports boring, box-like part symbols.)**
+
+    usage: kilib2csv [-h] [-o OUTPUT] [-w] [-v] input_files [input_files ...]
+
+    Parse KiCad symbol libraries to CSV files
+
+    positional arguments:
+    input_files           Input KiCad symbol library files (.kicad_sym)
+
+    options:
+    -h, --help            show this help message and exit
+    -o OUTPUT, --output OUTPUT
+                            Output CSV file path
+    -w, --overwrite       Allow overwriting of an existing CSV file
+    -v, --version         show program's version number and exit
+
+This utility handles single and multiple input files in the same manner
+as KiPart and supports some of the same options for overwriting and
+appending to the output CSV file:
+
+    kilib2csv my_lib1.lib my_lib2.lib -o my_library.csv
+
+Then you can generate a consistent library from the CSV file:
+
+    kipart my_library.csv -o my_library_new.lib
