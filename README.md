@@ -492,6 +492,22 @@ present, the CSV output does not include a Unit column (single-unit symbol).
 | u    | unspecified    |
 | x    | no_connect     |
 
+**Pin style modifiers:**
+
+After the pin type code, optional modifier characters can be added to set the pin style and visibility:
+
+| Modifier | Effect |
+|----------|--------|
+| `*`      | inverted style |
+| `>`      | clock style |
+| `-`      | hidden pin |
+
+Multiple modifiers can be combined (e.g., `*>` produces inverted_clock style).
+
+**Comments:**
+
+Both `;` and `#` can be used to start comment lines.
+
     usage: sdt2csv [-h] [-o OUTPUT] [-m] input_files [input_files ...]
 
     Convert SDT symbol description files to CSV format for kipart
