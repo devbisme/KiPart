@@ -156,16 +156,27 @@ def convert_sdt_symbol(lines: list[str]) -> list[list[str]]:
 
         # Parse modifiers
         # Build up style based on modifiers (* = inverted, > = clock)
-        style_parts = []
+        style_parts = set()
         pin_hidden = 'no'
         for mod in pin_type_with_mods[1:]:
             if mod == '*':
-                style_parts.append('inverted')
+                style_parts.add('inverted')
             elif mod == '-':
                 pin_hidden = 'yes'
             elif mod == '>':
-                style_parts.append('clock')
-        pin_style = '_'.join(style_parts) if style_parts else ''
+                style_parts.add('clock')
+            else:
+                raise ValueError(f"Unsupported pin modifier: {mod} in {pin_type_with_mods}")
+        style_parts_to_kicad = {
+            frozenset({'inverted'}): 'inverted',
+            frozenset({'clock'}): 'clock',
+            frozenset({'inverted', 'clock'}): 'inverted_clock',
+            frozenset({}): '',       
+        }
+        try:
+            pin_style = style_parts_to_kicad[frozenset(style_parts)]
+        except KeyError:
+            raise ValueError(f"Unsupported combination of pin modifiers: {pin_type_with_mods}")
 
         pin_name = parts[1]
         pin_numbers = parts[2:]
