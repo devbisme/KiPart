@@ -1267,3 +1267,210 @@ def test_bundle_pins():
     
     # Case 3: Test with empty input
     assert bundle_pins(0, []) == []
+
+
+# ============================================================================
+# Tests for sdt2csv
+# ============================================================================
+
+from kipart.sdt2csv import parse_sdt_file, convert_sdt_symbol, sdt_to_csv
+from pathlib import Path
+from io import StringIO
+
+
+class TestSdt2Csv:
+    """Tests for SDT to CSV conversion."""
+
+    def test_parse_simple_sdt(self, tmp_path):
+        """Test parsing a simple SDT file."""
+        sdt_content = """; Simple test
+device testpart 4 4
+left
+i       vcc     1
+o       gnd     2
+"""
+        f = tmp_path / "test.sdt"
+        f.write_text(sdt_content)
+
+        symbols = parse_sdt_file(f)
+        assert len(symbols) == 1
+        assert symbols[0][0] == "device testpart 4 4"
+
+    def test_parse_multiple_symbols(self, tmp_path):
+        """Test parsing multiple symbols in one file."""
+        sdt_content = """; First device
+device part1 4 4
+left
+i       a       1
+; Second device
+device part2 6 6
+left
+i       b       2
+"""
+        f = tmp_path / "test.sdt"
+        f.write_text(sdt_content)
+
+        symbols = parse_sdt_file(f)
+        assert len(symbols) == 2
+
+    def test_parse_comments_semicolon(self, tmp_path):
+        """Test parsing semicolon comments."""
+        sdt_content = """; This is a comment
+device testpart 4 4
+; Another comment
+left
+i       pin1    1
+"""
+        f = tmp_path / "test.sdt"
+        f.write_text(sdt_content)
+
+        symbols = parse_sdt_file(f)
+        assert len(symbols) == 1
+        # Comments should be stripped
+        assert symbols[0] == ["device testpart 4 4", "left", "i       pin1    1"]
+
+    def test_parse_comments_hash(self, tmp_path):
+        """Test parsing hash (#) comments."""
+        sdt_content = """# Hash comment
+device testpart 4 4
+# Another comment
+left
+i       pin1    1
+"""
+        f = tmp_path / "test.sdt"
+        f.write_text(sdt_content)
+
+        symbols = parse_sdt_file(f)
+        assert len(symbols) == 1
+        # Comments should be stripped
+        assert symbols[0] == ["device testpart 4 4", "left", "i       pin1    1"]
+
+    def test_convert_simple_symbol(self):
+        """Test converting a simple SDT symbol to CSV."""
+        lines = ["device testpart 4 4", "left", "i       vcc     1", "right", "o       gnd     2"]
+        csv_rows = convert_sdt_symbol(lines)
+
+        # Check part name
+        assert csv_rows[0] == ["testpart", ""]
+        # Check header
+        assert csv_rows[1] == ["Pin", "Type", "Name", "Side", "Style", "Hidden"]
+        # Check pins
+        assert csv_rows[2] == ["1", "input", "vcc", "left", "", "no"]
+        assert csv_rows[3] == ["2", "output", "gnd", "right", "", "no"]
+
+    def test_convert_with_modifiers(self):
+        """Test converting pins with style modifiers."""
+        lines = [
+            "device testpart 4 4", "left",
+            "i*      inverted  1",      # inverted style
+            "i>      clock     2",      # clock style
+            "i-      hidden    3",      # hidden
+            "i*>     inv_clk   4",      # inverted + clock
+            "i       normal    5",      # normal
+        ]
+        csv_rows = convert_sdt_symbol(lines)
+
+        assert csv_rows[2] == ["1", "input", "inverted", "left", "inverted", "no"]
+        assert csv_rows[3] == ["2", "input", "clock", "left", "clock", "no"]
+        assert csv_rows[4] == ["3", "input", "hidden", "left", "", "yes"]
+        assert csv_rows[5] == ["4", "input", "inv_clk", "left", "inverted_clock", "no"]
+        assert csv_rows[6] == ["5", "input", "normal", "left", "", "no"]
+
+    def test_convert_with_units(self):
+        """Test converting multi-unit symbol."""
+        lines = [
+            "device testpart 8 6",
+            "unit A",
+            "left",
+            "i       a       1",
+            "unit B",
+            "right",
+            "o       b       2",
+        ]
+        csv_rows = convert_sdt_symbol(lines)
+
+        # Check header includes Unit column
+        assert csv_rows[1] == ["Pin", "Type", "Name", "Side", "Style", "Hidden", "Unit"]
+        # Check pins have unit
+        assert csv_rows[2] == ["1", "input", "a", "left", "", "no", "A"]
+        assert csv_rows[3] == ["2", "output", "b", "right", "", "no", "B"]
+
+    def test_convert_no_unit_column_without_units(self):
+        """Test that Unit column is omitted when no units are specified."""
+        lines = ["device testpart 4 4", "left", "i       vcc     1"]
+        csv_rows = convert_sdt_symbol(lines)
+
+        # Header should NOT have Unit column
+        assert csv_rows[1] == ["Pin", "Type", "Name", "Side", "Style", "Hidden"]
+
+    def test_incremental_pin_names_with_numeric_suffix(self):
+        """Test that pin names increment when name ends with number."""
+        lines = ["device testpart 4 4", "left", "i       a0      1 2 3"]
+        csv_rows = convert_sdt_symbol(lines)
+
+        # Should create a0, a1, a2
+        assert csv_rows[2] == ["1", "input", "a0", "left", "", "no"]
+        assert csv_rows[3] == ["2", "input", "a1", "left", "", "no"]
+        assert csv_rows[4] == ["3", "input", "a2", "left", "", "no"]
+
+    def test_same_pin_name_without_numeric_suffix(self):
+        """Test that pin names stay same when name doesn't end with number."""
+        lines = ["device testpart 4 4", "left", "b       bus     1 2 3"]
+        csv_rows = convert_sdt_symbol(lines)
+
+        # All should have same name "bus"
+        assert csv_rows[2] == ["1", "bidirectional", "bus", "left", "", "no"]
+        assert csv_rows[3] == ["2", "bidirectional", "bus", "left", "", "no"]
+        assert csv_rows[4] == ["3", "bidirectional", "bus", "left", "", "no"]
+
+    def test_spacer_pins(self, tmp_path):
+        """Test that empty lines create spacer pins."""
+        lines = [
+            "device testpart 4 4",
+            "left",
+            "i       vcc     1",
+            "",  # empty line = spacer
+            "i       gnd     3",
+        ]
+        csv_rows = convert_sdt_symbol(lines)
+
+        # Should have a spacer pin (*)
+        assert csv_rows[2] == ["1", "input", "vcc", "left", "", "no"]
+        assert csv_rows[3] == ["*", "", "", "left", "", ""]  # spacer
+        assert csv_rows[4] == ["3", "input", "gnd", "left", "", "no"]
+
+    def test_sdt_to_csv_function(self, tmp_path):
+        """Test the sdt_to_csv convenience function."""
+        sdt_content = """; Test file
+device mypart 4 4
+left
+i       pin1    1
+"""
+        csv_output = sdt_to_csv(sdt_content)
+
+        # Should return CSV string
+        assert "mypart" in csv_output
+        assert "Pin,Type,Name,Side,Style,Hidden" in csv_output
+        assert "pin1" in csv_output
+
+    def test_pin_type_mapping(self):
+        """Test that SDT pin types are correctly mapped to KiCad types."""
+        test_cases = [
+            ("a", "power_in"),
+            ("s", "power_out"),
+            ("i", "input"),
+            ("o", "output"),
+            ("b", "bidirectional"),
+            ("t", "tri_state"),
+            ("h", "open_collector"),
+            ("c", "open_collector"),
+            ("e", "open_emitter"),
+            ("p", "passive"),
+            ("u", "unspecified"),
+            ("x", "no_connect"),
+        ]
+
+        for sdt_type, expected_kicad in test_cases:
+            lines = ["device test 4 4", "left", f"{sdt_type}      testpin  1"]
+            csv_rows = convert_sdt_symbol(lines)
+            assert csv_rows[2][1] == expected_kicad, f"Failed for SDT type {sdt_type}"
