@@ -2,22 +2,26 @@
 ; Unit A: first amplifier (pins 1-5)
 ; Unit B: second amplifier (pins 6-10)
 device opa2333 8 10
-unit A
-left
-i       in-     2
-i       in+     3
-right
-o       out     1
-top
-p       nc      5
-unit B
-left
-i       in-     6
-i       in+     7
-right
-o       out     8
-top
-p       nc     10
-bottom
-h       vcc     4
-h       gnd     9
+
+  unit A
+    left
+      i       in-     2
+
+      i       in+     3
+    right
+      o       out     1
+    top
+      p       nc      5
+
+  unit B
+    left
+      i       in-     6
+      
+      i       in+     7
+    right
+      o       out     8
+    top
+      p       nc     10
+    bottom
+      h       vcc     4
+      h       gnd     9
