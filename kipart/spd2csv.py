@@ -133,7 +133,7 @@ def convert_spd_symbol(lines: list[str]) -> list[list[str]]:
 
     # First line should be the device definition
     device_line = lines[0]
-    match = re.match(r'device\s+(\S+)\s+(\d+)\s+(\d+)', device_line)
+    match = re.match(r'^device\s+(\S+)$', device_line)
     if not match:
         raise ValueError(f"Invalid device line: {device_line}")
 
@@ -165,8 +165,8 @@ def convert_spd_symbol(lines: list[str]) -> list[list[str]]:
     for line in lines[1:]:
         stripped = line.strip()
 
-        # Skip empty lines (they're used to skip pin positions in SPD)
-        if not stripped:
+        # Skip empty lines or lines with just an asterisk (they're used to skip pin positions in SPD)
+        if not stripped or stripped=='*':
             if has_units:
                 csv_rows.append(["*", '', '', current_side, '', '', current_unit])  # Blank row for skipped pin with unit column
             else:
@@ -184,10 +184,6 @@ def convert_spd_symbol(lines: list[str]) -> list[list[str]]:
                 current_unit = stripped.split()[1]
             except IndexError:
                 pass  # If no unit name is given, just keep whatever unit was active before
-            continue
-
-        # Skip comment blocks (both ; and #)
-        if stripped[0] in (';', '#'):
             continue
 
         # Parse pin definition: <type> <name> <pin numbers...>
@@ -224,7 +220,6 @@ def convert_spd_symbol(lines: list[str]) -> list[list[str]]:
         try:
             pin_style = STYLE_TO_KICAD[frozenset(style)]
         except KeyError:
-            breakpoint()  # For debugging unsupported style combinations
             raise ValueError(f"Unsupported combination of pin modifiers: {pin_type_with_mods}")
 
         pin_name = parts[1]
