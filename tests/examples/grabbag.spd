@@ -1,0 +1,172 @@
+// Just a grab-bag of stuff to test the Shorthand Part Description format,
+// demonstrating various features and edge cases of the format.
+
+
+; 74HC00 quad NAND gate
+device 74hc00
+unit LOGIC
+    left
+        i       a1      1
+        i       b1      2
+
+        i       a2      4
+        i       b2      5
+
+        i       a3      9
+        i       b3     10
+    right
+        o       y1      3
+        *
+        o       y2      6
+        *
+        o       y3      8
+        *
+        o       y4     11
+
+    unit PWR
+        bottom
+            p      gnd     7
+        top
+            p      vcc    14
+
+// 74HC04 hex inverter
+device 74hc04
+    unit LOGIC
+        left
+            i       a1      1
+            i       a2      3
+            i       a3      5
+            i       a4      9
+            i       a5     11
+            i       a6     13
+        right
+            o       y1      2
+            o       y2      4
+            o       y3      6
+            o       y4      8
+            o       y5     10
+            o       y6     12
+    unit PWR
+        bottom
+            pi      gnd     7
+        top
+            pi      vcc    14
+
+; DRAM with address and data buses
+device dram
+    left
+        i      a0      k4 l8 l4 k3 l9 13 m9 m3 n9 m4
+        i      a10     j4 j8 j3 k9 l3 m8
+    right
+        b      d0      a1 b1 c1 d1
+
+        io     d4      a2 b2 c2 d2
+    bottom
+        i!>    clk     e1
+        i      r/w     e2
+        i!     #en     e3
+
+; Dual opamp with separate units for each amplifier
+; Unit A: first amplifier (pins 1-5)
+; Unit B: second amplifier (pins 6-10)
+device opa2333
+
+  unit A
+    left
+      *
+      a@      in-     2
+
+      a@      in+     3
+      *
+    right
+      o@      out     1
+
+  unit B
+    left
+      i@      in-     6
+      
+      i@      in+     7
+    right
+      o@      out     8
+
+  unit PWR
+    bottom
+      p      gnd     9
+    top
+      p      vcc     4
+
+; Device with all pin types
+device mixed_types
+left
+pass    passive1    1
+i       input1      2
+o       output1     3
+p       power_in    4
+t       tristate1   5
+b       bidir1      6
+oc      opencoll1   7
+oe      openemit1   8
+po      power_out   9
+s       source1    10
+u       unspec1    11
+f       free1      12
+right
+x       nc1        13
+io      io1        14
+
+; Opamp with multiple pins on each side
+device opa2277
+left
+a       in-     2
+a       in+     3
+p       vcc     8
+right
+a       out     6
+p       vss     4
+top
+pass    nc      1 5 7
+bottom
+pass    nc      null
+
+; Nonsense part with different pin counts per unit and various pin styles
+device nonsense
+
+    unit A
+        left
+            i        in-     2
+            !in      in+     3  // inverted input, demonstrating pin modifiers
+        right
+            out      out     1
+        bottom
+            pi       vcc     4
+            pi       gnd     9
+
+    unit B
+        left
+            i        in-     6
+            i-       in+     7  // hidden pin, demonstrating pin sharing
+        right
+            o_       out     8
+            o!>      enable   10
+            i_       shutdown 10  ; alternate pin for enable, demonstrating pin sharing
+        bottom
+            pwr      vcc     4
+            po       gnd     9
+            i>_      clk     5
+
+; Simple 4-pin device (SOT-23 style)
+; RT9818 reset IC
+device rt9818 // reset IC with 4 pins in a SOT-23 package
+left
+
+p       vcc     3
+
+p       gnd     2
+*
+
+right
+
+
+i_      rst#    1
+*
+*
