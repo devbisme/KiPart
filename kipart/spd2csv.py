@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
-"""Convert SDT symbol description format to CSV for kipart.
+"""Convert SPD symbol description format to CSV for kipart.
 
-SDT (Schematic Design Tool) format is used by OrCAD/similar EDA tools.
+SPD (Shorthand Part Description) format.
 """
 
 import argparse
@@ -17,7 +17,7 @@ COMMENT_DELIM = (
 )
 
 # Map SDT pin types to kipart types
-SDT_TYPE_MAP = {
+SPD_TYPE_MAP = {
     'p': 'power_in',
     'pi': 'power_in',
     'pwr': 'power_in',
@@ -45,7 +45,8 @@ SDT_TYPE_MAP = {
     'nc': 'no_connect',
 }
 
-SDT_STYLE_MAP = {
+SPD_STYLE_MAP = {
+    '*': 'inverted',
     '!': 'inverted',
     '~': 'inverted',
     '/': 'inverted',
@@ -69,8 +70,8 @@ STYLE_TO_KICAD = {
 }
 
 
-def parse_sdt_file(filepath: Path) -> list[list[str]]:
-    """Parse an SDT-format symbol description file.
+def parse_spd_file(filepath: Path) -> list[list[str]]:
+    """Parse an SPD-format symbol description file.
 
     Returns a list of symbol row groups (each group is a list of CSV rows).
     """
@@ -126,8 +127,8 @@ def parse_sdt_file(filepath: Path) -> list[list[str]]:
     return symbols
 
 
-def convert_sdt_symbol(lines: list[str]) -> list[list[str]]:
-    """Convert SDT symbol lines to CSV rows for kipart."""
+def convert_spd_symbol(lines: list[str]) -> list[list[str]]:
+    """Convert SPD symbol lines to CSV rows for kipart."""
     csv_rows = []
 
     # First line should be the device definition
@@ -164,7 +165,7 @@ def convert_sdt_symbol(lines: list[str]) -> list[list[str]]:
     for line in lines[1:]:
         stripped = line.strip()
 
-        # Skip empty lines (they're used to skip pin positions in SDT)
+        # Skip empty lines (they're used to skip pin positions in SPD)
         if not stripped:
             if has_units:
                 csv_rows.append(["*", '', '', current_side, '', '', current_unit])  # Blank row for skipped pin with unit column
@@ -205,13 +206,13 @@ def convert_sdt_symbol(lines: list[str]) -> list[list[str]]:
         # Extract style_mods as the remaining characters
         style_mods = ''.join(c for c in pin_type_with_mods if not c.isalpha())
 
-        # Convert SDT type code to kipart type
-        pin_type = SDT_TYPE_MAP.get(pin_type_code, 'passive')
+        # Convert SPD type code to kipart type
+        pin_type = SPD_TYPE_MAP.get(pin_type_code, 'passive')
 
         # Parse modifiers
         # Build up style based on modifiers (* = inverted, > = clock)
         try:
-            style = {SDT_STYLE_MAP[mod] for mod in style_mods}
+            style = {SPD_STYLE_MAP[mod] for mod in style_mods}
         except KeyError as e:
             raise ValueError(f"Unsupported pin modifier: {e.args[0]} in {pin_type_with_mods}")
         pin_hidden = 'no'
@@ -285,21 +286,21 @@ def convert_sdt_symbol(lines: list[str]) -> list[list[str]]:
     return csv_rows
 
 
-def sdt_to_csv(sdt_content: str) -> str:
-    """Convert SDT format content to CSV format string."""
+def spd_to_csv(spd_content: str) -> str:
+    """Convert SPD format content to CSV format string."""
     # Parse as file
     from io import StringIO
 
     # Write to temp file for parsing
-    with open('/tmp/sdt_temp.txt', 'w') as f:
-        f.write(sdt_content)
+    with open('/tmp/spd_temp.txt', 'w') as f:
+        f.write(spd_content)
 
-    symbols = parse_sdt_file(Path('/tmp/sdt_temp.txt'))
+    symbols = parse_spd_file(Path('/tmp/spd_temp.txt'))
 
     all_csv_rows = []
 
     for i, symbol_lines in enumerate(symbols):
-        csv_rows = convert_sdt_symbol(symbol_lines)
+        csv_rows = convert_spd_symbol(symbol_lines)
         all_csv_rows.extend(csv_rows)
         if i < len(symbols) - 1:
             all_csv_rows.append([])  # Blank row between symbols
@@ -317,12 +318,12 @@ def sdt_to_csv(sdt_content: str) -> str:
 
 def main():
     parser = argparse.ArgumentParser(
-        description='Convert SDT symbol description files to CSV format for kipart.'
+        description='Convert SPD symbol description files to CSV format for kipart.'
     )
     parser.add_argument(
         'input_files',
         nargs='+',
-        help='SDT format input files'
+        help='SPD format input files'
     )
     parser.add_argument(
         '-o', '--output',
@@ -345,10 +346,10 @@ def main():
             continue
 
         try:
-            symbols = parse_sdt_file(path)
+            symbols = parse_spd_file(path)
 
             for i, symbol_lines in enumerate(symbols):
-                csv_rows = convert_sdt_symbol(symbol_lines)
+                csv_rows = convert_spd_symbol(symbol_lines)
                 all_csv_rows.extend(csv_rows)
                 if i < len(symbols) - 1:
                     all_csv_rows.append([])  # Blank row between symbols

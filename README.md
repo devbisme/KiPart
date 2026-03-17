@@ -3,7 +3,7 @@
 [![image](https://img.shields.io/pypi/v/kipart.svg)](https://pypi.python.org/pypi/kipart)
 
 Generate multi-unit schematic symbols for KiCad from a CSV, text,
-Excel, or SDT file.
+Excel, or SPD file.
 
 ## Features
 
@@ -18,7 +18,7 @@ Excel, or SDT file.
 -   Pins with the same name (e.g., GND) can be placed at the
     same location so they can all be tied to a net with a single
     connection.
--   Also includes `sdt2csv` for converting SDT symbol description files
+-   Also includes `spd2csv` for converting SPD symbol description files
     to CSV format which can then be turned into schematic part libraries.
 -   Also includes `kilib2csv` for converting schematic part libraries
     into CSV files suitable for input to KiPart.
@@ -58,7 +58,7 @@ This will install three command-line utilities:
 -   `kilib2csv`: A utility for converting existing KiCad libraries into
         CSV files. This is useful for converting existing libraries into a format that
         can be used with KiPart.
--   `sdt2csv`: A utility for converting SDT (Schematic Design Tool) symbol description
+-   `spd2csv`: A utility for converting SPD (Shorthand Part Description)
         files to CSV format for use with KiPart.
 
 ## Usage
@@ -433,11 +433,11 @@ gives the following symbol:
 ![image](images/quadpart_ccw_scrunch.png)
 
 
-### sdt2csv
+### spd2csv
 
-If you have existing symbol definitions in SDT (Schematic Design Tool) format
-(used by OrCAD and similar EDA tools), you can convert them to CSV using the
-`sdt2csv` utility. SDT format uses a simple text format to define symbols:
+If you have symbol definitions in SPD (Shorthand Part Description) format,
+you can convert them to CSV using the
+`spd2csv` utility. SPD files use a simple text format to define symbols:
 
     ; Comment
     device part_name width height
@@ -457,7 +457,7 @@ for address and data buses).
 
 **Multi-Unit Symbols:**
 
-SDT files can define symbols with multiple units using the `unit` directive:
+SPD files can define symbols with multiple units using the `unit` directive:
 
     device mypart 8 6
     unit A
@@ -477,43 +477,53 @@ present, the CSV output does not include a Unit column (single-unit symbol).
 
 **Pin type codes:**
 
-| Code | KiCad Type     |
-|------|----------------|
-| a    | power_in       |
-| s    | power_out      |
-| i    | input          |
-| o    | output         |
-| b    | bidirectional  |
-| t    | tri_state      |
-| h    | open_collector |
-| c    | open_collector |
-| e    | open_emitter   |
-| p    | passive        |
-| u    | unspecified    |
-| x    | no_connect     |
+| Code             | KiCad Type     |
+|------------------|----------------|
+| p, pi, pwr       | power_in       |
+| po, pwr_out      | power_out      |
+| i, in            | input          |
+| o, out           | output         |
+| b, bi, io        | bidirectional  |
+| t, tri           | tri_state      |
+| oc               | open_collector |
+| oe               | open_emitter   |
+| pass             | passive        |
+| f                | free           |
+| u, un, a, analog | unspecified    |
+| x, nc            | no_connect     |
 
 **Pin style modifiers:**
 
 After the pin type code, optional modifier characters can be added to set the pin style and visibility:
 
-| Modifier | Effect |
-|----------|--------|
-| `*`      | inverted style |
-| `>`      | clock style |
-| `-`      | hidden pin |
+| Modifier | Effect          |
+|----------|-----------------|
+| `*`      | inverted        |
+| `!`      | inverted        |
+| `~`      | inverted        |
+| `>`      | clock           |
+| `_`      | low             |
+| `-`      | hidden          |
+| `@`      | analog          |
 
-Multiple modifiers can be combined (e.g., `*>` produces inverted_clock style).
+Multiple modifiers can be combined (e.g., `!>` produces inverted_clock, `-!>` produces inverted_clock + hidden).
 
 **Comments:**
 
-Both `;` and `#` can be used to start comment lines.
+Full-line comments start with `;`, or `//`. Inline comments are also supported using these delimiters.
 
-    usage: sdt2csv [-h] [-o OUTPUT] [-m] input_files [input_files ...]
+**Indentation:**
 
-    Convert SDT symbol description files to CSV format for kipart
+Part descriptions can be indented for readability. Indentation is ignored during parsing.
+
+**Command Usage**
+
+    usage: spd2csv [-h] [-o OUTPUT] [-m] input_files [input_files ...]
+
+    Convert SPD symbol description files to CSV format for kipart
 
     positional arguments:
-      input_files           Input SDT format files
+      input_files           Input SPD format files
 
     options:
       -h, --help            show this help message and exit
@@ -521,7 +531,7 @@ Both `;` and `#` can be used to start comment lines.
                             Output CSV file path
       -m, --merge           Append to output file instead of overwriting
 
-**Example SDT file (rt9818.sdt):**
+**Example SPD file (rt9818.spd):**
 
     ;
     ; RT9818 reset (SOT-23)
@@ -537,17 +547,17 @@ Both `;` and `#` can be used to start comment lines.
 
     h       rst#    1
 
-Note: Empty lines between pin definitions create spacers (skipped pin positions)
-in the symbol.
+Note: Empty lines between pin definitions or lines containing just a `*`
+create spacers (skipped pin positions) in the symbol.
 
 Convert and generate the symbol:
 
-    sdt2csv rt9818.sdt -o rt9818.csv
+    spd2csv rt9818.spd -o rt9818.csv
     kipart rt9818.csv -o rt9818.kicad_sym
 
 Or pipe directly to kipart:
 
-    sdt2csv rt9818.sdt | kipart -o rt9818.kicad_sym
+    spd2csv rt9818.spd | kipart -o rt9818.kicad_sym
 
 
 ### kilib2csv

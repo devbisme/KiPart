@@ -2,17 +2,17 @@
 
 ## 2.5.0 (2026-03-15)
 
--   Added Style and Hidden columns to sdt2csv CSV output.
--   Added pin style modifiers in SDT files: `*` = inverted, `>` = clock, `-` = hidden.
+-   Added Style and Hidden columns to spd2csv CSV output.
+-   Added pin style modifiers in SPD files: `*` = inverted, `>` = clock, `-` = hidden.
 -   Combined modifiers supported: `*>` = inverted_clock.
--   Added support for `#` comments in addition to `;` comments in SDT files.
+-   Added support for `#` comments in addition to `;` comments in SPD files.
 -   Fixed pin naming: when pin name doesn't end with a number but has multiple pin numbers, the name is used as-is without appending incrementing index.
--   Added comprehensive unit tests for sdt2csv.
+-   Added comprehensive unit tests for spd2csv.
 
 ## 2.4.0 (2026-03-14)
 
--   Added `sdt2csv` command-line utility for converting SDT (Schematic Design Tool) symbol description format to CSV for use with kipart.
--   Added multi-unit symbol support in SDT files via the `unit <name>` directive.
+-   Added `spd2csv` command-line utility for converting SPD (Shorthand Part Description) symbol description format to CSV for use with kipart.
+-   Added multi-unit symbol support in SPD files via the `unit <name>` directive.
 -   Added ability for kipart to read CSV from stdin when no input files are given.
 
 ## 2.3.0 (2026-01-30)
