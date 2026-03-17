@@ -817,9 +817,16 @@ def create_pin(pin, x, y, orientation, pin_length, alt_pin_delim=None):
         number_sexp.append(effects_sexp)
         pin_sexp.append(number_sexp)
 
-        # Add alternate names
+        # Add alternate names from both:
+        # 1. Names split by alt_pin_delim (from original code)
+        # 2. Alternates from duplicate pin numbers (new feature)
         for name in names[1:]:
             pin_sexp.append(["alternate", name, pin_type, pin["style"]])
+
+        # Add alternates from duplicate pin numbers
+        if "alternates" in pin:
+            for alt in pin["alternates"]:
+                pin_sexp.append(["alternate", alt["name"], alt["type"], alt["style"]])
 
         pin_sexps.append(pin_sexp)
 
@@ -1074,6 +1081,7 @@ def rows_to_symbol(
     row_idx = row_idx + 1
 
     # Collect pin data with defaults for optional fields
+    # Also handle duplicate pin numbers by adding alternates to existing pins
     for idx, row in enumerate(symbol_rows[row_idx:]):
         pin_data = {
             "number": row[column_map["pin"]].strip(),
@@ -1105,6 +1113,29 @@ def rows_to_symbol(
             ),
             "row_index": idx,  # Store original row index for row sorting
         }
+
+        # Check for duplicate pin number in the same unit
+        # If found, add the current pin's name/type/style as an alternate to the existing pin
+        pin_unit = pin_data["unit"]
+        pin_number = pin_data["number"]
+        # Skip spacer pins (*)
+        if pin_number != "*":
+            duplicate_found = False
+            for existing_pin in pins:
+                if existing_pin["unit"] == pin_unit and existing_pin["number"] == pin_number:
+                    # Add as alternate to existing pin
+                    if "alternates" not in existing_pin:
+                        existing_pin["alternates"] = []
+                    existing_pin["alternates"].append({
+                        "name": pin_data["name"],
+                        "type": pin_data["type"],
+                        "style": pin_data["style"],
+                    })
+                    duplicate_found = True
+                    break
+            if duplicate_found:
+                continue  # Skip adding this pin as a new pin
+
         pins.append(pin_data)
 
     # Validate that at least one valid pin exists
