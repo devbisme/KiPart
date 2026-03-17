@@ -4,6 +4,7 @@
 
 ; 74HC00 quad NAND gate
 device 74hc00
+footprint: soic-14
 unit LOGIC
     left
         i       a1      1
@@ -31,6 +32,7 @@ unit LOGIC
 
 // 74HC04 hex inverter
 device 74hc04
+manf: Texas Instruments
     unit LOGIC
         left
             i       a1      1
