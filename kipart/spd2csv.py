@@ -142,12 +142,25 @@ def convert_spd_symbol(lines: list[str]) -> list[list[str]]:
     # Part name row
     csv_rows.append([part_name, ''])
 
+    # Pass any part property values through to the CSV.
+    non_property_lines = []
+    for line in lines[1:]:
+        # Property lines are in the format "property_name: property_value"
+        match = re.match(r"^(\w+)\s*:\s*(.*)$", line)
+        if match:
+            prop_name = match.group(1)
+            prop_value = match.group(2)
+            csv_rows.append([f"{prop_name}:", prop_value, ''])
+        else:
+            non_property_lines.append(line)
+    lines = non_property_lines  # Only keep non-property lines for further processing
+
     # Parse remaining lines for pins to determine if units are used
     current_unit = None
     has_units = False
 
     # First pass: determine if any unit is specified
-    for line in lines[1:]:
+    for line in lines:
         if line.strip().lower().startswith('unit '):
              has_units = True
              break
@@ -162,7 +175,7 @@ def convert_spd_symbol(lines: list[str]) -> list[list[str]]:
     current_side = 'left'  # default
     current_unit = None
 
-    for line in lines[1:]:
+    for line in lines:
         stripped = line.strip()
 
         # Skip empty lines or lines with just an asterisk (they're used to skip pin positions in SPD)
