@@ -12,18 +12,31 @@ from pathlib import Path
 
 # Map SDT pin types to kipart types
 SDT_TYPE_MAP = {
-    'a': 'power_in',
-    's': 'power_out',
+    'p': 'power_in',
+    'pi': 'power_in',
+    'pwr': 'power_in',
+    'pwr_in': 'power_in',
+    'po': 'power_out',
+    'pwr_out': 'power_out',
     'i': 'input',
+    'in': 'input',
     'o': 'output',
+    'out': 'output',
     'b': 'bidirectional',
+    'bi': 'bidirectional',
+    'io': 'bidirectional',
     't': 'tri_state',
-    'h': 'open_collector',
-    'c': 'open_collector',
-    'e': 'open_emitter',
-    'p': 'passive',
+    'tri': 'tri_state',
+    'oc': 'open_collector',
+    'oe': 'open_emitter',
+    'pass': 'passive',
+    'f': 'free',
     'u': 'unspecified',
+    'un': 'unspecified',
+    'a': 'unspecified',
+    'analog': 'unspecified',
     'x': 'no_connect',
+    'nc': 'no_connect',
 }
 
 
@@ -149,16 +162,19 @@ def convert_sdt_symbol(lines: list[str]) -> list[list[str]]:
             continue
 
         # Extract pin type and modifiers from first part
-        # e.g., "i*" -> type="i", style="inverted"
-        #       "i*->" -> type="i", style="inverted_clock", hidden="yes"
+        # e.g., "i*" -> pin_type_code="i", style_mods="*"
+        #       "i*->" -> pin_type_code="i", style_mods="*->"
         pin_type_with_mods = parts[0]
-        pin_type_code = pin_type_with_mods[0]  # First character is the type
+        # Extract pin_type_code as all the alpha chars from the start
+        pin_type_code = ''.join(c for c in pin_type_with_mods if c.isalpha())
+        # Extract style_mods as the remaining characters
+        style_mods = ''.join(c for c in pin_type_with_mods if not c.isalpha())
 
         # Parse modifiers
         # Build up style based on modifiers (* = inverted, > = clock)
         style_parts = set()
         pin_hidden = 'no'
-        for mod in pin_type_with_mods[1:]:
+        for mod in style_mods:
             if mod == '*':
                 style_parts.add('inverted')
             elif mod == '-':
