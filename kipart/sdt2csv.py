@@ -10,6 +10,12 @@ import sys
 from pathlib import Path
 
 
+# SDT comment lines can start with either ';' or '//'
+COMMENT_START = (
+    ";",
+    "//",
+)
+
 # Map SDT pin types to kipart types
 SDT_TYPE_MAP = {
     'p': 'power_in',
@@ -39,6 +45,29 @@ SDT_TYPE_MAP = {
     'nc': 'no_connect',
 }
 
+SDT_STYLE_MAP = {
+    '!': 'inverted',
+    '~': 'inverted',
+    '/': 'inverted',
+    '#': 'inverted',
+    '>': 'clock',
+    '_': 'low',
+    '@': 'analog',
+    '-': 'hidden',
+}
+
+STYLE_TO_KICAD = {
+    frozenset({'inverted'}): 'inverted',
+    frozenset({'clock'}): 'clock',
+    frozenset({'inverted', 'clock'}): 'inverted_clock',
+    frozenset({'low', 'input'}): 'input_low',
+    frozenset({'low', 'output'}): 'output_low',
+    frozenset({'low', 'input', 'clock'}): 'clock_low',
+    frozenset({'low', 'output', 'clock'}): 'clock_low',
+    frozenset({'analog'}): 'analog',
+    frozenset({}): '',       
+}
+
 
 def parse_sdt_file(filepath: Path) -> list[list[str]]:
     """Parse an SDT-format symbol description file.
@@ -63,8 +92,8 @@ def parse_sdt_file(filepath: Path) -> list[list[str]]:
             empty_lines.append('')
             continue
 
-        # Skip pure comment lines (both ; and #)
-        if stripped[0] in (';', '#'):
+        # Skip pure comment lines
+        if stripped.startswith(COMMENT_START):
             continue
 
         # Start of a new symbol definition
@@ -170,35 +199,29 @@ def convert_sdt_symbol(lines: list[str]) -> list[list[str]]:
         # Extract style_mods as the remaining characters
         style_mods = ''.join(c for c in pin_type_with_mods if not c.isalpha())
 
+        # Convert SDT type code to kipart type
+        pin_type = SDT_TYPE_MAP.get(pin_type_code, 'passive')
+
         # Parse modifiers
         # Build up style based on modifiers (* = inverted, > = clock)
-        style_parts = set()
-        pin_hidden = 'no'
-        for mod in style_mods:
-            if mod == '*':
-                style_parts.add('inverted')
-            elif mod == '-':
-                pin_hidden = 'yes'
-            elif mod == '>':
-                style_parts.add('clock')
-            else:
-                raise ValueError(f"Unsupported pin modifier: {mod} in {pin_type_with_mods}")
-        style_parts_to_kicad = {
-            frozenset({'inverted'}): 'inverted',
-            frozenset({'clock'}): 'clock',
-            frozenset({'inverted', 'clock'}): 'inverted_clock',
-            frozenset({}): '',       
-        }
         try:
-            pin_style = style_parts_to_kicad[frozenset(style_parts)]
+            style = {SDT_STYLE_MAP[mod] for mod in style_mods}
+        except KeyError as e:
+            raise ValueError(f"Unsupported pin modifier: {e.args[0]} in {pin_type_with_mods}")
+        pin_hidden = 'no'
+        if 'hidden' in style:
+            pin_hidden = 'yes'
+            style.discard('hidden')  # Hidden is not a style, it's a separate column
+        if 'low' in style:
+            style.add(pin_type)
+        try:
+            pin_style = STYLE_TO_KICAD[frozenset(style)]
         except KeyError:
+            breakpoint()  # For debugging unsupported style combinations
             raise ValueError(f"Unsupported combination of pin modifiers: {pin_type_with_mods}")
 
         pin_name = parts[1]
         pin_numbers = parts[2:]
-
-        # Convert SDT type code to kipart type
-        pin_type = SDT_TYPE_MAP.get(pin_type_code, 'passive')
 
         # Create a row for each pin number (for repetitive pins)
         # If there is only one pin number, keep name as-is
