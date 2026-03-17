@@ -10,8 +10,8 @@ import sys
 from pathlib import Path
 
 
-# SDT comment lines can start with either ';' or '//'
-COMMENT_START = (
+# SDT comment delimiters (both full-line and in-line)
+COMMENT_DELIM = (
     ";",
     "//",
 )
@@ -93,8 +93,14 @@ def parse_sdt_file(filepath: Path) -> list[list[str]]:
             continue
 
         # Skip pure comment lines
-        if stripped.startswith(COMMENT_START):
+        if stripped.startswith(COMMENT_DELIM):
             continue
+
+        # Remove in-line comments
+        for comment_start in COMMENT_DELIM:
+            comment_index = stripped.find(comment_start)
+            if comment_index != -1:
+                stripped = stripped[:comment_index].strip()
 
         # Start of a new symbol definition
         if stripped.startswith('device '):
