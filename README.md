@@ -18,9 +18,9 @@ Excel, or SPD file.
 -   Pins with the same name (e.g., GND) can be placed at the
     same location so they can all be tied to a net with a single
     connection.
--   Also includes `spd2csv` for converting SPD symbol description files
+-   Also includes `spd2csv` for converting Shorthand Part Description (SPD) files
     to CSV format which can then be turned into schematic part libraries.
--   Also includes `kilib2csv` for converting schematic part libraries
+-   Also includes `kilib2csv` for converting existing schematic part libraries
     into CSV files suitable for input to KiPart.
 
 ## Example Use Case
@@ -55,11 +55,11 @@ This will install three command-line utilities:
 
 -   `kipart`: The main utility for generating schematic symbols from rows of pin data
         stored in CSV or Excel files.
+-   `spd2csv`: A utility for converting SPD (Shorthand Part Description)
+        files to CSV format for use with KiPart.
 -   `kilib2csv`: A utility for converting existing KiCad libraries into
         CSV files. This is useful for converting existing libraries into a format that
         can be used with KiPart.
--   `spd2csv`: A utility for converting SPD (Shorthand Part Description)
-        files to CSV format for use with KiPart.
 
 ## Usage
 
@@ -70,12 +70,12 @@ KiPart is mainly intended to be used as a script:
 ```
 usage: kipart [-h] [-o OUTPUT] [-w] [-m] [-1] [-s {row,num,name}] [-r] [--ccw] [--scrunch] [--side {left,right,top,bottom}] [--type TYPE] [--style STYLE] [--push PUSH] [-a ALT_DELIMITER] [-b]
               [--bundle-style {none,count,range}] [--hide-pin-num] [-j {left,center,right}] [-v]
-              input_files [input_files ...]
+              [input_files ...]
 
 Convert CSV or Excel files into KiCad symbol libraries
 
 positional arguments:
-  input_files           Input symbol pin data CSV or Excel files (.csv, .xlsx, .xls)
+  input_files           Input symbol pin data CSV or Excel files (.csv, .xlsx, .xls). If no files are given, reads from stdin.
 
 options:
   -h, --help            show this help message and exit
@@ -238,6 +238,11 @@ The `-a` option specifies a delimiter for splitting pin names
 into alternates. This is useful for parts with pins having multiple
 functions. For example, `-a /` will split the pin name `IO1/SDA/MOSI` into
 a pin named `IO1` with two alternate names of `SDA` and `MOSI`.
+In this case, the alternate pins will have different names but 
+the electrical types and styles will be the same.
+If alternate pins with different types and styles are needed,
+just create one or more rows with the same data as the primary pin
+but change the name, type, and style as needed.
 
 The `-w` option is used to overwrite an existing library with any new
 parts from the file. The old contents of the library are lost.
@@ -436,46 +441,46 @@ gives the following symbol:
 ### spd2csv
 
 If you have symbol definitions in SPD (Shorthand Part Description) format,
-you can convert them to CSV using the
-`spd2csv` utility. SPD files use a simple text format to define symbols:
+you can convert them to CSV using the `spd2csv` utility.
+
+```
+usage: spd2csv [-h] [-o OUTPUT] [-m] [input_files ...]
+
+Convert SPD symbol description files to CSV format for kipart.
+
+positional arguments:
+  input_files          SPD format input files (if none given, reads from stdin)
+
+options:
+  -h, --help           show this help message and exit
+  -o, --output OUTPUT  Output CSV file (default: stdout)
+  -m, --merge          Append to output file instead of overwriting
+```
+
+SPD files use a simple text format to define symbols:
 
     ; Comment
-    device part_name width height
+    device part_name
     left
-    type  pin_name  pin_number
+       pin_type  pin_name  pin_number
+       pin_type  pin_name  pin_number
     right
-    type  pin_name  pin_number
+       pin_type  pin_name  pin_number
+       pin_type  pin_name  pin_number
     top
-    ...
+       ...
     bottom
-    ...
+       ...
 
-The side directives (`left`, `right`, `top`, `bottom`) control where subsequent
-pins are placed. Empty lines can be used to skip pin positions. Multiple pin
-numbers can be provided for a single pin name to create multiple pins (useful
-for address and data buses).
+Full-line or in-line comments start with `;`, or `//`.
+White space is ignored, so part descriptions can be indented for readability.
 
-**Multi-Unit Symbols:**
+The side directives (`left`, `right`, `top`, `bottom`) control on which
+side of the symbol the subsequent pins are placed.
 
-SPD files can define symbols with multiple units using the `unit` directive:
-
-    device mypart 8 6
-    unit A
-    left
-    i       a       1 2 3
-    right
-    o       y       4 5 6
-    unit B
-    left
-    i       b       7 8 9
-    right
-    o       z       10 11 12
-
-The `unit <name>` directive assigns subsequent pins to that unit. Each unit
-becomes a separate section in the KiCad symbol. If no `unit` directive is
-present, the CSV output does not include a Unit column (single-unit symbol).
-
-**Pin type codes:**
+A pin type is composed of a code for the electrical type to which
+optional modifier characters can be added to set the
+graphical pin style and visibility:
 
 | Code             | KiCad Type     |
 |------------------|----------------|
@@ -492,10 +497,6 @@ present, the CSV output does not include a Unit column (single-unit symbol).
 | u, un, a, analog | unspecified    |
 | x, nc            | no_connect     |
 
-**Pin style modifiers:**
-
-After the pin type code, optional modifier characters can be added to set the pin style and visibility:
-
 | Modifier | Effect          |
 |----------|-----------------|
 | `*`      | inverted        |
@@ -503,52 +504,94 @@ After the pin type code, optional modifier characters can be added to set the pi
 | `~`      | inverted        |
 | `>`      | clock           |
 | `_`      | low             |
-| `-`      | hidden          |
 | `@`      | analog          |
+| `-`      | hidden          |
 
-Multiple modifiers can be combined (e.g., `!>` produces inverted_clock, `-!>` produces inverted_clock + hidden).
+Multiple modifiers can be combined (e.g., `!>` produces an inverted_clock,
+`-!>` produces an inverted_clock + hidden).
+The modifiers can be placed before or after the pin code.
 
-**Comments:**
+If the same pin number is used more than once, the subsequent uses
+will define *alternate pins*, possibly with different names, electrical
+types, and styles.
+For example, the following will define pin 10 of a part to be
+a general-purpose I/O with an alternate function as a serial output:
 
-Full-line comments start with `;`, or `//`. Inline comments are also supported using these delimiters.
+    io   GPIO1   10
+    o    TX      10
 
-**Indentation:**
+To create multiple pins from a single line, provide multiple pin numbers after
+the pin name:
 
-Part descriptions can be indented for readability. Indentation is ignored during parsing.
+    device mypart
+    left
+    i       a0      1 2 3 4 5 6 7 8
 
-**Command Usage**
+This creates pins `a0-a7` assigned to pin numbers 1-8. If the pin name ends with
+a number, the pin names will be automatically incremented (`a0`, `a1`, `a2`...). If
+the pin name does not end with a number, all pins get the same name (useful for
+things like VCC and GND pins).
 
-    usage: spd2csv [-h] [-o OUTPUT] [-m] input_files [input_files ...]
+To leave an empty position on a side of the symbol, insert a line 
+containing only an `*`:
 
-    Convert SPD symbol description files to CSV format for kipart
+    device mypart
+    left
+    i       vcc     1
+    *                   // pin spacer
+    i       gnd     3
 
-    positional arguments:
-      input_files           Input SPD format files
+This creates an empty pin position (spacer) between `vcc` and `gnd` on the left side.
 
-    options:
-      -h, --help            show this help message and exit
-      -o OUTPUT, --output OUTPUT
-                            Output CSV file path
-      -m, --merge           Append to output file instead of overwriting
+Symbols with multiple functional units are defined using the `unit` directive:
 
-**Example SPD file (rt9818.spd):**
+    device mypart
+    unit A
+        left
+        i       a0      1 2 3
+        right
+        o       y0      4 5 6
+    unit B
+        left
+        i       b0      7 8 9
+        right
+        o       z0      10 11 12
+
+The `unit <name>` directive assigns subsequent pins to that unit. Each unit
+becomes a separate section in the KiCad symbol. If no `unit` directive is
+present, the CSV output does not include a Unit column (single-unit symbol).
+
+After the `device` line, you can specify part properties in the format `name: value`:
+
+    device mypart
+    Reference: U
+    Value: mypart
+    Footprint: SOP-8
+    Datasheet: https://example.com/datasheet.pdf
+    Description: A short description of the part
+    keywords: opamp analog
+    my_property_1: My very own property!
+    left
+    i       vcc     1
+    ...
+
+Below is a simple example of an SPD file:
 
     ;
     ; RT9818 reset (SOT-23)
     ;
-    device rt9818 4 4
-    left
-    a       vcc     3
+    device rt9818
+    Manf: Richtek
 
-    a       gnd     2
+    left
+        a       vcc     3
+        *
+        a       gnd     2
 
     right
-
-
-    h       rst#    1
-
-Note: Empty lines between pin definitions or lines containing just a `*`
-create spacers (skipped pin positions) in the symbol.
+        *
+        *
+        h       rst#    1
 
 Convert and generate the symbol:
 
@@ -569,19 +612,21 @@ the CSV file can be manipulated with a spreadsheet and used as input to
 KiPart. **(Note that any stylized part symbol graphics will be lost in
 the conversion. KiPart only supports boring, box-like part symbols.)**
 
-    usage: kilib2csv [-h] [-o OUTPUT] [-w] [-v] input_files [input_files ...]
+```
+usage: kilib2csv [-h] [-o OUTPUT] [-w] [-v] input_files [input_files ...]
 
-    Parse KiCad symbol libraries to CSV files
+Parse KiCad symbol libraries to CSV files
 
-    positional arguments:
-    input_files           Input KiCad symbol library files (.kicad_sym)
+positional arguments:
+input_files           Input KiCad symbol library files (.kicad_sym)
 
-    options:
-    -h, --help            show this help message and exit
-    -o OUTPUT, --output OUTPUT
-                            Output CSV file path
-    -w, --overwrite       Allow overwriting of an existing CSV file
-    -v, --version         show program's version number and exit
+options:
+-h, --help            show this help message and exit
+-o OUTPUT, --output OUTPUT
+                        Output CSV file path
+-w, --overwrite       Allow overwriting of an existing CSV file
+-v, --version         show program's version number and exit
+```
 
 This utility handles single and multiple input files in the same manner
 as KiPart and supports some of the same options for overwriting and

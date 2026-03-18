@@ -1,11 +1,15 @@
 # History
 
-## 2.5.0 (2026-03-15)
+## 2.5.0 (2026-03-17)
 
+-   Added alternate pin handling: when a pin number appears multiple times, the subsequent pins become alternates of the first pin.
 -   Added Style and Hidden columns to spd2csv CSV output.
--   Added pin style modifiers in SPD files: `*` = inverted, `>` = clock, `-` = hidden.
--   Combined modifiers supported: `*>` = inverted_clock.
--   Added support for `#` comments in addition to `;` comments in SPD files.
+-   Added pin style modifiers in SPD files such as `!` = inverted, `>` = clock, `-` = hidden.
+-   Combined modifiers supported: `!>` = inverted_clock.
+-   Added support for `//` comments in addition to `;` comments in SPD files.
+-   Added part properties support in SPD files using `property_name: property_value` format.
+-   Added multi-pin bus support with automatic pin name incrementing.
+-   Added spacer pin support (empty lines or lines containing just `*` create skipped pin positions).
 -   Fixed pin naming: when pin name doesn't end with a number but has multiple pin numbers, the name is used as-is without appending incrementing index.
 -   Added comprehensive unit tests for spd2csv.
 
