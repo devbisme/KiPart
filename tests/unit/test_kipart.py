@@ -1329,9 +1329,9 @@ i       pin1    1
         # Comments should be stripped
         assert symbols[0] == ["device testpart", "left", "i       pin1    1"]
 
-    def test_parse_comments_hash(self, tmp_path):
+    def test_parse_comments_dbl_slash(self, tmp_path):
         """Test parsing comments."""
-        spd_content = """# Hash comment
+        spd_content = """// Double-slash comment
 device testpart
 // A comment
 ; Another comment
