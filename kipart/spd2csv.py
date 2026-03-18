@@ -325,8 +325,8 @@ def main():
     )
     parser.add_argument(
         'input_files',
-        nargs='+',
-        help='SPD format input files'
+        nargs='*',
+        help='SPD format input files (if none given, reads from stdin)'
     )
     parser.add_argument(
         '-o', '--output',
@@ -341,6 +341,18 @@ def main():
     args = parser.parse_args()
 
     all_csv_rows = []
+
+    # If no input files given, read from stdin
+    if len(args.input_files) == 0:
+        stdin_content = sys.stdin.read()
+        if not stdin_content.strip():
+            print("Error: No input files specified and no data provided via stdin", file=sys.stderr)
+            sys.exit(1)
+        # Write stdin content to a temporary file and process it
+        import tempfile
+        with tempfile.NamedTemporaryFile(mode='w', suffix='.spd', delete=False) as tmp:
+            tmp.write(stdin_content)
+            args.input_files = [tmp.name]
 
     for filepath in args.input_files:
         path = Path(filepath)
