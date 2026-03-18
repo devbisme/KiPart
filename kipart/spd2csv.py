@@ -89,8 +89,6 @@ def parse_spd_file(filepath: Path) -> list[list[str]]:
 
         # Skip empty lines
         if not stripped:
-            # Keep empty lines within a symbol definition (they indicate skipped pin positions)
-            empty_lines.append('')
             continue
 
         # Skip pure comment lines
@@ -108,17 +106,14 @@ def parse_spd_file(filepath: Path) -> list[list[str]]:
             # Save previous symbol if exists
             if current_symbol_lines:
                 symbols.append(current_symbol_lines)
-            empty_lines = []
             current_symbol_lines = [stripped]
             in_symbol = True
         elif in_symbol:
-            if stripped.lower().split()[0] in ('left', 'right', 'top', 'bottom', 'unit'):
-                empty_lines = []  # Clear empty lines before side/unit directives
-            # Insert any preceding empty lines between pins.
-            current_symbol_lines.extend(empty_lines)
-            empty_lines = []
             # Append the current, non-empty line to the current symbol definition
             current_symbol_lines.append(stripped)
+        else:
+            # Lines outside of any symbol definition are illegal.
+            raise ValueError(f"Text outside of device definition: {line}")
 
     # Add the last symbol
     if current_symbol_lines:
