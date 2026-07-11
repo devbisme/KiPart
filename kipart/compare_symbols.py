@@ -1,6 +1,131 @@
 from kipart.kipart import extract_symbols_from_lib
 
 
+def compare_symbol_pins(symbol1, symbol2):
+    """
+    Compare two symbols pin-by-pin for matching pin numbers.
+
+    For each unit present in either symbol, pins are matched by pin number.
+    The function reports mismatches for:
+    - pin names
+    - alternate pin names
+    - pin types
+    - pin numbers present in one symbol but missing in the other
+
+    Args:
+        symbol1 (Sexp): First symbol S-expression to compare
+        symbol2 (Sexp): Second symbol S-expression to compare
+
+    Returns:
+        list[str]: A list of human-readable difference reports.
+    """
+    if not symbol1 or not symbol2 or symbol1[0] != "symbol" or symbol2[0] != "symbol":
+        return []
+
+    def get_pin_number(pin):
+        return next((item[1] for item in pin if isinstance(item, list) and item[0] == "number"), None)
+
+    def get_pin_name(pin):
+        return next((item[1] for item in pin if isinstance(item, list) and item[0] == "name"), None)
+
+    def get_pin_type(pin):
+        return pin[1] if len(pin) > 1 else None
+
+    def get_pin_alternates(pin):
+        alternates = [
+            item[1]
+            for item in pin
+            if isinstance(item, list) and item[0] == "alternate" and len(item) > 1
+        ]
+        return alternates
+
+    def get_unit_pins(unit):
+        return [
+            item
+            for item in unit
+            if isinstance(item, list) and item[0] == "pin"
+        ]
+
+    def get_units(symbol):
+        return [
+            item
+            for item in symbol
+            if isinstance(item, list) and item[0] == "symbol"
+        ]
+
+    units1 = {unit[1]: unit for unit in get_units(symbol1) if len(unit) > 1}
+    units2 = {unit[1]: unit for unit in get_units(symbol2) if len(unit) > 1}
+
+    reports = []
+    unit_names = sorted(set(units1.keys()) | set(units2.keys()))
+
+    for unit_name in unit_names:
+        unit1 = units1.get(unit_name)
+        unit2 = units2.get(unit_name)
+
+        if unit1 is None:
+            reports.append(
+                f"unit '{unit_name}' is present in the second symbol but missing from the first"
+            )
+            continue
+
+        if unit2 is None:
+            reports.append(
+                f"unit '{unit_name}' is present in the first symbol but missing from the second"
+            )
+            continue
+
+        pins1 = {}
+        pins2 = {}
+
+        for pin in get_unit_pins(unit1):
+            pin_num = get_pin_number(pin)
+            if pin_num is not None:
+                pins1[pin_num] = pin
+
+        for pin in get_unit_pins(unit2):
+            pin_num = get_pin_number(pin)
+            if pin_num is not None:
+                pins2[pin_num] = pin
+
+        for pin_num in sorted(set(pins1) - set(pins2)):
+            reports.append(
+                f"unit '{unit_name}': pin {pin_num} is present in the first symbol but missing in the second"
+            )
+
+        for pin_num in sorted(set(pins2) - set(pins1)):
+            reports.append(
+                f"unit '{unit_name}': pin {pin_num} is present in the second symbol but missing in the first"
+            )
+
+        for pin_num in sorted(set(pins1) & set(pins2)):
+            pin1 = pins1[pin_num]
+            pin2 = pins2[pin_num]
+
+            name1 = get_pin_name(pin1)
+            name2 = get_pin_name(pin2)
+            if name1 != name2:
+                reports.append(
+                    f"unit '{unit_name}': pin {pin_num} name mismatch: {name1!r} != {name2!r}"
+                )
+
+            alternates1 = get_pin_alternates(pin1)
+            alternates2 = get_pin_alternates(pin2)
+            if alternates1 != alternates2:
+                reports.append(
+                    f"unit '{unit_name}': pin {pin_num} alternate names mismatch: {alternates1} != {alternates2}"
+                )
+
+            type1 = get_pin_type(pin1)
+            type2 = get_pin_type(pin2)
+            if type1 != type2:
+                reports.append(
+                    f"unit '{unit_name}': pin {pin_num} type mismatch: {type1!r} != {type2!r}"
+                )
+
+    return reports
+
+
 def symbols_are_equal(symbol1, symbol2):
     """
     Test if two symbols are equal regardless of the order of their properties, units, or pins.

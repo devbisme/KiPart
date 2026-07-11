@@ -21,7 +21,11 @@ from kipart.kipart import (
     merge_symbol_libs,
 )
 from kipart.random_symbol import create_random_symbol_lib
-from kipart.compare_symbols import symbols_are_equal, symbol_libs_are_equal
+from kipart.compare_symbols import (
+    compare_symbol_pins,
+    symbols_are_equal,
+    symbol_libs_are_equal,
+)
 
 
 def test_get_text_bounding_box():
@@ -811,6 +815,44 @@ def test_symbols_are_equal():
     add_quotes(gen_symbol2)
 
     assert symbols_are_equal(gen_symbol1, gen_symbol2) == True
+
+
+def test_compare_symbol_pins_reports_differences():
+    """Test that pin comparisons report mismatched names, alternates, types, and missing pins."""
+    symbol1_str = """
+    (symbol "test_part"
+      (property "Reference" "U")
+      (symbol "test_part_1_1"
+        (rectangle (start -10 -5) (end 10 5))
+        (pin input line (at -15 0 0) (length 5) (name "IN") (number "1"))
+        (pin output line (at 15 0 180) (length 5) (name "OUT") (number "2") (alternate "OUT_ALT" output line))
+        (pin output line (at 20 0 180) (length 5) (name "OUT2") (number "4"))
+      )
+    )
+    """
+
+    symbol2_str = """
+    (symbol "test_part"
+      (property "Reference" "U")
+      (symbol "test_part_1_1"
+        (rectangle (start -10 -5) (end 10 5))
+        (pin input line (at -15 0 0) (length 5) (name "INPUT") (number "1") (alternate "ALT_IN" input line))
+        (pin bidirectional line (at 15 0 180) (length 5) (name "OUT") (number "2") (alternate "OUT_ALT" output line))
+        (pin output line (at 20 0 180) (length 5) (name "OUT3") (number "3"))
+      )
+    )
+    """
+
+    symbol1 = Sexp(symbol1_str)
+    symbol2 = Sexp(symbol2_str)
+
+    reports = compare_symbol_pins(symbol1, symbol2)
+
+    assert any("pin 1" in report and "name" in report for report in reports)
+    assert any("pin 1" in report and "alternate" in report for report in reports)
+    assert any("pin 4" in report and "missing" in report for report in reports)
+    assert any("pin 3" in report and "missing" in report for report in reports)
+    assert any("pin 2" in report and "type" in report for report in reports)
 
 
 def test_symbol_libs_are_equal():
