@@ -155,6 +155,7 @@ field rather than folding it into the type. So SPD's `-i!>` is:
 | `i a0 1 2 3`               | ...plus `"increment": true` |
 | a repeated pin number      | an entry in `alternates` |
 | `*`                        | `{"spacer": 1}` |
+| `*3` (or `***`)            | `{"spacer": 3}` |
 | `; comment`                | no equivalent — JSON has no comments |
 
 Comments are the one thing SPD carries that JPD can't. Everything that affects

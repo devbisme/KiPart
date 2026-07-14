@@ -9,6 +9,12 @@
 -   Added the JPD (JSON Part Description) format, which holds the same information as an SPD file as JSON. See JPD.md.
 -   Added `spd2jpd` and `jpd2spd` command-line utilities (and `spd_to_jpd`, `jpd_to_spd`, `spd2jpd`, and `jpd2spd` functions) for converting between the SPD and JPD formats.
 -   Added SPD.md, a reference for the SPD format.
+-   Moved the SPD format itself into `spd.py`, which owns its comment syntax, type codes, style modifiers, pin naming rules, and pin-line reading and writing. `spd2csv`, `kilib2spd`, and `jpd` are now converters built on top of it.
+-   Added `spd.parse_spd_symbol`, the single reader of SPD's directives, which returns a structured part in the shape of the JPD format. `spd2csv` and `jpd` both work from it rather than each walking the lines of a symbol themselves.
+-   `spd2csv` now writes pin styles under the names KiCad gives them, so the Style column holds `line` where it used to be left empty and `non_logic` where it used to say `analog`. Both produce the same symbols as before.
+-   Only a line containing `*` creates a spacer. An empty line never did so in an SPD file, but could when symbol lines were passed to `convert_spd_symbol` directly.
+-   Added spacer lines that leave several pin positions empty, written either as repeated asterisks (`***`) or as a count (`*3`). `kilib2spd` and `jpd2spd` write a run of spacers in the counted form.
+-   SPD lines that are neither a directive, a spacer, nor a pin are now reported as errors. A pin line missing its pin number, or a misspelled side directive, used to be skipped without a word.
 
 ## 2.5.0 (2026-03-17)
 

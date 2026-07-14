@@ -22,15 +22,17 @@ import os
 import re
 import sys
 
-from .kilib2spd import (
+from .spd import (
     KICAD_STYLE_TO_SPD,
     KICAD_TYPE_TO_SPD,
     NUMBERED_NAME,
     SIDE_ORDER,
-    _format_pin_line,
+    format_pin_line,
+    format_spacer_line,
+    parse_spd,
+    parse_spd_symbol,
     pin_to_spd_fields,
 )
-from .spd2csv import parse_pin_type_field, parse_spd
 
 try:
     from .version import __version__
@@ -45,151 +47,7 @@ JPD_VERSION = 1
 DEFAULT_TYPE = "passive"
 DEFAULT_STYLE = "line"
 
-# JPD names pin styles the way KiCad does, but a couple of the styles that come
-# back from parsing SPD go by another name.
-SPD_STYLE_TO_KICAD = {
-    "": "line",
-    "analog": "non_logic",
-}
-
-# Matches an SPD 'device' line, a property line, and a 'unit' directive.
-DEVICE_RE = re.compile(r"^device\s+(\S+)$")
-PROPERTY_RE = re.compile(r"^(\w+)\s*:\s*(.*)$")
-UNIT_RE = re.compile(r"^unit\s+(\S+)$", re.IGNORECASE)
-
-
 # ===== SPD to JPD =====
-
-
-def _pin_names(name, numbers):
-    """
-    Give the name of each pin created by one SPD pin line.
-
-    A line carrying several pin numbers repeats the name across all of them,
-    unless the name ends in a number, in which case it is incremented for each
-    pin (a0, a1, a2...). The second return value says which rule was applied.
-    """
-    match = NUMBERED_NAME.search(name)
-
-    if len(numbers) > 1 and match:
-        base, start = match.group(1), int(match.group(2))
-        return [f"{base}{start + i}" for i in range(len(numbers))], True
-
-    return [name] * len(numbers), False
-
-
-def _add_pin(unit, side, line, pins_by_number):
-    """Add the pins of one SPD pin line to a unit of a JPD part."""
-    type_field, name, *numbers = line.split()
-    pin_type, pin_style, pin_hidden = parse_pin_type_field(type_field)
-
-    # JPD names the type and style in full and keeps visibility to itself,
-    # rather than packing all three into a type code and its modifiers.
-    pin = {
-        "type": pin_type,
-        "style": SPD_STYLE_TO_KICAD.get(pin_style, pin_style),
-    }
-    if pin_hidden == "yes":
-        pin["hidden"] = True
-
-    names, increment = _pin_names(name, numbers)
-
-    # A pin number used a second time defines an alternate for the pin that
-    # already claimed it, rather than a pin of its own.
-    new_names, new_numbers = [], []
-    for pin_name, number in zip(names, numbers):
-        if number in pins_by_number:
-            alternate = dict(pin, name=pin_name)
-            alternate.pop("hidden", None)  # Visibility belongs to the pin itself.
-            pins_by_number[number].setdefault("alternates", []).append(alternate)
-        else:
-            new_names.append(pin_name)
-            new_numbers.append(number)
-
-    if not new_numbers:
-        return
-
-    pin["name"] = new_names[0]
-    pin["numbers"] = new_numbers
-    if increment and len(new_numbers) > 1:
-        pin["increment"] = True
-
-    # Reorder the keys so a pin reads name-first when written out as JSON.
-    key_order = ["name", "numbers", "type", "style", "hidden", "increment"]
-    pin = {key: pin[key] for key in key_order if key in pin}
-
-    unit[side].append(pin)
-    for number in new_numbers:
-        pins_by_number[number] = pin
-
-
-def _symbol_to_part(lines):
-    """Convert the lines of one SPD symbol into a JPD part."""
-    device = DEVICE_RE.match(lines[0])
-    if not device:
-        raise ValueError(f"Invalid device line: {lines[0]}")
-
-    part = {"name": device.group(1)}
-    properties = {}
-    units = []
-    units_by_name = {}
-    pins_by_number = {}  # Maps a unit name to its pins, for spotting alternates.
-    side = "left"  # The side that pins go on until a side directive says otherwise.
-
-    def get_unit(name):
-        """Fetch a unit by name, creating it if this is its first mention."""
-        if name not in units_by_name:
-            unit = {} if name is None else {"name": name}
-            units_by_name[name] = unit
-            pins_by_number[name] = {}
-            units.append(unit)
-        return units_by_name[name]
-
-    # Pins that appear before any unit directive land in a single unnamed unit.
-    unit_name = None
-
-    for line in lines[1:]:
-        property_ = PROPERTY_RE.match(line)
-        if property_:
-            properties[property_.group(1)] = property_.group(2)
-            continue
-
-        unit_directive = UNIT_RE.match(line)
-        if unit_directive:
-            unit_name = unit_directive.group(1)
-            continue
-
-        if line.lower() in SIDE_ORDER:
-            side = line.lower()
-            continue
-
-        # A unit comes into being when the first pin or spacer lands in it, and
-        # its sides appear in the order the SPD file first uses them.
-        unit = get_unit(unit_name)
-        unit.setdefault(side, [])
-
-        if line == "*":
-            # Merge a run of spacers into a single JPD spacer.
-            if unit[side] and "spacer" in unit[side][-1]:
-                unit[side][-1]["spacer"] += 1
-            else:
-                unit[side].append({"spacer": 1})
-            continue
-
-        # Anything else is a pin line: a type, a name, and pin numbers.
-        if len(line.split()) >= 3:
-            _add_pin(unit, side, line, pins_by_number[unit_name])
-
-    if properties:
-        part["properties"] = properties
-
-    # Drop the sides that were named but ended up with no pins on them.
-    part["units"] = [
-        {key: value for key, value in unit.items() if key not in SIDE_ORDER or value}
-        for unit in units
-    ]
-
-    return part
 
 
 def spd_to_jpd(spd):
@@ -208,7 +66,7 @@ def spd_to_jpd(spd):
     return {
         "format": JPD_FORMAT,
         "version": JPD_VERSION,
-        "parts": [_symbol_to_part(lines) for lines in parse_spd(spd)],
+        "parts": [parse_spd_symbol(lines) for lines in parse_spd(spd)],
     }
 
 
@@ -223,7 +81,7 @@ def _spd_pin_lines(name, numbers, type_field, increment, indent):
     pin numbers, so a pin that doesn't want that gets a line per number.
     """
     if len(numbers) > 1 and NUMBERED_NAME.search(name) and not increment:
-        return [_format_pin_line(type_field, name, [n], indent) for n in numbers]
+        return [format_pin_line(type_field, name, [n], indent) for n in numbers]
 
     if increment and not NUMBERED_NAME.search(name):
         raise ValueError(
@@ -231,7 +89,7 @@ def _spd_pin_lines(name, numbers, type_field, increment, indent):
             "in a number"
         )
 
-    return [_format_pin_line(type_field, name, numbers, indent)]
+    return [format_pin_line(type_field, name, numbers, indent)]
 
 
 def _type_field(pin, hidden):
@@ -337,7 +195,7 @@ def jpd_to_spd(jpd):
 
                 for entry in unit[side]:
                     if "spacer" in entry:
-                        lines.extend(f"{indent}*" for _ in range(entry["spacer"]))
+                        lines.append(format_spacer_line(entry["spacer"], indent))
                     else:
                         lines.extend(_pin_to_spd(entry, indent))
 

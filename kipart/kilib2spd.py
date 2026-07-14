@@ -27,102 +27,26 @@ from .kipart import (
     extract_symbols_from_lib,
     yntf_to_yesno,
 )
+from .spd import (
+    NUMBERED_NAME,
+    SIDE_ORDER,
+    format_pin_line,
+    format_spacer_line,
+    pin_to_spd_fields,
+    warn,
+)
 
 try:
     from .version import __version__
 except ImportError:
     __version__ = "unknown"
 
-# Sides in the order they are emitted for each unit.
-SIDE_ORDER = ("left", "right", "top", "bottom")
-
 # Map a pin orientation to the side of the symbol the pin is on.
 ORIENTATION_TO_SIDE = {0: "left", 90: "bottom", 180: "right", 270: "top"}
-
-# Map KiCad pin types to their SPD type codes (inverse of SPD_TYPE_MAP).
-KICAD_TYPE_TO_SPD = {
-    "power_in": "p",
-    "power_out": "po",
-    "input": "i",
-    "output": "o",
-    "bidirectional": "b",
-    "tri_state": "t",
-    "open_collector": "oc",
-    "open_emitter": "oe",
-    "passive": "pass",
-    "free": "f",
-    "unspecified": "u",
-    "no_connect": "x",
-}
-
-# Map KiCad pin styles to their SPD modifier characters.
-# The 'low' modifier ('_') is only meaningful on input/output pins, so styles
-# that use it are only emitted with it for those types (see pin_to_spd_fields).
-KICAD_STYLE_TO_SPD = {
-    "line": "",
-    "inverted": "!",
-    "clock": ">",
-    "inverted_clock": "!>",
-    "input_low": "_",
-    "output_low": "_",
-    "clock_low": ">_",
-    "edge_clock_high": ">",
-    "non_logic": "@",
-}
-
-# Styles whose modifiers depend on the pin being an input or output.
-LOW_STYLES = ("input_low", "output_low", "clock_low")
 
 # Property names/values that kipart supplies by default and which don't need
 # to be written back out to the SPD file.
 DEFAULT_PROPERTIES = {"Reference": "U"}
-
-# A pin name ending in digits gets auto-incremented by spd2csv when a single
-# line carries several pin numbers.
-NUMBERED_NAME = re.compile(r"(\D+)(\d+)$")
-
-
-def _warn(message):
-    print(f"Warning: {message}", file=sys.stderr)
-
-
-def pin_to_spd_fields(pin_type, pin_style, hidden=False):
-    """
-    Build the SPD type field (type code plus style modifiers) for a pin.
-
-    Args:
-        pin_type (str): KiCad pin electrical type (e.g. 'input', 'power_in').
-        pin_style (str): KiCad pin graphical style (e.g. 'line', 'inverted').
-        hidden (bool, optional): Whether the pin is hidden. Defaults to False.
-
-    Returns:
-        str: The SPD type field, e.g. 'i', 'i!>', 'pass-'.
-    """
-    try:
-        type_code = KICAD_TYPE_TO_SPD[pin_type]
-    except KeyError:
-        _warn(f"unknown pin type '{pin_type}'; using 'pass'")
-        type_code = "pass"
-
-    try:
-        mods = KICAD_STYLE_TO_SPD[pin_style]
-    except KeyError:
-        _warn(f"unknown pin style '{pin_style}'; using 'line'")
-        mods = ""
-
-    # SPD derives input_low/output_low/clock_low from the '_' modifier combined
-    # with the pin type, so '_' can't be represented on any other type.
-    if pin_style in LOW_STYLES and pin_type not in ("input", "output"):
-        _warn(
-            f"style '{pin_style}' can't be applied to a '{pin_type}' pin in SPD; "
-            "dropping the 'low' modifier"
-        )
-        mods = mods.replace("_", "")
-
-    if hidden:
-        mods += "-"
-
-    return type_code + mods
 
 
 def _get_pins(unit):
@@ -135,7 +59,7 @@ def _get_pins(unit):
         try:
             side = ORIENTATION_TO_SIDE[orientation]
         except KeyError:
-            _warn(f"skipping pin with unsupported orientation {orientation}")
+            warn(f"skipping pin with unsupported orientation {orientation}")
             continue
 
         hide = pin.search("/pin/hide", ignore_case=True)
@@ -255,16 +179,6 @@ def _group_side_pins(pins, compress=True):
     return groups
 
 
-def _format_pin_line(type_field, name, numbers, indent):
-    """
-    Format a single SPD pin line with the columns aligned.
-
-    Fields wider than their column still get a separating space, since SPD
-    splits a pin line on whitespace.
-    """
-    return f"{indent}{type_field:<7} {name:<11} {' '.join(numbers)}".rstrip()
-
-
 def symbol_to_spd(symbol, compress=True):
     """
     Convert a KiCad symbol into its SPD representation.
@@ -293,7 +207,7 @@ def symbol_to_spd(symbol, compress=True):
         if prop_name == "Value" and prop_value == part_name:
             continue
         if not re.fullmatch(r"\w+", prop_name):
-            _warn(
+            warn(
                 f"property name '{prop_name}' of symbol '{part_name}' can't be "
                 "represented in SPD; skipping it"
             )
@@ -337,17 +251,18 @@ def symbol_to_spd(symbol, compress=True):
             lines.append(f"{side_indent}{side}")
 
             for group in _group_side_pins(side_pins[side], compress=compress):
-                lines.extend(f"{indent}*" for _ in range(group[0]["spacers"]))
+                if group[0]["spacers"]:
+                    lines.append(format_spacer_line(group[0]["spacers"], indent))
 
                 pin = group[0]
                 for field in ("name", "number"):
                     if any(char.isspace() for char in pin[field]):
-                        _warn(
+                        warn(
                             f"pin {field} '{pin[field]}' of symbol '{part_name}' "
                             "contains whitespace, which SPD can't represent"
                         )
                 lines.append(
-                    _format_pin_line(
+                    format_pin_line(
                         pin_to_spd_fields(pin["type"], pin["style"], pin["hidden"]),
                         pin["name"],
                         [p["number"] for p in group],
@@ -358,7 +273,7 @@ def symbol_to_spd(symbol, compress=True):
                 # Alternate pin functions re-use the pin number on later lines.
                 for alt in pin["alternates"]:
                     lines.append(
-                        _format_pin_line(
+                        format_pin_line(
                             pin_to_spd_fields(alt["type"], alt["style"], pin["hidden"]),
                             alt["name"],
                             [pin["number"]],

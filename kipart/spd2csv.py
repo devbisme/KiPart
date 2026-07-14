@@ -1,327 +1,78 @@
 #!/usr/bin/env python3
 """Convert SPD symbol description format to CSV for kipart.
 
-SPD (Shorthand Part Description) format.
+The SPD format itself lives in spd.py; this module only turns the parsed pieces
+into the CSV rows that kipart reads.
 """
 
 import argparse
-import re
 import sys
 from pathlib import Path
 
-
-# SDT comment delimiters (both full-line and in-line)
-COMMENT_DELIM = (
-    ";",
-    "//",
+from .spd import (
+    expand_pin_names,
+    parse_spd,
+    parse_spd_file,
+    parse_spd_symbol,
+    SIDE_ORDER,
 )
-
-# A comment only starts at the beginning of a line or after whitespace so that
-# values such as "Datasheet: https://example.com/ds.pdf" stay intact.
-COMMENT_RE = re.compile(
-    r"(?:^|(?<=\s))(?:" + "|".join(re.escape(d) for d in COMMENT_DELIM) + r")"
-)
-
-# Map SDT pin types to kipart types
-SPD_TYPE_MAP = {
-    'p': 'power_in',
-    'pi': 'power_in',
-    'pwr': 'power_in',
-    'pwr_in': 'power_in',
-    'po': 'power_out',
-    'pwr_out': 'power_out',
-    'i': 'input',
-    'in': 'input',
-    'o': 'output',
-    'out': 'output',
-    'b': 'bidirectional',
-    'bi': 'bidirectional',
-    'io': 'bidirectional',
-    't': 'tri_state',
-    'tri': 'tri_state',
-    'oc': 'open_collector',
-    'oe': 'open_emitter',
-    'pass': 'passive',
-    'f': 'free',
-    'u': 'unspecified',
-    'un': 'unspecified',
-    'a': 'unspecified',
-    'analog': 'unspecified',
-    'x': 'no_connect',
-    'nc': 'no_connect',
-}
-
-SPD_STYLE_MAP = {
-    '*': 'inverted',
-    '!': 'inverted',
-    '~': 'inverted',
-    '/': 'inverted',
-    '#': 'inverted',
-    '>': 'clock',
-    '_': 'low',
-    '@': 'analog',
-    '-': 'hidden',
-}
-
-STYLE_TO_KICAD = {
-    frozenset({'inverted'}): 'inverted',
-    frozenset({'clock'}): 'clock',
-    frozenset({'inverted', 'clock'}): 'inverted_clock',
-    frozenset({'low', 'input'}): 'input_low',
-    frozenset({'low', 'output'}): 'output_low',
-    frozenset({'low', 'input', 'clock'}): 'clock_low',
-    frozenset({'low', 'output', 'clock'}): 'clock_low',
-    frozenset({'analog'}): 'analog',
-    frozenset({}): '',       
-}
-
-
-def parse_pin_type_field(field: str) -> tuple[str, str, str]:
-    """Parse the type field of an SPD pin line.
-
-    The field is a pin type code with optional style modifiers attached before
-    or after it, e.g. "i", "i*", "-i*>".
-
-    Returns the pin type, the pin style, and 'yes'/'no' for the pin visibility.
-    """
-    # The type code is the alphabetic part of the field, the modifiers the rest.
-    pin_type_code = ''.join(c for c in field if c.isalpha())
-    style_mods = ''.join(c for c in field if not c.isalpha())
-
-    pin_type = SPD_TYPE_MAP.get(pin_type_code, 'passive')
-
-    try:
-        style = {SPD_STYLE_MAP[mod] for mod in style_mods}
-    except KeyError as e:
-        raise ValueError(f"Unsupported pin modifier: {e.args[0]} in {field}")
-
-    # Visibility is carried by a modifier but isn't a style.
-    pin_hidden = 'no'
-    if 'hidden' in style:
-        pin_hidden = 'yes'
-        style.discard('hidden')
-
-    # A 'low' pin style depends on whether the pin is an input or an output.
-    if 'low' in style:
-        style.add(pin_type)
-
-    try:
-        pin_style = STYLE_TO_KICAD[frozenset(style)]
-    except KeyError:
-        raise ValueError(f"Unsupported combination of pin modifiers: {field}")
-
-    return pin_type, pin_style, pin_hidden
-
-
-def parse_spd(content: str) -> list[list[str]]:
-    """Parse SPD-format text into a list of symbols, each a list of lines.
-
-    Blank lines and comments are removed.
-    """
-    # Split into symbol definitions (separated by 'device' keyword)
-    symbols = []
-    current_symbol_lines = []
-    empty_lines = []
-    in_symbol = False
-
-    for line in content.split('\n'):
-        stripped = line.strip()
-
-        # Skip empty lines
-        if not stripped:
-            continue
-
-        # Remove full-line and in-line comments
-        comment = COMMENT_RE.search(stripped)
-        if comment:
-            stripped = stripped[:comment.start()].strip()
-
-        # Skip lines that were nothing but a comment
-        if not stripped:
-            continue
-
-        # Start of a new symbol definition
-        if stripped.startswith('device '):
-            # Save previous symbol if exists
-            if current_symbol_lines:
-                symbols.append(current_symbol_lines)
-            current_symbol_lines = [stripped]
-            in_symbol = True
-        elif in_symbol:
-            # Append the current, non-empty line to the current symbol definition
-            current_symbol_lines.append(stripped)
-        else:
-            # Lines outside of any symbol definition are illegal.
-            raise ValueError(f"Text outside of device definition: {line}")
-
-    # Add the last symbol
-    if current_symbol_lines:
-        symbols.append(current_symbol_lines)
-
-    return symbols
-
-
-def parse_spd_file(filepath: Path) -> list[list[str]]:
-    """Parse an SPD-format symbol description file.
-
-    Returns a list of symbols, each a list of lines.
-    """
-    with open(filepath, 'r') as f:
-        return parse_spd(f.read())
 
 
 def convert_spd_symbol(lines: list[str]) -> list[list[str]]:
     """Convert SPD symbol lines to CSV rows for kipart."""
-    csv_rows = []
+    part = parse_spd_symbol(lines)
 
-    # First line should be the device definition
-    device_line = lines[0]
-    match = re.match(r'^device\s+(\S+)$', device_line)
-    if not match:
-        raise ValueError(f"Invalid device line: {device_line}")
-
-    part_name = match.group(1)
-
-    # Part name row
-    csv_rows.append([part_name, ''])
+    csv_rows = [[part["name"], '']]
 
     # Pass any part property values through to the CSV.
-    non_property_lines = []
-    for line in lines[1:]:
-        # Property lines are in the format "property_name: property_value"
-        match = re.match(r"^(\w+)\s*:\s*(.*)$", line)
-        if match:
-            prop_name = match.group(1)
-            prop_value = match.group(2)
-            csv_rows.append([f"{prop_name}:", prop_value, ''])
-        else:
-            non_property_lines.append(line)
-    lines = non_property_lines  # Only keep non-property lines for further processing
+    for prop_name, prop_value in part.get("properties", {}).items():
+        csv_rows.append([f"{prop_name}:", prop_value, ''])
 
-    # Parse remaining lines for pins to determine if units are used
-    current_unit = None
-    has_units = False
-
-    # First pass: determine if any unit is specified
-    for line in lines:
-        if line.strip().lower().startswith('unit '):
-             has_units = True
-             break
-
-    # Header row (always include Style and Hidden columns)
+    # The Unit column only appears for a part that has unit directives.
+    has_units = any("name" in unit for unit in part["units"])
+    header = ['Pin', 'Type', 'Name', 'Side', 'Style', 'Hidden']
     if has_units:
-        csv_rows.append(['Pin', 'Type', 'Name', 'Side', 'Style', 'Hidden', 'Unit'])
-    else:
-        csv_rows.append(['Pin', 'Type', 'Name', 'Side', 'Style', 'Hidden'])
+        header.append('Unit')
+    csv_rows.append(header)
 
-    # Second pass: process pins
-    current_side = 'left'  # default
-    current_unit = None
+    def add_row(row, unit_name):
+        if has_units:
+            row.append(unit_name)
+        csv_rows.append(row)
 
-    for line in lines:
-        stripped = line.strip()
+    def pin_rows(pin, numbers, side, hidden, unit_name):
+        """One row per pin number, with the name each of them ends up with."""
+        names, _ = expand_pin_names(pin["name"], numbers)
+        for name, number in zip(names, numbers):
+            add_row(
+                [number, pin["type"], name, side, pin["style"], hidden], unit_name
+            )
 
-        # Skip empty lines or lines with just an asterisk (they're used to skip pin positions in SPD)
-        if not stripped or stripped=='*':
-            if has_units:
-                csv_rows.append(["*", '', '', current_side, '', '', current_unit])  # Blank row for skipped pin with unit column
-            else:
-                csv_rows.append(["*", '', '', current_side, '', ''])  # Blank row for skipped pin
-            continue
+    for unit in part["units"]:
+        unit_name = unit.get("name", '')
+        for side in (key for key in unit if key in SIDE_ORDER):
+            for entry in unit[side]:
+                if "spacer" in entry:
+                    # Spacers skip a pin position on the side.
+                    for _ in range(entry["spacer"]):
+                        add_row(["*", '', '', side, '', ''], unit_name)
+                    continue
 
-        # Check if this is a side directive
-        if stripped.lower() in ('left', 'right', 'top', 'bottom'):
-            current_side = stripped.lower()
-            continue
+                numbers = entry["numbers"]
+                hidden = 'yes' if entry.get("hidden") else 'no'
+                pin_rows(entry, numbers, side, hidden, unit_name)
 
-        # Check if this is a unit directive
-        if stripped.lower().startswith('unit '):
-            try:
-                current_unit = stripped.split()[1]
-            except IndexError:
-                pass  # If no unit name is given, just keep whatever unit was active before
-            continue
-
-        # Parse pin definition: <type> <name> <pin numbers...>
-        # Example: "a   vcc   3" or "i   a0   k4 l8 l4 k3 l9 l3 m9 m3 n9 m4"
-        # Type can have modifiers: "*"=inverted, "-"=hidden, ">"=clock
-        parts = stripped.split()
-        if len(parts) < 3:
-            continue
-
-        # Extract the pin type, style, and visibility from the first part,
-        # e.g., "i*" is an inverted input and "-i*>" a hidden inverted clock.
-        pin_type, pin_style, pin_hidden = parse_pin_type_field(parts[0])
-
-        pin_name = parts[1]
-        pin_numbers = parts[2:]
-
-        # Create a row for each pin number (for repetitive pins)
-        # If there is only one pin number, keep name as-is
-        # If there are multiple pin numbers, we need to handle naming:
-        #   - If pin name ends with a number (e.g., "a5"), then start incrementing
-        #     from that number for each pin number (a5, a6, a7...).
-        #   - If pin name does not end with a number, use name as-is for all pins.
-        num_pin_numbers = len(pin_numbers)
-        start_index_match = re.search(r'(\D+)(\d+)$', pin_name)
-
-        if num_pin_numbers == 1:
-            # Single pin number - use name as-is
-            for pin_num in pin_numbers:
-                if has_units:
-                    csv_rows.append(
-                        [pin_num, pin_type, pin_name, current_side,
-                         pin_style, pin_hidden, current_unit]
-                    )
-                else:
-                    csv_rows.append(
-                        [pin_num, pin_type, pin_name, current_side,
-                         pin_style, pin_hidden]
-                    )
-        else:
-            # Multiple pin numbers - determine starting index for naming
-            if start_index_match:
-                pin_name_base = start_index_match.group(1)
-                start_index = int(start_index_match.group(2))
-                # Create a row for each pin number with incremented index
-                for index, pin_num in enumerate(pin_numbers, start_index):
-                    if has_units:
-                        csv_rows.append(
-                            [pin_num, pin_type, f"{pin_name_base}{index}",
-                             current_side, pin_style, pin_hidden, current_unit]
-                        )
-                    else:
-                        csv_rows.append(
-                            [pin_num, pin_type, f"{pin_name_base}{index}",
-                             current_side, pin_style, pin_hidden]
-                        )
-            else:
-                # No numeric suffix - use name as-is for all pins
-                for pin_num in pin_numbers:
-                    if has_units:
-                        csv_rows.append(
-                            [pin_num, pin_type, pin_name, current_side,
-                             pin_style, pin_hidden, current_unit]
-                        )
-                    else:
-                        csv_rows.append(
-                            [pin_num, pin_type, pin_name, current_side,
-                             pin_style, pin_hidden]
-                        )
+                # An alternate re-uses the pin numbers of the pin it belongs to,
+                # and kipart turns the duplicate rows into alternate pins.
+                for alternate in entry.get("alternates", []):
+                    pin_rows(alternate, numbers, side, hidden, unit_name)
 
     return csv_rows
 
 
 def spd_to_csv(spd_content: str) -> str:
     """Convert SPD format content to CSV format string."""
-    # Parse as file
-    from io import StringIO
-
-    # Write to temp file for parsing
-    with open('/tmp/spd_temp.txt', 'w') as f:
-        f.write(spd_content)
-
-    symbols = parse_spd_file(Path('/tmp/spd_temp.txt'))
+    symbols = parse_spd(spd_content)
 
     all_csv_rows = []
 
@@ -332,14 +83,9 @@ def spd_to_csv(spd_content: str) -> str:
             all_csv_rows.append([])  # Blank row between symbols
 
     # Convert to CSV string
-    output = StringIO()
-    for row in all_csv_rows:
-        if row:
-            output.write(','.join(row) + '\n')
-        else:
-            output.write('\n')
-
-    return output.getvalue()
+    return ''.join(
+        (','.join(row) + '\n') if row else '\n' for row in all_csv_rows
+    )
 
 
 def main():

@@ -142,6 +142,21 @@ A line containing only `*` leaves an empty pin position on the current side:
         *                       // gap between vcc and gnd
         p       gnd     3
 
+To leave several positions empty, repeat the asterisk or give a count after it.
+These two are the same:
+
+    ***
+    *3
+
+A count and repeated asterisks can't be combined, so `**2` is an error.
+
+## Errors
+
+Every line has to be one of the above: a `device` line, a property, a `unit` or
+side directive, a spacer, or a pin. Anything else is an error rather than
+something quietly skipped, so a pin line missing its number (`i vcc`) or a
+misspelled directive (`lefft`) is reported instead of silently dropping a pin.
+
 ## Example
 
     ;

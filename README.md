@@ -552,6 +552,12 @@ containing only an `*`:
     i       gnd     3
 
 This creates an empty pin position (spacer) between `vcc` and `gnd` on the left side.
+To leave several positions empty, repeat the asterisk (`***`) or give a count
+after it (`*3`).
+
+Every line of an SPD file has to be a `device` line, a property, a `unit` or side
+directive, a spacer, or a pin. Anything else is reported as an error rather than
+being quietly skipped.
 
 Symbols with multiple functional units are defined using the `unit` directive:
 

@@ -1398,8 +1398,8 @@ i       pin1    1
         # Check header
         assert csv_rows[1] == ["Pin", "Type", "Name", "Side", "Style", "Hidden"]
         # Check pins
-        assert csv_rows[2] == ["1", "input", "vcc", "left", "", "no"]
-        assert csv_rows[3] == ["2", "output", "gnd", "right", "", "no"]
+        assert csv_rows[2] == ["1", "input", "vcc", "left", "line", "no"]
+        assert csv_rows[3] == ["2", "output", "gnd", "right", "line", "no"]
 
     def test_convert_with_modifiers(self):
         """Test converting pins with style modifiers."""
@@ -1415,9 +1415,9 @@ i       pin1    1
 
         assert csv_rows[2] == ["1", "input", "inverted", "left", "inverted", "no"]
         assert csv_rows[3] == ["2", "input", "clock", "left", "clock", "no"]
-        assert csv_rows[4] == ["3", "input", "hidden", "left", "", "yes"]
+        assert csv_rows[4] == ["3", "input", "hidden", "left", "line", "yes"]
         assert csv_rows[5] == ["4", "input", "inv_clk", "left", "inverted_clock", "no"]
-        assert csv_rows[6] == ["5", "input", "normal", "left", "", "no"]
+        assert csv_rows[6] == ["5", "input", "normal", "left", "line", "no"]
 
     def test_convert_with_units(self):
         """Test converting multi-unit symbol."""
@@ -1435,8 +1435,8 @@ i       pin1    1
         # Check header includes Unit column
         assert csv_rows[1] == ["Pin", "Type", "Name", "Side", "Style", "Hidden", "Unit"]
         # Check pins have unit
-        assert csv_rows[2] == ["1", "input", "a", "left", "", "no", "A"]
-        assert csv_rows[3] == ["2", "output", "b", "right", "", "no", "B"]
+        assert csv_rows[2] == ["1", "input", "a", "left", "line", "no", "A"]
+        assert csv_rows[3] == ["2", "output", "b", "right", "line", "no", "B"]
 
     def test_convert_no_unit_column_without_units(self):
         """Test that Unit column is omitted when no units are specified."""
@@ -1452,9 +1452,9 @@ i       pin1    1
         csv_rows = convert_spd_symbol(lines)
 
         # Should create a0, a1, a2
-        assert csv_rows[2] == ["1", "input", "a0", "left", "", "no"]
-        assert csv_rows[3] == ["2", "input", "a1", "left", "", "no"]
-        assert csv_rows[4] == ["3", "input", "a2", "left", "", "no"]
+        assert csv_rows[2] == ["1", "input", "a0", "left", "line", "no"]
+        assert csv_rows[3] == ["2", "input", "a1", "left", "line", "no"]
+        assert csv_rows[4] == ["3", "input", "a2", "left", "line", "no"]
 
     def test_same_pin_name_without_numeric_suffix(self):
         """Test that pin names stay same when name doesn't end with number."""
@@ -1462,25 +1462,58 @@ i       pin1    1
         csv_rows = convert_spd_symbol(lines)
 
         # All should have same name "bus"
-        assert csv_rows[2] == ["1", "bidirectional", "bus", "left", "", "no"]
-        assert csv_rows[3] == ["2", "bidirectional", "bus", "left", "", "no"]
-        assert csv_rows[4] == ["3", "bidirectional", "bus", "left", "", "no"]
+        assert csv_rows[2] == ["1", "bidirectional", "bus", "left", "line", "no"]
+        assert csv_rows[3] == ["2", "bidirectional", "bus", "left", "line", "no"]
+        assert csv_rows[4] == ["3", "bidirectional", "bus", "left", "line", "no"]
 
     def test_spacer_pins(self, tmp_path):
-        """Test that empty lines create spacer pins."""
+        """Test that a '*' line creates a spacer pin."""
         lines = [
             "device testpart",
             "left",
             "i       vcc     1",
-            "",  # empty line = spacer
+            "*",  # spacer
             "i       gnd     3",
         ]
         csv_rows = convert_spd_symbol(lines)
 
         # Should have a spacer pin (*)
-        assert csv_rows[2] == ["1", "input", "vcc", "left", "", "no"]
+        assert csv_rows[2] == ["1", "input", "vcc", "left", "line", "no"]
         assert csv_rows[3] == ["*", "", "", "left", "", ""]  # spacer
-        assert csv_rows[4] == ["3", "input", "gnd", "left", "", "no"]
+        assert csv_rows[4] == ["3", "input", "gnd", "left", "line", "no"]
+
+    def test_multiple_spacer_pins(self):
+        """Test the spacer forms that leave several pin positions empty."""
+        spacer_row = ["*", "", "", "left", "", ""]
+
+        for spacer in ("*", "*", "*"), ("***",), ("*3",), ("* 3",):
+            lines = ["device testpart", "left", "i  vcc  1", *spacer, "i  gnd  3"]
+            csv_rows = convert_spd_symbol(lines)
+
+            # However it's written, it leaves three empty positions.
+            assert csv_rows[3:6] == [spacer_row] * 3, spacer
+            assert csv_rows[6] == ["3", "input", "gnd", "left", "line", "no"]
+
+    def test_bad_spacer_pins(self):
+        """Test that a spacer that can't be read is rejected."""
+        def convert(spacer):
+            return convert_spd_symbol(
+                ["device testpart", "left", "i  vcc  1", spacer]
+            )
+
+        # A count and repeated asterisks together don't say how many are meant.
+        with pytest.raises(ValueError, match="Ambiguous spacer"):
+            convert("**2")
+
+        with pytest.raises(ValueError, match="must be 1 or more"):
+            convert("*0")
+
+    def test_unrecognized_line(self):
+        """Test that a line which is neither a directive nor a pin is rejected."""
+        # A pin line without a pin number, and a misspelled side directive.
+        for line in ("i       vcc", "lefft"):
+            with pytest.raises(ValueError, match="Unrecognized line"):
+                convert_spd_symbol(["device testpart", "left", line])
 
     def test_spd_to_csv_function(self, tmp_path):
         """Test the spd_to_csv convenience function."""
@@ -1883,7 +1916,7 @@ class TestJpd:
         assert lines[0] == ["device", "testpart"]
         assert ["Footprint:", "SOIC-8"] in lines
         assert ["i!>-", "clk", "1"] in lines
-        assert lines.count(["*"]) == 2
+        assert ["*2"] in lines  # Several spacers are written as a count.
         assert ["p", "gnd", "7", "8"] in lines
 
     def test_jpd_to_spd_increment(self):
