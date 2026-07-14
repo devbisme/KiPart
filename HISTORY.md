@@ -1,6 +1,6 @@
 # History
 
-## Unreleased
+## 2.6.0 (2026-07-14)
 
 -   Added `kilib2spd` command-line utility (and `symbol_to_spd`, `symbol_lib_to_spd`, and `symbol_lib_file_to_spd_file` functions) for converting KiCad symbol libraries into SPD files, reversing the `spd2csv` + `kipart` pipeline.
 -   Adjacent pins sharing a type, style, and name (or a run of incrementing names) are combined onto a single SPD line unless `--no-compress` is given.
