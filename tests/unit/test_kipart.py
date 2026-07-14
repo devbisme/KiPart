@@ -1517,3 +1517,237 @@ i       pin1    1
             lines = ["device test", "left", f"{spd_type}      testpin  1"]
             csv_rows = convert_spd_symbol(lines)
             assert csv_rows[2][1] == expected_kicad, f"Failed for SDT type {spd_type}"
+
+
+    def test_inline_comment_keeps_urls(self):
+        """Test that a '//' inside a value isn't mistaken for a comment."""
+        lines = [
+            "device testpart",
+            "Datasheet: https://example.com/ds.pdf",
+            "left",
+            "i       vcc     1",
+        ]
+        csv_rows = convert_spd_symbol(lines)
+
+        assert csv_rows[1] == ["Datasheet:", "https://example.com/ds.pdf", ""]
+
+
+# ============================================================================
+# Tests for kilib2spd
+# ============================================================================
+
+from kipart.kilib2spd import (
+    pin_to_spd_fields,
+    symbol_to_spd,
+    symbol_lib_to_spd,
+    symbol_lib_file_to_spd_file,
+)
+from kipart.kipart import rows_to_symbol_lib
+from kipart.spd2csv import parse_spd_file, convert_spd_symbol
+
+
+def spd_to_symbol_lib(spd, tmp_path):
+    """Round-trip SPD text back into a symbol library the way the CLIs do."""
+    spd_file = tmp_path / "roundtrip.spd"
+    spd_file.write_text(spd)
+
+    rows = []
+    symbols = parse_spd_file(spd_file)
+    for i, symbol_lines in enumerate(symbols):
+        rows.extend(convert_spd_symbol(symbol_lines))
+        if i < len(symbols) - 1:
+            rows.append([])
+
+    return rows_to_symbol_lib(rows)
+
+
+class TestKilib2Spd:
+    """Tests for KiCad symbol library to SPD conversion."""
+
+    def test_pin_to_spd_fields(self):
+        """Test that KiCad pin types and styles map back to SPD type fields."""
+        assert pin_to_spd_fields("input", "line") == "i"
+        assert pin_to_spd_fields("power_in", "line") == "p"
+        assert pin_to_spd_fields("no_connect", "line") == "x"
+        assert pin_to_spd_fields("input", "inverted") == "i!"
+        assert pin_to_spd_fields("input", "inverted_clock") == "i!>"
+        assert pin_to_spd_fields("output", "output_low") == "o_"
+        assert pin_to_spd_fields("unspecified", "non_logic") == "u@"
+        assert pin_to_spd_fields("input", "line", hidden=True) == "i-"
+
+    def test_pin_to_spd_fields_drops_unusable_low(self):
+        """Test that the 'low' modifier is dropped from non-input/output pins."""
+        # SPD derives input_low/output_low from '_' plus the pin type, so the
+        # modifier has no meaning on a passive pin.
+        assert pin_to_spd_fields("passive", "input_low") == "pass"
+
+    def test_symbol_to_spd(self, tmp_path):
+        """Test converting a symbol into SPD text."""
+        rows = [
+            ["testpart", ""],
+            ["Footprint:", "SOIC-8"],
+            ["pin", "name", "type", "side", "style", "hidden"],
+            ["1", "vcc", "power_in", "left", "line", "no"],
+            ["2", "clk", "input", "left", "clock", "no"],
+            ["3", "out", "output", "right", "line", "no"],
+        ]
+        spd = symbol_to_spd(rows_to_symbol(rows))
+        lines = [line.split() for line in spd.splitlines() if line.strip()]
+
+        assert lines[0] == ["device", "testpart"]
+        assert ["Footprint:", "SOIC-8"] in lines
+        assert ["left"] in lines
+        assert ["p", "vcc", "1"] in lines
+        assert ["i>", "clk", "2"] in lines
+        assert ["right"] in lines
+        assert ["o", "out", "3"] in lines
+
+    def test_spacers_reproduce_gaps(self, tmp_path):
+        """Test that a gap between pins becomes a spacer in the SPD file."""
+        rows = [
+            ["testpart", ""],
+            ["pin", "name", "type", "side", "style", "hidden"],
+            ["1", "vcc", "power_in", "left", "line", "no"],
+            ["*", "", "", "left", "", ""],
+            ["2", "gnd", "power_in", "left", "line", "no"],
+        ]
+        spd = symbol_to_spd(rows_to_symbol(rows))
+        lines = [line.strip() for line in spd.splitlines() if line.strip()]
+
+        # The spacer sits between the two pins.
+        assert lines.index("*") == lines.index("p       vcc         1") + 1
+        assert lines.index("*") == lines.index("p       gnd         2") - 1
+
+    def test_compress_pins_onto_one_line(self):
+        """Test that pins sharing a type and style are combined onto one line."""
+        rows = [
+            ["testpart", ""],
+            ["pin", "name", "type", "side", "style", "hidden"],
+            ["1", "a0", "input", "left", "line", "no"],
+            ["2", "a1", "input", "left", "line", "no"],
+            ["3", "a2", "input", "left", "line", "no"],
+            ["4", "gnd", "power_in", "right", "line", "no"],
+            ["5", "gnd", "power_in", "right", "line", "no"],
+        ]
+        symbol = rows_to_symbol(rows)
+        lines = [line.split() for line in symbol_to_spd(symbol).splitlines() if line.strip()]
+
+        # Incrementing names collapse to the first name of the run, and
+        # identical names collapse to a single name shared by all the pins.
+        assert ["i", "a0", "1", "2", "3"] in lines
+        assert ["p", "gnd", "4", "5"] in lines
+
+        # Without compression, every pin gets its own line.
+        lines = [
+            line.split()
+            for line in symbol_to_spd(symbol, compress=False).splitlines()
+            if line.strip()
+        ]
+        assert ["i", "a0", "1"] in lines
+        assert ["i", "a1", "2"] in lines
+        assert ["p", "gnd", "4"] in lines
+        assert ["p", "gnd", "5"] in lines
+
+    def test_long_names_stay_separate_from_pin_numbers(self):
+        """Test that a name wider than its column doesn't run into the numbers."""
+        rows = [
+            ["testpart", ""],
+            ["pin", "name", "type", "side", "style", "hidden"],
+            ["1", "a_very_long_pin_name", "input", "left", "line", "no"],
+        ]
+        spd = symbol_to_spd(rows_to_symbol(rows))
+        lines = [line.split() for line in spd.splitlines() if line.strip()]
+
+        assert ["i", "a_very_long_pin_name", "1"] in lines
+
+    def test_alternate_pins(self):
+        """Test that alternate pin functions re-use the pin number."""
+        rows = [
+            ["testpart", ""],
+            ["pin", "name", "type", "side", "style", "hidden"],
+            ["10", "GPIO1", "bidirectional", "left", "line", "no"],
+            ["10", "TX", "output", "left", "line", "no"],
+        ]
+        spd = symbol_to_spd(rows_to_symbol(rows))
+        lines = [line.split() for line in spd.splitlines() if line.strip()]
+
+        assert ["b", "GPIO1", "10"] in lines
+        assert ["o", "TX", "10"] in lines
+
+    def test_units(self):
+        """Test that multi-unit symbols get a unit directive per unit."""
+        rows = [
+            ["testpart", ""],
+            ["pin", "name", "type", "side", "unit", "style", "hidden"],
+            ["1", "a", "input", "left", "A", "line", "no"],
+            ["2", "b", "output", "right", "B", "line", "no"],
+        ]
+        spd = symbol_to_spd(rows_to_symbol(rows))
+        lines = [line.split() for line in spd.splitlines() if line.strip()]
+
+        assert ["unit", "A"] in lines
+        assert ["unit", "B"] in lines
+        assert lines.index(["unit", "A"]) < lines.index(["i", "a", "1"])
+        assert lines.index(["unit", "B"]) < lines.index(["o", "b", "2"])
+
+    def test_default_properties_are_omitted(self):
+        """Test that kipart's default property values aren't written out."""
+        rows = [
+            ["testpart", ""],
+            ["pin", "name", "type", "side", "style", "hidden"],
+            ["1", "vcc", "power_in", "left", "line", "no"],
+        ]
+        spd = symbol_to_spd(rows_to_symbol(rows))
+
+        # Reference 'U' and Value 'testpart' are the defaults kipart supplies,
+        # and the remaining properties are empty.
+        assert "Reference:" not in spd
+        assert "Value:" not in spd
+        assert "Footprint:" not in spd
+
+    def test_symbol_lib_to_spd_roundtrip(self, tmp_path):
+        """Test that a library survives the trip out to SPD and back."""
+        lib_file = os.path.join(
+            os.path.dirname(__file__), "..", "examples", "grabbag.kicad_sym"
+        )
+        with open(lib_file) as f:
+            original = Sexp(f.read())
+
+        roundtripped = spd_to_symbol_lib(symbol_lib_to_spd(original), tmp_path)
+
+        originals = {s[1]: s for s in extract_symbols_from_lib(original)}
+        results = {s[1]: s for s in extract_symbols_from_lib(roundtripped)}
+        assert set(originals) == set(results)
+
+        # Every pin keeps its name, alternates, and type through the round trip.
+        for name, symbol in originals.items():
+            assert compare_symbol_pins(symbol, results[name]) == []
+
+    def test_symbol_lib_file_to_spd_file(self, tmp_path):
+        """Test the file-level conversion and its overwrite check."""
+        lib_file = tmp_path / "test.kicad_sym"
+        rows = [
+            ["testpart", ""],
+            ["pin", "name", "type", "side", "style", "hidden"],
+            ["1", "vcc", "power_in", "left", "line", "no"],
+        ]
+        lib = rows_to_symbol_lib(rows)
+        add_quotes(lib)
+        lib_file.write_text(str(lib))
+
+        spd_file = symbol_lib_file_to_spd_file(str(lib_file))
+        assert spd_file == str(tmp_path / "test.spd")
+        assert "device testpart" in Path(spd_file).read_text()
+
+        # A second conversion needs permission to overwrite the output.
+        with pytest.raises(ValueError):
+            symbol_lib_file_to_spd_file(str(lib_file))
+        symbol_lib_file_to_spd_file(str(lib_file), overwrite=True)
+
+    def test_symbol_lib_file_to_spd_file_rejects_non_kicad_sym(self, tmp_path):
+        """Test that only .kicad_sym files are accepted."""
+        csv_file = tmp_path / "test.csv"
+        csv_file.write_text("testpart,\npin,name\n1,vcc\n")
+
+        with pytest.raises(ValueError):
+            symbol_lib_file_to_spd_file(str(csv_file))

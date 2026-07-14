@@ -22,6 +22,8 @@ Excel, or SPD file.
     to CSV format which can then be turned into schematic part libraries.
 -   Also includes `kilib2csv` for converting existing schematic part libraries
     into CSV files suitable for input to KiPart.
+-   Also includes `kilib2spd` for converting existing schematic part libraries
+    into SPD files, so a library can be maintained in the compact SPD format.
 
 ## Example Use Case
 
@@ -51,7 +53,7 @@ Simple enough:
 
     pip install kipart
 
-This will install three command-line utilities:
+This will install four command-line utilities:
 
 -   `kipart`: The main utility for generating schematic symbols from rows of pin data
         stored in CSV or Excel files.
@@ -60,6 +62,8 @@ This will install three command-line utilities:
 -   `kilib2csv`: A utility for converting existing KiCad libraries into
         CSV files. This is useful for converting existing libraries into a format that
         can be used with KiPart.
+-   `kilib2spd`: A utility for converting existing KiCad libraries into
+        SPD files, which is the reverse of the `spd2csv` + `kipart` pipeline.
 
 ## Usage
 
@@ -637,3 +641,53 @@ appending to the output CSV file:
 Then you can generate a consistent library from the CSV file:
 
     kipart my_library.csv -o my_library_new.lib
+
+
+### kilib2spd
+
+If you'd rather maintain an existing library in the compact SPD format,
+`kilib2spd` converts a KiCad symbol library into an SPD file. It's the
+reverse of the `spd2csv` + `kipart` pipeline, so the SPD file it writes can
+be fed straight back through those utilities to rebuild the library.
+**(As with kilib2csv, any stylized part symbol graphics are lost in the
+conversion.)**
+
+```
+usage: kilib2spd [-h] [-o OUTPUT] [-w] [--no-compress] [-v] input_files [input_files ...]
+
+Convert KiCad symbol libraries into SPD (Shorthand Part Description) files
+
+positional arguments:
+input_files           Input KiCad symbol library files (.kicad_sym)
+
+options:
+-h, --help            show this help message and exit
+-o OUTPUT, --output OUTPUT
+                        Output SPD file path ('-' writes to stdout)
+-w, --overwrite       Allow overwriting of an existing SPD file
+--no-compress         Give each pin its own line instead of combining pins
+                        that share a type, style, and name
+-v, --version         show program's version number and exit
+```
+
+Convert a library into an SPD file, edit it, and rebuild the library:
+
+    kilib2spd my_library.kicad_sym          # Generates my_library.spd
+    spd2csv my_library.spd | kipart -o my_library_new.kicad_sym
+
+By default, adjacent pins that share an electrical type, style, and visibility
+are combined onto a single line: pins with identical names (such as several GND
+pins) get listed as one name followed by all their pin numbers, and a run of
+pins whose names increment (`a0`, `a1`, `a2`...) collapses to the first name of
+the run. Use `--no-compress` to give every pin a line of its own.
+
+Gaps between the pins on a side become `*` spacers, so the groupings within
+each side are preserved. Where the pins of a side sit *as a whole* along that
+side is not recorded, since KiPart re-derives that when it lays the symbol out
+again (see the `--push` option). Symbols built with `kipart --bundle` are also
+laid out slightly differently when rebuilt, because their bundled pins are
+stacked at a single location in the library.
+
+Pin names and numbers containing whitespace can't be represented in SPD, and
+neither can property names that aren't a single word; `kilib2spd` warns when it
+encounters them.

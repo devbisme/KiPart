@@ -1,5 +1,12 @@
 # History
 
+## Unreleased
+
+-   Added `kilib2spd` command-line utility (and `symbol_to_spd`, `symbol_lib_to_spd`, and `symbol_lib_file_to_spd_file` functions) for converting KiCad symbol libraries into SPD files, reversing the `spd2csv` + `kipart` pipeline.
+-   Adjacent pins sharing a type, style, and name (or a run of incrementing names) are combined onto a single SPD line unless `--no-compress` is given.
+-   Gaps between the pins on a side are written out as `*` spacers.
+-   Fixed comment handling in SPD files: `;` and `//` now only start a comment at the beginning of a line or after whitespace, so values such as `Datasheet: https://example.com/ds.pdf` are no longer truncated.
+
 ## 2.5.0 (2026-03-17)
 
 -   Added alternate pin handling: when a pin number appears multiple times, the subsequent pins become alternates of the first pin.

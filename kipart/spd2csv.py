@@ -16,6 +16,12 @@ COMMENT_DELIM = (
     "//",
 )
 
+# A comment only starts at the beginning of a line or after whitespace so that
+# values such as "Datasheet: https://example.com/ds.pdf" stay intact.
+COMMENT_RE = re.compile(
+    r"(?:^|(?<=\s))(?:" + "|".join(re.escape(d) for d in COMMENT_DELIM) + r")"
+)
+
 # Map SDT pin types to kipart types
 SPD_TYPE_MAP = {
     'p': 'power_in',
@@ -91,15 +97,14 @@ def parse_spd_file(filepath: Path) -> list[list[str]]:
         if not stripped:
             continue
 
-        # Skip pure comment lines
-        if stripped.startswith(COMMENT_DELIM):
-            continue
+        # Remove full-line and in-line comments
+        comment = COMMENT_RE.search(stripped)
+        if comment:
+            stripped = stripped[:comment.start()].strip()
 
-        # Remove in-line comments
-        for comment_start in COMMENT_DELIM:
-            comment_index = stripped.find(comment_start)
-            if comment_index != -1:
-                stripped = stripped[:comment_index].strip()
+        # Skip lines that were nothing but a comment
+        if not stripped:
+            continue
 
         # Start of a new symbol definition
         if stripped.startswith('device '):
