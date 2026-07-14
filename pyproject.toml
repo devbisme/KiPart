@@ -51,6 +51,8 @@ kipart = "kipart.kipart:kipart"
 kilib2csv = "kipart.kipart:kilib2csv"
 kilib2spd = "kipart.kilib2spd:kilib2spd"
 spd2csv = "kipart.spd2csv:main"
+spd2jpd = "kipart.jpd:spd2jpd_cli"
+jpd2spd = "kipart.jpd:jpd2spd_cli"
 
 [project.optional-dependencies]
 dev = [

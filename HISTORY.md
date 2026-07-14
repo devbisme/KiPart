@@ -6,6 +6,9 @@
 -   Adjacent pins sharing a type, style, and name (or a run of incrementing names) are combined onto a single SPD line unless `--no-compress` is given.
 -   Gaps between the pins on a side are written out as `*` spacers.
 -   Fixed comment handling in SPD files: `;` and `//` now only start a comment at the beginning of a line or after whitespace, so values such as `Datasheet: https://example.com/ds.pdf` are no longer truncated.
+-   Added the JPD (JSON Part Description) format, which holds the same information as an SPD file as JSON. See JPD.md.
+-   Added `spd2jpd` and `jpd2spd` command-line utilities (and `spd_to_jpd`, `jpd_to_spd`, `spd2jpd`, and `jpd2spd` functions) for converting between the SPD and JPD formats.
+-   Added SPD.md, a reference for the SPD format.
 
 ## 2.5.0 (2026-03-17)
 

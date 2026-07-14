@@ -270,7 +270,7 @@ def str_to_type(value):
     if value in ("open_collector", "opencollector", "open_coll", "opencoll", "oc"):
         return "open_collector"
     if value in ("open_emitter", "openemitter", "open_emit", "openemit", "oe"):
-        return "open_collector"
+        return "open_emitter"
     if value in ("no_connect", "noconnect", "no_conn", "noconn", "nc"):
         return "no_connect"
     raise ValueError(f"Invalid value for type: {value}")
@@ -302,8 +302,8 @@ def str_to_style(value):
         return "inverted_clock"
     if value in ("input_low", "inp_low", "in_lw", "in_b", "in_n", "~in", "#in"):
         return "input_low"
-    if value in ("clock_low", "clk_low", "clk_lw", "clk_b", "clk_n", "~clk", "#clk"):
-        return "inverted_clock"
+    if value in ("clock_low", "clk_low", "clk_lw"):
+        return "clock_low"
     if value in ("output_low", "outp_low", "out_lw", "out_b", "out_n", "~out", "#out"):
         return "output_low"
     if value in ("edge_clock_high",):

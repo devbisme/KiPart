@@ -76,14 +76,48 @@ STYLE_TO_KICAD = {
 }
 
 
-def parse_spd_file(filepath: Path) -> list[list[str]]:
-    """Parse an SPD-format symbol description file.
+def parse_pin_type_field(field: str) -> tuple[str, str, str]:
+    """Parse the type field of an SPD pin line.
 
-    Returns a list of symbol row groups (each group is a list of CSV rows).
+    The field is a pin type code with optional style modifiers attached before
+    or after it, e.g. "i", "i*", "-i*>".
+
+    Returns the pin type, the pin style, and 'yes'/'no' for the pin visibility.
     """
-    with open(filepath, 'r') as f:
-        content = f.read()
+    # The type code is the alphabetic part of the field, the modifiers the rest.
+    pin_type_code = ''.join(c for c in field if c.isalpha())
+    style_mods = ''.join(c for c in field if not c.isalpha())
 
+    pin_type = SPD_TYPE_MAP.get(pin_type_code, 'passive')
+
+    try:
+        style = {SPD_STYLE_MAP[mod] for mod in style_mods}
+    except KeyError as e:
+        raise ValueError(f"Unsupported pin modifier: {e.args[0]} in {field}")
+
+    # Visibility is carried by a modifier but isn't a style.
+    pin_hidden = 'no'
+    if 'hidden' in style:
+        pin_hidden = 'yes'
+        style.discard('hidden')
+
+    # A 'low' pin style depends on whether the pin is an input or an output.
+    if 'low' in style:
+        style.add(pin_type)
+
+    try:
+        pin_style = STYLE_TO_KICAD[frozenset(style)]
+    except KeyError:
+        raise ValueError(f"Unsupported combination of pin modifiers: {field}")
+
+    return pin_type, pin_style, pin_hidden
+
+
+def parse_spd(content: str) -> list[list[str]]:
+    """Parse SPD-format text into a list of symbols, each a list of lines.
+
+    Blank lines and comments are removed.
+    """
     # Split into symbol definitions (separated by 'device' keyword)
     symbols = []
     current_symbol_lines = []
@@ -125,6 +159,15 @@ def parse_spd_file(filepath: Path) -> list[list[str]]:
         symbols.append(current_symbol_lines)
 
     return symbols
+
+
+def parse_spd_file(filepath: Path) -> list[list[str]]:
+    """Parse an SPD-format symbol description file.
+
+    Returns a list of symbols, each a list of lines.
+    """
+    with open(filepath, 'r') as f:
+        return parse_spd(f.read())
 
 
 def convert_spd_symbol(lines: list[str]) -> list[list[str]]:
@@ -206,34 +249,9 @@ def convert_spd_symbol(lines: list[str]) -> list[list[str]]:
         if len(parts) < 3:
             continue
 
-        # Extract pin type and modifiers from first part
-        # e.g., "i*" -> pin_type_code="i", style_mods="*"
-        #       "i*->" -> pin_type_code="i", style_mods="*->"
-        pin_type_with_mods = parts[0]
-        # Extract pin_type_code as all the alpha chars from the start
-        pin_type_code = ''.join(c for c in pin_type_with_mods if c.isalpha())
-        # Extract style_mods as the remaining characters
-        style_mods = ''.join(c for c in pin_type_with_mods if not c.isalpha())
-
-        # Convert SPD type code to kipart type
-        pin_type = SPD_TYPE_MAP.get(pin_type_code, 'passive')
-
-        # Parse modifiers
-        # Build up style based on modifiers (* = inverted, > = clock)
-        try:
-            style = {SPD_STYLE_MAP[mod] for mod in style_mods}
-        except KeyError as e:
-            raise ValueError(f"Unsupported pin modifier: {e.args[0]} in {pin_type_with_mods}")
-        pin_hidden = 'no'
-        if 'hidden' in style:
-            pin_hidden = 'yes'
-            style.discard('hidden')  # Hidden is not a style, it's a separate column
-        if 'low' in style:
-            style.add(pin_type)
-        try:
-            pin_style = STYLE_TO_KICAD[frozenset(style)]
-        except KeyError:
-            raise ValueError(f"Unsupported combination of pin modifiers: {pin_type_with_mods}")
+        # Extract the pin type, style, and visibility from the first part,
+        # e.g., "i*" is an inverted input and "-i*>" a hidden inverted clock.
+        pin_type, pin_style, pin_hidden = parse_pin_type_field(parts[0])
 
         pin_name = parts[1]
         pin_numbers = parts[2:]

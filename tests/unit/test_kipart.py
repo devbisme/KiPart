@@ -1707,11 +1707,10 @@ class TestKilib2Spd:
 
     def test_symbol_lib_to_spd_roundtrip(self, tmp_path):
         """Test that a library survives the trip out to SPD and back."""
-        lib_file = os.path.join(
-            os.path.dirname(__file__), "..", "examples", "grabbag.kicad_sym"
-        )
-        with open(lib_file) as f:
-            original = Sexp(f.read())
+        # Build the library from the example SPD file, since the .kicad_sym
+        # examples are generated artifacts that aren't checked in.
+        spd_file = Path(__file__).parent.parent / "examples" / "grabbag.spd"
+        original = spd_to_symbol_lib(spd_file.read_text(), tmp_path)
 
         roundtripped = spd_to_symbol_lib(symbol_lib_to_spd(original), tmp_path)
 
@@ -1751,3 +1750,258 @@ class TestKilib2Spd:
 
         with pytest.raises(ValueError):
             symbol_lib_file_to_spd_file(str(csv_file))
+
+
+# ============================================================================
+# Tests for jpd (SPD <-> JPD conversion)
+# ============================================================================
+
+import json
+
+from kipart.jpd import spd_to_jpd, jpd_to_spd, spd2jpd, jpd2spd
+
+
+class TestJpd:
+    """Tests for conversion between the SPD and JPD formats."""
+
+    def test_spd_to_jpd(self):
+        """Test converting SPD text into a JPD description."""
+        jpd = spd_to_jpd(
+            "device testpart\n"
+            "Footprint: SOIC-8\n"
+            "left\n"
+            "i>      clk     1\n"
+            "right\n"
+            "-o!     out     2\n"
+        )
+
+        assert jpd["format"] == "jpd"
+        assert jpd["parts"][0]["name"] == "testpart"
+        assert jpd["parts"][0]["properties"] == {"Footprint": "SOIC-8"}
+
+        unit = jpd["parts"][0]["units"][0]
+        assert "name" not in unit  # A part with no unit directive has one unit.
+        assert unit["left"] == [
+            {"name": "clk", "numbers": ["1"], "type": "input", "style": "clock"}
+        ]
+        assert unit["right"] == [
+            {
+                "name": "out",
+                "numbers": ["2"],
+                "type": "output",
+                "style": "inverted",
+                "hidden": True,
+            }
+        ]
+
+    def test_spd_to_jpd_units(self):
+        """Test that unit directives become separate JPD units."""
+        jpd = spd_to_jpd(
+            "device testpart\n"
+            "unit A\n"
+            "left\n"
+            "i       a       1\n"
+            "unit B\n"
+            "left\n"
+            "i       b       2\n"
+        )
+
+        units = jpd["parts"][0]["units"]
+        assert [unit["name"] for unit in units] == ["A", "B"]
+        assert units[0]["left"][0]["name"] == "a"
+        assert units[1]["left"][0]["name"] == "b"
+
+    def test_spd_to_jpd_increment(self):
+        """Test that an incrementing bus is flagged rather than expanded."""
+        jpd = spd_to_jpd("device testpart\nleft\ni       a0      1 2 3\n")
+        pin = jpd["parts"][0]["units"][0]["left"][0]
+
+        assert pin["name"] == "a0"
+        assert pin["numbers"] == ["1", "2", "3"]
+        assert pin["increment"] is True
+
+    def test_spd_to_jpd_repeated_name(self):
+        """Test that pins sharing one name aren't flagged as incrementing."""
+        jpd = spd_to_jpd("device testpart\nleft\np       gnd     10 20 30\n")
+        pin = jpd["parts"][0]["units"][0]["left"][0]
+
+        assert pin["numbers"] == ["10", "20", "30"]
+        assert "increment" not in pin
+
+    def test_spd_to_jpd_alternates(self):
+        """Test that a re-used pin number becomes an alternate."""
+        jpd = spd_to_jpd(
+            "device testpart\nleft\nio      GPIO1   10\no       TX      10\n"
+        )
+        pins = jpd["parts"][0]["units"][0]["left"]
+
+        assert len(pins) == 1
+        assert pins[0]["name"] == "GPIO1"
+        assert pins[0]["alternates"] == [
+            {"name": "TX", "type": "output", "style": "line"}
+        ]
+
+    def test_spd_to_jpd_spacers(self):
+        """Test that a run of spacers collapses into a single JPD spacer."""
+        jpd = spd_to_jpd("device testpart\nleft\ni  a  1\n*\n*\ni  b  2\n")
+        pins = jpd["parts"][0]["units"][0]["left"]
+
+        assert pins[1] == {"spacer": 2}
+
+    def test_jpd_to_spd(self):
+        """Test converting a JPD description into SPD text."""
+        spd = jpd_to_spd(
+            {
+                "parts": [
+                    {
+                        "name": "testpart",
+                        "properties": {"Footprint": "SOIC-8"},
+                        "units": [
+                            {
+                                "left": [
+                                    {
+                                        "name": "clk",
+                                        "numbers": ["1"],
+                                        "type": "input",
+                                        "style": "inverted_clock",
+                                        "hidden": True,
+                                    },
+                                    {"spacer": 2},
+                                ],
+                                "right": [
+                                    {"name": "gnd", "numbers": ["7", "8"],
+                                     "type": "power_in"}
+                                ],
+                            }
+                        ],
+                    }
+                ]
+            }
+        )
+        lines = [line.split() for line in spd.splitlines() if line.strip()]
+
+        assert lines[0] == ["device", "testpart"]
+        assert ["Footprint:", "SOIC-8"] in lines
+        assert ["i!>-", "clk", "1"] in lines
+        assert lines.count(["*"]) == 2
+        assert ["p", "gnd", "7", "8"] in lines
+
+    def test_jpd_to_spd_increment(self):
+        """Test that the increment flag decides how numbered names are written."""
+        pin = {"name": "a0", "numbers": ["1", "2"], "type": "input"}
+
+        # Incrementing names ride on a single line, which is how SPD spells a bus.
+        spd = jpd_to_spd(
+            {"parts": [{"name": "p", "units": [{"left": [dict(pin, increment=True)]}]}]}
+        )
+        lines = [line.split() for line in spd.splitlines() if line.strip()]
+        assert ["i", "a0", "1", "2"] in lines
+
+        # Without it, the pins need a line each, or SPD would increment them.
+        spd = jpd_to_spd({"parts": [{"name": "p", "units": [{"left": [pin]}]}]})
+        lines = [line.split() for line in spd.splitlines() if line.strip()]
+        assert ["i", "a0", "1"] in lines
+        assert ["i", "a0", "2"] in lines
+
+    def test_jpd_to_spd_alternates(self):
+        """Test that alternates re-use the pin number of their pin."""
+        spd = jpd_to_spd(
+            {
+                "parts": [
+                    {
+                        "name": "p",
+                        "units": [
+                            {
+                                "left": [
+                                    {
+                                        "name": "GPIO1",
+                                        "numbers": ["10"],
+                                        "type": "bidirectional",
+                                        "alternates": [
+                                            {"name": "TX", "type": "output"}
+                                        ],
+                                    }
+                                ]
+                            }
+                        ],
+                    }
+                ]
+            }
+        )
+        lines = [line.split() for line in spd.splitlines() if line.strip()]
+
+        assert ["b", "GPIO1", "10"] in lines
+        assert ["o", "TX", "10"] in lines
+
+    def test_jpd_to_spd_errors(self):
+        """Test that a malformed JPD description is rejected."""
+        def convert(pin):
+            return jpd_to_spd(
+                {"parts": [{"name": "p", "units": [{"left": [pin]}]}]}
+            )
+
+        with pytest.raises(ValueError, match="parts"):
+            jpd_to_spd({})
+
+        with pytest.raises(ValueError, match="numbers"):
+            convert({"name": "a"})
+
+        with pytest.raises(ValueError, match="unknown type"):
+            convert({"name": "a", "numbers": ["1"], "type": "bogus"})
+
+        with pytest.raises(ValueError, match="unknown style"):
+            convert({"name": "a", "numbers": ["1"], "style": "bogus"})
+
+        with pytest.raises(ValueError, match="doesn't end"):
+            convert({"name": "vcc", "numbers": ["1", "2"], "increment": True})
+
+    def test_roundtrip_spd_jpd_spd(self, tmp_path):
+        """Test that an SPD file survives the trip out to JPD and back."""
+        spd_file = os.path.join(
+            os.path.dirname(__file__), "..", "examples", "grabbag.spd"
+        )
+        with open(spd_file) as f:
+            original = f.read()
+
+        jpd = spd_to_jpd(original)
+        roundtripped = jpd_to_spd(jpd)
+
+        # The SPD text is reformatted, so compare what the two describe.
+        def csv_rows(spd):
+            rows = []
+            for symbol_lines in parse_spd_file_from_text(spd, tmp_path):
+                rows.extend(convert_spd_symbol(symbol_lines))
+            return rows
+
+        assert csv_rows(roundtripped) == csv_rows(original)
+
+        # And a second trip through JPD changes nothing.
+        assert spd_to_jpd(roundtripped) == jpd
+
+    def test_spd2jpd_and_jpd2spd_files(self, tmp_path):
+        """Test the file-level conversions and their overwrite checks."""
+        spd_file = tmp_path / "part.spd"
+        spd_file.write_text("device testpart\nleft\ni       vcc     1\n")
+
+        jpd_file = spd2jpd(str(spd_file))
+        assert jpd_file == str(tmp_path / "part.jpd")
+
+        jpd = json.loads(Path(jpd_file).read_text())
+        assert jpd["parts"][0]["name"] == "testpart"
+
+        # Converting back needs permission to overwrite the original SPD file.
+        with pytest.raises(ValueError, match="already exists"):
+            jpd2spd(jpd_file)
+
+        spd_file = jpd2spd(jpd_file, overwrite=True)
+        assert "device testpart" in Path(spd_file).read_text()
+
+        with pytest.raises(FileNotFoundError):
+            spd2jpd(str(tmp_path / "missing.spd"))
+
+
+def parse_spd_file_from_text(spd, tmp_path):
+    """Parse SPD text by way of a temporary file."""
+    path = tmp_path / "tmp.spd"
+    path.write_text(spd)
+    return parse_spd_file(path)

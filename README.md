@@ -24,6 +24,8 @@ Excel, or SPD file.
     into CSV files suitable for input to KiPart.
 -   Also includes `kilib2spd` for converting existing schematic part libraries
     into SPD files, so a library can be maintained in the compact SPD format.
+-   Also includes `spd2jpd` and `jpd2spd` for converting SPD files to and from
+    JPD (JSON Part Description) files, which hold the same information as JSON.
 
 ## Example Use Case
 
@@ -53,7 +55,7 @@ Simple enough:
 
     pip install kipart
 
-This will install four command-line utilities:
+This will install six command-line utilities:
 
 -   `kipart`: The main utility for generating schematic symbols from rows of pin data
         stored in CSV or Excel files.
@@ -64,6 +66,9 @@ This will install four command-line utilities:
         can be used with KiPart.
 -   `kilib2spd`: A utility for converting existing KiCad libraries into
         SPD files, which is the reverse of the `spd2csv` + `kipart` pipeline.
+-   `spd2jpd` and `jpd2spd`: Utilities for converting SPD files to and from JPD
+        (JSON Part Description) files, for when a part is easier to handle as JSON
+        than as text.
 
 ## Usage
 
@@ -461,7 +466,8 @@ options:
   -m, --merge          Append to output file instead of overwriting
 ```
 
-SPD files use a simple text format to define symbols:
+SPD files use a simple text format to define symbols, summarized below and
+described in full in [SPD.md](SPD.md):
 
     ; Comment
     device part_name
@@ -691,3 +697,38 @@ stacked at a single location in the library.
 Pin names and numbers containing whitespace can't be represented in SPD, and
 neither can property names that aren't a single word; `kilib2spd` warns when it
 encounters them.
+
+
+### spd2jpd and jpd2spd
+
+JPD (JSON Part Description) holds the same information as an SPD file, but as
+JSON, which is handier when a part is being generated or consumed by another
+program. `spd2jpd` and `jpd2spd` convert between the two formats, and the full
+format is described in [JPD.md](JPD.md).
+
+```
+usage: spd2jpd [-h] [-o OUTPUT] [-w] [-v] input_files [input_files ...]
+usage: jpd2spd [-h] [-o OUTPUT] [-w] [-v] input_files [input_files ...]
+
+positional arguments:
+input_files           Input files to convert
+
+options:
+-h, --help            show this help message and exit
+-o OUTPUT, --output OUTPUT
+                        Output file path ('-' writes to stdout)
+-w, --overwrite       Allow overwriting of an existing output file
+-v, --version         show program's version number and exit
+```
+
+    spd2jpd part.spd            # Generates part.jpd
+    jpd2spd part.jpd            # Generates part.spd
+
+SPD remains the route to a KiCad library, so a JPD file gets there by way of
+`jpd2spd`:
+
+    jpd2spd -o - part.jpd | spd2csv | kipart -o part.kicad_sym
+
+The two formats hold the same information, so a part survives the trip in
+either direction. Comments are the exception: JSON has none, so the comments in
+an SPD file are lost on the way to JPD.
