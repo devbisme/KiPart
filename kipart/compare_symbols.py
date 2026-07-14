@@ -1,3 +1,5 @@
+from simp_sexp import Sexp
+
 from kipart.kipart import extract_symbols_from_lib
 
 
@@ -23,35 +25,25 @@ def compare_symbol_pins(symbol1, symbol2):
         return []
 
     def get_pin_number(pin):
-        return next((item[1] for item in pin if isinstance(item, list) and item[0] == "number"), None)
+        number_nodes = pin.search("/pin/number", ignore_case=True)
+        return number_nodes[0][1] if number_nodes else None
 
     def get_pin_name(pin):
-        return next((item[1] for item in pin if isinstance(item, list) and item[0] == "name"), None)
+        name_nodes = pin.search("/pin/name", ignore_case=True)
+        return name_nodes[0][1] if name_nodes else None
 
     def get_pin_type(pin):
         return pin[1] if len(pin) > 1 else None
 
     def get_pin_alternates(pin):
-        alternates = [
-            item[1]
-            for item in pin
-            if isinstance(item, list) and item[0] == "alternate" and len(item) > 1
-        ]
-        return alternates
+        alternates = pin.search("/pin/alternate", ignore_case=True)
+        return [alt[1] for alt in alternates if len(alt) > 1]
 
     def get_unit_pins(unit):
-        return [
-            item
-            for item in unit
-            if isinstance(item, list) and item[0] == "pin"
-        ]
+        return unit.search("/symbol/pin", ignore_case=True)
 
     def get_units(symbol):
-        return [
-            item
-            for item in symbol
-            if isinstance(item, list) and item[0] == "symbol"
-        ]
+        return symbol.search("/symbol/symbol", ignore_case=True)
 
     units1 = {unit[1]: unit for unit in get_units(symbol1) if len(unit) > 1}
     units2 = {unit[1]: unit for unit in get_units(symbol2) if len(unit) > 1}
@@ -132,7 +124,7 @@ def symbols_are_equal(symbol1, symbol2):
 
     This function compares two KiCad symbol S-expressions for equality by matching properties
     by name, units by name, and pins by pin number, ensuring the comparison is not affected by
-    the order of these elements in the original S-expressions.
+    the order of the original S-expressions.
 
     Args:
         symbol1 (Sexp): First symbol S-expression to compare
@@ -141,93 +133,42 @@ def symbols_are_equal(symbol1, symbol2):
     Returns:
         bool: True if the symbols are equivalent, False otherwise
     """
-    # Check if both are valid symbol S-expressions
+    if not isinstance(symbol1, Sexp) or not isinstance(symbol2, Sexp):
+        return False
+
     if symbol1[0] != "symbol" or symbol2[0] != "symbol":
         return False
 
-    # Compare symbol names
     if symbol1[1] != symbol2[1]:
         return False
 
-    # Helper function to match subelements across S-expressions
-    def match_by_key(elements1, elements2, key_pos, compare_func=None):
-        """Match elements from two lists using a specified position as key"""
-        if len(elements1) != len(elements2):
-            return False
+    def get_named_children(node, name):
+        return [child for child in node if isinstance(child, Sexp) and child[0] == name]
 
-        # Create dictionaries to look up elements by key
-        dict1 = {elem[key_pos]: elem for elem in elements1}
-        dict2 = {elem[key_pos]: elem for elem in elements2}
+    def get_simple_attributes(node):
+        return {
+            child[0]: child
+            for child in node[2:]
+            if isinstance(child, Sexp) and child[0] not in ("property", "symbol")
+        }
 
-        # Check that all keys match
-        if set(dict1.keys()) != set(dict2.keys()):
-            return False
-
-        # Compare each matched pair
-        for key in dict1:
-            elem1 = dict1[key]
-            elem2 = dict2[key]
-
-            if compare_func:
-                if not compare_func(elem1, elem2):
-                    return False
-            elif elem1 != elem2:
-                return False
-
-        return True
-
-    # Compare simple attributes (exclude properties, units, and pins for now)
-    symbol1_attrs = {}
-    symbol2_attrs = {}
-
-    # Extract simple attributes (non-property, non-unit elements)
-    for i in range(2, len(symbol1)):
-        if symbol1[i][0] not in ("property", "symbol"):
-            symbol1_attrs[symbol1[i][0]] = symbol1[i]
-
-    for i in range(2, len(symbol2)):
-        if symbol2[i][0] not in ("property", "symbol"):
-            symbol2_attrs[symbol2[i][0]] = symbol2[i]
-
-    # Compare attributes
-    if set(symbol1_attrs.keys()) != set(symbol2_attrs.keys()):
-        return False
-
-    for key in symbol1_attrs:
-        if symbol1_attrs[key] != symbol2_attrs[key]:
-            return False
-
-    # Extract and compare properties by name
-    props1 = [
-        item for item in symbol1 if isinstance(item, list) and item[0] == "property"
-    ]
-    props2 = [
-        item for item in symbol2 if isinstance(item, list) and item[0] == "property"
-    ]
-
-    # Function to compare properties (name, value, position, effects)
     def compare_properties(prop1, prop2):
-        # Compare property name and value
-        if prop1[1] != prop2[1] or prop1[2] != prop2[2]:
+        if prop1[1] != prop2[1] or prop2[2] != prop1[2]:
             return False
 
-        # Compare effects, ignoring order
-        effects1 = next(
-            (x for x in prop1 if isinstance(x, list) and x[0] == "effects"), None
-        )
-        effects2 = next(
-            (x for x in prop2 if isinstance(x, list) and x[0] == "effects"), None
-        )
+        effects1 = prop1.search("/property/effects", ignore_case=True)
+        effects2 = prop2.search("/property/effects", ignore_case=True)
 
         if not effects1 and not effects2:
             return True
         if not effects1 or not effects2:
             return False
 
-        # Convert effects to dictionaries for easy comparison
         def effects_to_dict(effects):
             result = {}
             for item in effects[1:]:
+                if not isinstance(item, Sexp):
+                    continue
                 if item[0] == "font":
                     result["font"] = tuple(item[1][1:]) if len(item) > 1 else tuple()
                 elif item[0] == "justify":
@@ -236,183 +177,121 @@ def symbols_are_equal(symbol1, symbol2):
                     result["hide"] = item[1]
             return result
 
-        effects_dict1 = effects_to_dict(effects1)
-        effects_dict2 = effects_to_dict(effects2)
+        return effects_to_dict(effects1[0]) == effects_to_dict(effects2[0])
 
-        return effects_dict1 == effects_dict2
+    def compare_pins(pin1, pin2):
+        if pin1[1] != pin2[1] or pin1[2] != pin2[2]:
+            return False
 
-    if not match_by_key(props1, props2, 1, compare_properties):
-        return False
+        num1 = pin1.search("/pin/number", ignore_case=True)
+        num2 = pin2.search("/pin/number", ignore_case=True)
+        if not num1 or not num2 or num1[0][1] != num2[0][1]:
+            return False
 
-    # Extract and compare units
-    units1 = [
-        item for item in symbol1 if isinstance(item, list) and item[0] == "symbol"
-    ]
-    units2 = [
-        item for item in symbol2 if isinstance(item, list) and item[0] == "symbol"
-    ]
+        name1 = pin1.search("/pin/name", ignore_case=True)
+        name2 = pin2.search("/pin/name", ignore_case=True)
+        if not name1 or not name2 or name1[0][1] != name2[0][1]:
+            return False
 
-    if len(units1) != len(units2):
-        return False
+        at1 = pin1.search("/pin/at", ignore_case=True)
+        at2 = pin2.search("/pin/at", ignore_case=True)
+        if not at1 or not at2:
+            return False
 
-    # Function to compare units and their pins
+        if at1[0][1] != at2[0][1] or at1[0][2] != at2[0][2]:
+            return False
+
+        if len(at1[0]) > 3 and len(at2[0]) > 3:
+            if at1[0][3] != at2[0][3]:
+                return False
+        elif len(at1[0]) > 3 or len(at2[0]) > 3:
+            return False
+
+        length1 = pin1.search("/pin/length", ignore_case=True)
+        length2 = pin2.search("/pin/length", ignore_case=True)
+        if not length1 or not length2 or length1[0][1] != length2[0][1]:
+            return False
+
+        hide1 = pin1.search("/pin/hide", ignore_case=True)
+        hide2 = pin2.search("/pin/hide", ignore_case=True)
+        if bool(hide1) != bool(hide2):
+            return False
+
+        alternates1 = [alt[1] for alt in pin1.search("/pin/alternate", ignore_case=True)]
+        alternates2 = [alt[1] for alt in pin2.search("/pin/alternate", ignore_case=True)]
+        return sorted(alternates1) == sorted(alternates2)
+
     def compare_units(unit1, unit2):
-        # Compare unit names
         if unit1[1] != unit2[1]:
             return False
 
-        # Extract geometry elements (rectangles, polylines, etc.)
         geom1 = [
-            item
-            for item in unit1
-            if isinstance(item, list) and item[0] not in ("pin", "text")
+            child for child in unit1 if isinstance(child, Sexp) and child[0] not in ("pin", "text")
         ]
         geom2 = [
-            item
-            for item in unit2
-            if isinstance(item, list) and item[0] not in ("pin", "text")
+            child for child in unit2 if isinstance(child, Sexp) and child[0] not in ("pin", "text")
         ]
-
-        # Compare geometry (must match exactly regardless of order)
         if sorted(str(g) for g in geom1) != sorted(str(g) for g in geom2):
             return False
 
-        # Extract and compare pins by number
-        pins1 = [item for item in unit1 if isinstance(item, list) and item[0] == "pin"]
-        pins2 = [item for item in unit2 if isinstance(item, list) and item[0] == "pin"]
+        pins1 = get_named_children(unit1, "pin")
+        pins2 = get_named_children(unit2, "pin")
 
-        def compare_pins(pin1, pin2):
-            # Type and style must match
-            if pin1[1] != pin2[1] or pin1[2] != pin2[2]:
-                return False
-
-            # Extract pin number and name, which must match
-            num1 = next(
-                (x[1] for x in pin1 if isinstance(x, list) and x[0] == "number"), None
-            )
-            num2 = next(
-                (x[1] for x in pin2 if isinstance(x, list) and x[0] == "number"), None
-            )
-            if num1 != num2:
-                return False
-
-            name1 = next(
-                (x[1] for x in pin1 if isinstance(x, list) and x[0] == "name"), None
-            )
-            name2 = next(
-                (x[1] for x in pin2 if isinstance(x, list) and x[0] == "name"), None
-            )
-            if name1 != name2:
-                return False
-
-            # Check pin position and orientation
-            at1 = next((x for x in pin1 if isinstance(x, list) and x[0] == "at"), None)
-            at2 = next((x for x in pin2 if isinstance(x, list) and x[0] == "at"), None)
-            if not at1 or not at2:
-                return False
-
-            # Compare x, y coordinates
-            if at1[1] != at2[1] or at1[2] != at2[2]:
-                return False
-
-            # Compare orientation (either both have it or neither does)
-            if len(at1) > 3 and len(at2) > 3:
-                if at1[3] != at2[3]:
-                    return False
-            elif len(at1) > 3 or len(at2) > 3:
-                return False
-
-            # Compare pin length
-            len1 = next(
-                (x[1] for x in pin1 if isinstance(x, list) and x[0] == "length"), None
-            )
-            len2 = next(
-                (x[1] for x in pin2 if isinstance(x, list) and x[0] == "length"), None
-            )
-            if len1 != len2:
-                return False
-
-            # Compare hide attribute if present
-            hide1 = next(
-                (x for x in pin1 if isinstance(x, list) and x[0] == "hide"), None
-            )
-            hide2 = next(
-                (x for x in pin2 if isinstance(x, list) and x[0] == "hide"), None
-            )
-            if bool(hide1) != bool(hide2):
-                return False
-
-            # Compare alternates if present
-            alt1 = [x for x in pin1 if isinstance(x, list) and x[0] == "alternate"]
-            alt2 = [x for x in pin2 if isinstance(x, list) and x[0] == "alternate"]
-
-            # Convert to sets for order-independent comparison
-            alt_set1 = {tuple(x[1:]) for x in alt1}
-            alt_set2 = {tuple(x[1:]) for x in alt2}
-
-            return alt_set1 == alt_set2
-
-        # Extract pin numbers for lookup
-        pin_nums1 = []
-        pin_nums2 = []
-
-        for pin in pins1:
-            num = next(
-                (x[1] for x in pin if isinstance(x, list) and x[0] == "number"), None
-            )
-            if num:
-                pin_nums1.append(num)
-
-        for pin in pins2:
-            num = next(
-                (x[1] for x in pin if isinstance(x, list) and x[0] == "number"), None
-            )
-            if num:
-                pin_nums2.append(num)
-
-        # Make sure the same pin numbers exist in both units
-        if set(pin_nums1) != set(pin_nums2):
+        if len(pins1) != len(pins2):
             return False
 
-        # Create pin lookup dictionaries
-        pin_dict1 = {}
-        pin_dict2 = {}
+        pin_dict1 = {
+            pin.search("/pin/number", ignore_case=True)[0][1]: pin
+            for pin in pins1
+            if pin.search("/pin/number", ignore_case=True)
+        }
+        pin_dict2 = {
+            pin.search("/pin/number", ignore_case=True)[0][1]: pin
+            for pin in pins2
+            if pin.search("/pin/number", ignore_case=True)
+        }
 
-        for pin in pins1:
-            num = next(
-                (x[1] for x in pin if isinstance(x, list) and x[0] == "number"), None
-            )
-            if num:
-                pin_dict1[num] = pin
+        if set(pin_dict1.keys()) != set(pin_dict2.keys()):
+            return False
 
-        for pin in pins2:
-            num = next(
-                (x[1] for x in pin if isinstance(x, list) and x[0] == "number"), None
-            )
-            if num:
-                pin_dict2[num] = pin
-
-        # Compare each pin
-        for num in pin_dict1:
-            if not compare_pins(pin_dict1[num], pin_dict2[num]):
+        for pin_num in pin_dict1:
+            if not compare_pins(pin_dict1[pin_num], pin_dict2[pin_num]):
                 return False
 
         return True
 
-    # Match units by name
-    unit_dict1 = {u[1]: u for u in units1}
-    unit_dict2 = {u[1]: u for u in units2}
+    attrs1 = get_simple_attributes(symbol1)
+    attrs2 = get_simple_attributes(symbol2)
+    if set(attrs1.keys()) != set(attrs2.keys()):
+        return False
 
-    # Ensure same unit names exist in both symbols
+    for key in attrs1:
+        if attrs1[key] != attrs2[key]:
+            return False
+
+    props1 = {prop[1]: prop for prop in get_named_children(symbol1, "property")}
+    props2 = {prop[1]: prop for prop in get_named_children(symbol2, "property")}
+    if set(props1.keys()) != set(props2.keys()):
+        return False
+
+    for prop_name in props1:
+        if not compare_properties(props1[prop_name], props2[prop_name]):
+            return False
+
+    units1 = get_named_children(symbol1, "symbol")
+    units2 = get_named_children(symbol2, "symbol")
+    if len(units1) != len(units2):
+        return False
+
+    unit_dict1 = {unit[1]: unit for unit in units1}
+    unit_dict2 = {unit[1]: unit for unit in units2}
     if set(unit_dict1.keys()) != set(unit_dict2.keys()):
         return False
 
-    # Compare matched units
-    for name in unit_dict1:
-        if not compare_units(unit_dict1[name], unit_dict2[name]):
+    for unit_name in unit_dict1:
+        if not compare_units(unit_dict1[unit_name], unit_dict2[unit_name]):
             return False
 
-    # If we've made it this far, the symbols match
     return True
 
 
