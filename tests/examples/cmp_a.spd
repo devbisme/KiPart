@@ -1,0 +1,102 @@
+// cmp_a.spd — one of a pair of libraries for trying cmpparts out.
+//
+// cmp_b.spd holds the same parts with a handful of deliberate differences, one
+// of every kind cmpparts reports. Build both and compare them:
+//
+//     make -f test.mk cmp_a.kicad_sym cmp_b.kicad_sym
+//     cmpparts cmp_a.kicad_sym cmp_b.kicad_sym            # everything
+//     cmpparts -g cmp_a.kicad_sym cmp_b.kicad_sym         # only what the parts are
+//     cmpparts -g -m fuzzy cmp_a.kicad_sym cmp_b.kicad_sym    # pairs rt9818 up
+//     cmpparts -g -m fuzzy -f rich cmp_a.kicad_sym cmp_b.kicad_sym
+//
+// The SPD files can be compared directly too — cmpparts reads either format.
+
+
+; A voltage regulator. Identical in both libraries, so it should never be
+; reported. Only --verbose names it.
+device lm1117
+footprint: sot-223
+left
+    p       in       3
+right
+    p       out      2
+bottom
+    p       gnd      1
+
+
+; A dual opamp. Both libraries give it the same pins; cmp_b just draws two of
+; them the other way round. That's a geometry difference, so it shows up by
+; default and vanishes under -g.
+device tl072
+
+    unit A
+        left
+            a@      in-      2
+            a@      in+      3
+        right
+            o@      out      1
+
+    unit B
+        left
+            a@      in-      6
+            a@      in+      5
+        right
+            o@      out      7
+
+    unit PWR
+        top
+            p       vcc      8
+        bottom
+            p       vee      4
+
+
+; A quad NAND gate. cmp_b drops pin 5 and gives pin 6 another type — both are
+; pin differences, which are always reported.
+device 74hc00
+footprint: soic-14
+
+    unit LOGIC
+        left
+            i       a1       1
+            i       b1       2
+            *
+            i       a2       4
+            i       b2       5
+        right
+            o       y1       3
+            *2
+            o       y2       6
+
+    unit PWR
+        top
+            p       vcc     14
+        bottom
+            p       gnd      7
+
+
+; A reset IC. cmp_b calls it RT9818-33, adds a Manf property, renames vcc, and
+; hasn't got the alternate function on pin 1 — a difference of every category at
+; once. The default match mode won't pair the two names up; -m fuzzy will.
+device rt9818
+left
+    p       vcc      3
+    *
+    p       gnd      2
+right
+    *2
+    i_      rst#     1
+    o       mr       1      ; an alternate function of pin 1
+
+
+; A DAC that only cmp_a has.
+device dac8551
+left
+    i       din      1
+    i>      sclk     2
+    i!      sync#    3
+right
+    o@      vout     6
+top
+    p       vdd      5
+bottom
+    p       gnd      4

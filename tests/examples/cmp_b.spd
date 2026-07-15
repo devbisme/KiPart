@@ -1,0 +1,107 @@
+// cmp_b.spd — the other of the pair. See cmp_a.spd for what this is for.
+//
+// Every difference from cmp_a is marked with a DIFF comment below:
+//
+//   lm1117      nothing: the part is identical in both libraries
+//   tl072       two pins swapped on a side          (geometry)
+//   74hc00      a pin dropped, a pin retyped        (pins)
+//   RT9818-33   renamed, plus a property, a renamed pin, and a dropped
+//               alternate                           (names, properties, pins)
+//   dac8551     absent: only cmp_a has it
+//   lm358       present: only cmp_b has it
+
+
+; Identical to cmp_a's.
+device lm1117
+footprint: sot-223
+left
+    p       in       3
+right
+    p       out      2
+bottom
+    p       gnd      1
+
+
+; The same pins as cmp_a's, but unit B lists in+ above in-.
+device tl072
+
+    unit A
+        left
+            a@      in-      2
+            a@      in+      3
+        right
+            o@      out      1
+
+    unit B
+        left
+            a@      in+      5      // DIFF: cmp_a puts in- first
+            a@      in-      6
+        right
+            o@      out      7
+
+    unit PWR
+        top
+            p       vcc      8
+        bottom
+            p       vee      4
+
+
+; Pin 5 is gone and pin 6 has become a tri-state output.
+device 74hc00
+footprint: soic-14
+
+    unit LOGIC
+        left
+            i       a1       1
+            i       b1       2
+            *
+            i       a2       4
+                                    ; DIFF: cmp_a has 'i b2 5' here
+        right
+            o       y1       3
+            *2
+            t       y2       6      // DIFF: cmp_a has this as an output
+
+    unit PWR
+        top
+            p       vcc     14
+        bottom
+            p       gnd      7
+
+
+; cmp_a calls this part rt9818 and hasn't got the Manf property. Its pin 3 is
+; named vcc, and its pin 1 carries an 'mr' alternate function that this one
+; doesn't.
+device RT9818-33
+Manf: Richtek
+left
+    p       vdd      3               ; DIFF: cmp_a calls pin 3 vcc
+    *
+    p       gnd      2
+right
+    *2
+    i_      rst#     1               // DIFF: cmp_a gives pin 1 an 'mr' alternate
+
+
+; A dual opamp that only cmp_b has.
+device lm358
+
+    unit A
+        left
+            a@      in-      2
+            a@      in+      3
+        right
+            o@      out      1
+
+    unit B
+        left
+            a@      in-      6
+            a@      in+      5
+        right
+            o@      out      7
+
+    unit PWR
+        top
+            p       vcc      8
+        bottom
+            p       gnd      4

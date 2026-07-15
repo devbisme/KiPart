@@ -1,5 +1,21 @@
 # History
 
+## Unreleased
+
+-   A property can be named `Manf#`, as KiCad names some of its own. An SPD property name is now whatever sits before the colon — any one word holding neither whitespace nor a colon — rather than being held to the letters, digits, and underscores of a word. A name with a space in it remains the one thing SPD can't say. `spd.is_property_name` is the single place that rule is spelled, so `kilib2spd` and `jpd2spd` no longer drop or refuse such a property either.
+
+-   Added the `cmpparts` command-line utility (and the `compare_libraries`, `compare_parts`, and `match_parts` functions) for comparing the parts of two or more libraries and reporting what differs. The libraries can be `.kicad_sym`, `.spd`, or `.jpd` files, in any mix, so a symbol library can be checked against the part description it was built from. Exits with 1 if the libraries differ, so it can serve as a check in a build.
+-   `cmpparts --ignore-geometry` compares what a part *is* — its pins, their names, types, styles, visibility, and alternates, and the properties of the part — leaving out where the pins sit, how long they are, and how big the body is. Two libraries built from the same pinout with different `--push` or `--bundle` settings compare equal under it.
+-   `cmpparts --format` chooses how the report is written: `text` (the default), `rich` for a table in the terminal, `html` for a table opened in the browser, or `json` for another program to read. The tabular formats give a column to each library, so what changed reads across the row. `--output` says where the report goes, and `--no-browser` writes the HTML page without opening it.
+-   `cmpparts -f html` opens the page in the default *web browser* rather than handing it to the desktop's generic file opener. On Linux the generic opener gives a `file://` page to whatever program claims the `text/html` file type, which needn't be a browser: a mail client registered for HTML (Thunderbird, as a snap, does) swallows the page and shows nothing while reporting success.
+-   `cmpparts -f html` says so when there's no browser to be found, rather than claiming to have opened one. The page is written either way, and the warning names it so it can be opened by hand.
+-   The browser opened by `cmpparts -f html` no longer chatters into the terminal. A browser is spawned as a child of the process and inherits its output, so its startup grumbles (GTK modules, and the like) used to land in the middle of the user's shell prompt.
+-   The rich table is drawn only as wide as its contents need rather than stretched across the terminal, and `--wide` stretches it. The libraries are named in full above the table so their columns can go by filename alone, since a path in a column heading sets the width of the whole table.
+-   `cmpparts --ignore-units` (or `-u`, or `--ignore units`) sets the unit boundaries of a part aside and compares its pins as one table, so a part drawn as a single unit and the same part split across several come out alike. Nothing about the units themselves is then reported, but every difference in the pins still is.
+-   `cmpparts --match` pairs parts up across libraries whose names don't agree: `exact`, `normalized` (case and punctuation set aside, the default), `fuzzy` (names merely alike), or `pins` (recognizing a part by its pinout alone). `--alias OLD=NEW` pairs two parts up by hand.
+-   Added the `kilib2jpd` command-line utility (and the `symbol_lib_to_jpd` and `kilib2jpd` functions) for reading a KiCad symbol library straight into a JPD description, which took `kilib2spd | spd2jpd` before.
+-   Added `part.py`, which owns the neutral part structure the formats share. `symbol_to_part` is now the one reader of a `.kicad_sym` symbol into it, and `load_parts` reads a part out of any of the three formats. `kilib2spd` works from it rather than walking the S-expression itself.
+
 ## 2.6.0 (2026-07-14)
 
 -   Added `kilib2spd` command-line utility (and `symbol_to_spd`, `symbol_lib_to_spd`, and `symbol_lib_file_to_spd_file` functions) for converting KiCad symbol libraries into SPD files, reversing the `spd2csv` + `kipart` pipeline.

@@ -12,6 +12,16 @@ KiCad library:
     jpd2spd part.jpd            # Generates part.spd
     jpd2spd -o - part.jpd | spd2csv | kipart -o part.kicad_sym
 
+`kilib2jpd` goes the other way, reading an existing KiCad library into JPD:
+
+    kilib2jpd part.kicad_sym    # Generates part.jpd
+
+What a library says about a part comes across; the geometry it's drawn with does
+not, since JPD has no way to say it and kipart lays a symbol out afresh from the
+description anyway. That makes a JPD file a description of what a part *is*, free
+of how any one library chose to draw it — which is the level `cmpparts` compares
+two libraries at.
+
 ## Top level
 
 The top-level value is an object with a `parts` array. `format` and `version`
@@ -30,7 +40,7 @@ identify the file.
 | Key          | Type   | Required | Meaning |
 |--------------|--------|----------|---------|
 | `name`       | string | yes      | Part name, as in SPD's `device` line. |
-| `properties` | object | no       | Property name → value. Names are single words; values are any string. |
+| `properties` | object | no       | Property name → value. A name holds neither whitespace nor a colon, so that `Manf#` and the like can be written; values are any string. |
 | `units`      | array  | yes      | One or more units. A single-unit part has one unnamed unit. |
 
 ```json

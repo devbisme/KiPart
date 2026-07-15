@@ -25,6 +25,7 @@ __all__ = [
     "parse_spd_symbol",
     "parse_pin_type_field",
     "expand_pin_names",
+    "is_property_name",
     # Writing SPD
     "pin_to_spd_fields",
     "format_pin_line",
@@ -56,8 +57,18 @@ NUMBERED_NAME = re.compile(r"(\D+)(\d+)$")
 
 # The lines that introduce a part, one of its properties, and one of its units.
 DEVICE_RE = re.compile(r"^device\s+(\S+)$")
-PROPERTY_RE = re.compile(r"^(\w+)\s*:\s*(.*)$")
 UNIT_RE = re.compile(r"^unit\s+(\S+)$", re.IGNORECASE)
+
+# A property name runs up to the colon that follows it: any one word that isn't
+# broken by whitespace and doesn't hold a colon of its own. KiCad names some of
+# its own properties things like 'Manf#' and 'ki_fp_filters', so a name is not
+# held to the letters, digits, and underscores that make up a word elsewhere.
+#
+# The colon is what tells a property line from a pin line, and it has to follow
+# the name directly: 'Manf#: Microchip' names a property, while 'b SDA:SCL 5' is
+# a pin whose name happens to carry a colon.
+PROPERTY_NAME_RE = re.compile(r"[^\s:]+")
+PROPERTY_RE = re.compile(r"^([^\s:]+)\s*:\s*(.*)$")
 
 # A spacer line leaves empty pin positions on a side. Several of them are asked
 # for by repeating the asterisk ("***") or by giving a count ("*3").
@@ -161,6 +172,24 @@ LOW_STYLES = ("input_low", "output_low", "clock_low")
 def warn(message):
     """Report something an SPD file can't express."""
     print(f"Warning: {message}", file=sys.stderr)
+
+
+def is_property_name(name):
+    """
+    Say whether a property can be named this way in SPD.
+
+    A name is written before the colon of a property line, so it can be anything
+    that holds neither whitespace nor a colon — 'Manf#' and 'ki_fp_filters' among
+    them. A property of a KiCad symbol whose name has a space in it is the one
+    thing that can't be said.
+
+    Args:
+        name (str): The property name.
+
+    Returns:
+        bool: Whether an SPD file can name the property.
+    """
+    return bool(name) and bool(PROPERTY_NAME_RE.fullmatch(str(name)))
 
 
 # ===== Reading SPD =====

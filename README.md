@@ -24,8 +24,12 @@ Excel, or SPD file.
     into CSV files suitable for input to KiPart.
 -   Also includes `kilib2spd` for converting existing schematic part libraries
     into SPD files, so a library can be maintained in the compact SPD format.
--   Also includes `spd2jpd` and `jpd2spd` for converting SPD files to and from
-    JPD (JSON Part Description) files, which hold the same information as JSON.
+-   Also includes `spd2jpd`, `jpd2spd`, and `kilib2jpd` for converting SPD files
+    and KiCad libraries into JPD (JSON Part Description) files, which hold the
+    same information as JSON, and back again.
+-   Also includes `cmpparts` for comparing the parts of two or more libraries,
+    which can disregard the geometry a symbol is drawn with and can pair up
+    parts whose names don't quite agree.
 
 ## Example Use Case
 
@@ -66,9 +70,11 @@ This will install six command-line utilities:
         can be used with KiPart.
 -   `kilib2spd`: A utility for converting existing KiCad libraries into
         SPD files, which is the reverse of the `spd2csv` + `kipart` pipeline.
--   `spd2jpd` and `jpd2spd`: Utilities for converting SPD files to and from JPD
-        (JSON Part Description) files, for when a part is easier to handle as JSON
-        than as text.
+-   `spd2jpd`, `jpd2spd`, and `kilib2jpd`: Utilities for converting SPD files and
+        KiCad libraries to and from JPD (JSON Part Description) files, for when a
+        part is easier to handle as JSON than as text.
+-   `cmpparts`: A utility for comparing the parts of two or more libraries and
+        reporting what differs between them.
 
 ## Usage
 
@@ -701,8 +707,8 @@ laid out slightly differently when rebuilt, because their bundled pins are
 stacked at a single location in the library.
 
 Pin names and numbers containing whitespace can't be represented in SPD, and
-neither can property names that aren't a single word; `kilib2spd` warns when it
-encounters them.
+neither can a property name with a space in it; `kilib2spd` warns when it
+encounters them. A property name may hold anything else, `Manf#` included.
 
 
 ### spd2jpd and jpd2spd
@@ -738,3 +744,260 @@ SPD remains the route to a KiCad library, so a JPD file gets there by way of
 The two formats hold the same information, so a part survives the trip in
 either direction. Comments are the exception: JSON has none, so the comments in
 an SPD file are lost on the way to JPD.
+
+
+### kilib2jpd
+
+`kilib2jpd` reads a KiCad symbol library and writes the JPD description of the
+parts in it, which is what `kilib2spd | spd2jpd` would do in two steps:
+
+    kilib2jpd my_library.kicad_sym          # Generates my_library.jpd
+    kilib2jpd -o - my_library.kicad_sym     # Writes the JPD to stdout
+
+What the library says about each part comes across — its pins, their names,
+types, styles, and alternates, and the properties of the part. The geometry the
+symbol is drawn with does not, since JPD has no way to say it and KiPart lays a
+symbol out afresh from the description anyway. That makes the JPD file a
+description of what the part *is*, free of how any one library chose to draw it,
+which is what `cmpparts` compares.
+
+
+### cmpparts
+
+`cmpparts` compares the parts of two or more libraries and reports what differs.
+The libraries can be `.kicad_sym`, `.spd`, or `.jpd` files, in any mix, so a
+symbol library can be checked against the SPD file it was built from:
+
+    cmpparts my_parts.spd my_library.kicad_sym
+
+The first library is the one the others are compared against, so giving three
+libraries yields two comparisons rather than three. `cmpparts` exits with 1 if
+the libraries differ and 0 if they don't, which is enough to make it a check in
+a build.
+
+A pair of libraries to try it on lives in `tests/examples`. `cmp_a.spd` and
+`cmp_b.spd` hold the same six parts with one difference of every kind between
+them — a part that's identical, one whose pins are merely drawn in a different
+order, one with a dropped and a retyped pin, one that's been renamed and edited,
+and one apiece that the other library hasn't got:
+
+    cd tests/examples
+    make -f test.mk cmp_a.kicad_sym cmp_b.kicad_sym
+
+    cmpparts cmp_a.kicad_sym cmp_b.kicad_sym                 # everything
+    cmpparts -g cmp_a.kicad_sym cmp_b.kicad_sym              # only what the parts are
+    cmpparts -g -m fuzzy cmp_a.kicad_sym cmp_b.kicad_sym     # pairs the renamed part up
+    cmpparts -g -m fuzzy -f rich cmp_a.kicad_sym cmp_b.kicad_sym    # as a table
+    cmpparts -g -m fuzzy -f html cmp_a.kicad_sym cmp_b.kicad_sym    # in the browser
+
+The two `.spd` files can be compared directly as well, without building anything,
+and say the same thing.
+
+```
+usage: cmpparts [-h] [-g] [-u] [-i CATEGORY] [-m {exact,normalized,fuzzy,pins}]
+                [-t THRESHOLD] [-a OLD=NEW] [-f {text,rich,html,json}]
+                [-o FILE] [--no-browser] [--wide] [--verbose] [-v]
+                FILE FILE [FILE ...]
+
+positional arguments:
+FILE                  The libraries to compare (.kicad_sym, .spd, or .jpd)
+
+options:
+-h, --help            show this help message and exit
+-g, --ignore-geometry
+                        Ignore where the pins sit, how long they are, and how
+                        big the body is, comparing only what the part is
+-u, --ignore-units    Ignore how a part is split into units, comparing its
+                        pins as one table
+-i CATEGORY, --ignore CATEGORY
+                        Something to leave out of the comparison, given once
+                        per entry: names, properties, geometry, units
+-m, --match {exact,normalized,fuzzy,pins}
+                        How to pair parts up across libraries
+-t THRESHOLD, --threshold THRESHOLD
+                        How alike two parts must be for '--match fuzzy' or
+                        '--match pins' to pair them, from 0 to 1 (default: 0.6)
+-a OLD=NEW, --alias OLD=NEW
+                        Pair up a part of the first library with a differently
+                        named part of the others
+-f, --format {text,rich,html,json}
+                        How to write the report: 'text' (the default), 'rich'
+                        for a table in the terminal, 'html' for a table in the
+                        browser, or 'json' for another program to read
+-o FILE, --output FILE
+                        Where to write the report. An HTML report goes to a
+                        temporary file and is opened in the browser unless this
+                        says otherwise; the other formats go to stdout.
+--no-browser          Write the HTML report without opening it in the browser
+--wide                Stretch the rich table across the terminal instead of
+                        drawing it only as wide as its contents need
+--verbose             Name the parts that came out identical, not just the
+                        differing ones
+-v, --version         show program's version number and exit
+```
+
+#### Ignoring the geometry
+
+Where a pin sits, how long it is, and how big the symbol body is say nothing
+about what the part *is*, and only a `.kicad_sym` file records them at all. Two
+libraries built from the same pinout with different `--push` or `--bundle`
+settings differ in every pin position while describing the very same part.
+`--ignore-geometry` (or `-g`) leaves all of that out and compares the electrical
+description alone — the pins, their names, types, styles, visibility, and
+alternates, and the properties of the part:
+
+    cmpparts -g old_library.kicad_sym new_library.kicad_sym
+
+Differences are reported in four categories, of which three can be ignored:
+
+| Category     | What it covers                                                    | Ignorable |
+|--------------|-------------------------------------------------------------------|-----------|
+| `pins`       | Pins, and their names, types, styles, visibility, and alternates   | no        |
+| `properties` | The properties of a part                                          | yes       |
+| `names`      | Part and unit names                                                | yes       |
+| `geometry`   | Which side a pin is on, where it sits, and the body of the symbol  | yes       |
+
+Each comparison uses only what both files know. Comparing an SPD file against a
+`.kicad_sym` file compares everything but the coordinates, which the SPD file
+hasn't got; comparing two SPD files still notices a pin that moved to another
+side or changed its place in the order.
+
+#### Ignoring the units
+
+How a part is split into units is a drawing decision, not a fact about the part:
+a quad NAND gate drawn as four gate units and a power unit has the same fourteen
+pins as one drawn as a single block. `--ignore-units` (or `-u`) sets the unit
+boundaries aside and compares the pins of each part as one table, so a pin that
+moved from one unit to another is no longer a difference:
+
+    cmpparts -g -u split_library.kicad_sym flat_library.kicad_sym
+
+`units` isn't a category of difference like the others — it's a way of comparing.
+With it, whether the units line up is no longer a question, so nothing about them
+is reported: neither a unit that only one part has, nor a unit that goes by
+another name. Everything about the pins themselves is still compared, and a pin
+whose name, type, style, visibility, or alternates changed is still reported —
+only now without a unit to name it in:
+
+    part '74hc00':
+        pin 2 ('b1') is only in the first part
+        pin 3 type: 'output' != 'tri_state'
+        pin 7 name: 'gnd' != 'vss'
+
+A pin number that turns up in two units names a second function of the one pin,
+which is the rule a number re-used within a unit already follows.
+
+#### Matching parts whose names don't agree
+
+The same part is `OPA2333` in one library and `opa2333xdgk` in another. How
+`cmpparts` pairs parts up across libraries is set by `--match`:
+
+| Mode         | Pairs up parts whose... |
+|--------------|-------------------------|
+| `exact`      | names are identical |
+| `normalized` | names agree once case and punctuation are set aside (the default) |
+| `fuzzy`      | names are merely alike, by at least `--threshold` |
+| `pins`       | pinouts are alike, by at least `--threshold`, whatever they're called |
+
+Matching is one-to-one, and a part is only ever paired with its closest
+counterpart. `pins` recognizes a part by the pins it has, which is what to reach
+for when the names have nothing in common:
+
+    cmpparts -g -m fuzzy vendor_library.kicad_sym my_library.kicad_sym
+    cmpparts -g -m pins -t 0.8 vendor_library.kicad_sym my_library.kicad_sym
+
+A pairing can also be made by hand with `--alias`, whatever the match mode says:
+
+    cmpparts -g -a rt9818=XYZ-9999 -a opa2333=ABC-1234 mine.spd vendor.kicad_sym
+
+Parts that get paired up under a name that isn't identical are still *reported*
+as differing by name — the pairing says they're the same part, not that they're
+spelled the same way. Use `--ignore names` to leave those out.
+
+    ===== my_parts.spd vs vendor_library.kicad_sym =====
+    part 'opa2333' ~ 'OPA2333-xDGK' (matched, 78% alike):
+        part name: 'opa2333' != 'OPA2333-xDGK'
+        unit 'PWR':
+            pin 4 name: 'vcc' != 'vss'
+    part 'rt9818' is only in my_parts.spd
+
+    1 part matched, 0 identical, 1 differing; 1 only in my_parts.spd, 0 only in vendor_library.kicad_sym
+
+#### How the report is written
+
+`--format` (or `-f`) chooses how the same report is presented:
+
+| Format | What you get |
+|--------|--------------|
+| `text` | The report above, a difference per line, grouped by part and unit (the default) |
+| `rich` | The differences as a table in the terminal, drawn with [rich](https://github.com/Textualize/rich) |
+| `html` | The same table as an HTML page, opened in your browser |
+| `json` | The whole report as JSON, for another program to read |
+
+The two tabular formats give a column to each library, so what changed can be
+read across the row:
+
+    cmpparts -f rich -g -m fuzzy cmp_a.kicad_sym cmp_b.kicad_sym
+
+```
+cmp_a.kicad_sym vs cmp_b.kicad_sym
+┏━━━━━━━━━━━━━━━━━━━━┳━━━━━━━┳━━━━━┳━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━┓
+┃ Part               ┃ Unit  ┃ Pin ┃ Difference      ┃ cmp_a.kicad_sym ┃ cmp_b.kicad_sym ┃
+┡━━━━━━━━━━━━━━━━━━━━╇━━━━━━━╇━━━━━╇━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━┩
+│ 74hc00             │ LOGIC │ 5   │ missing pin     │ b2              │ —               │
+│                    │ LOGIC │ 6   │ type            │ output          │ tri_state       │
+├────────────────────┼───────┼─────┼─────────────────┼─────────────────┼─────────────────┤
+│ rt9818 ~ RT9818-33 │       │     │ part name       │ rt9818          │ RT9818-33       │
+│                    │       │     │ property 'Manf' │ —               │ Richtek         │
+│                    │ 1     │ 1   │ alternates      │ mr              │ none            │
+│                    │ 1     │ 3   │ name            │ vcc             │ vdd             │
+├────────────────────┼───────┼─────┼─────────────────┼─────────────────┼─────────────────┤
+│ dac8551            │       │     │ missing part    │ dac8551         │ —               │
+├────────────────────┼───────┼─────┼─────────────────┼─────────────────┼─────────────────┤
+│ lm358              │       │     │ missing part    │ —               │ lm358           │
+└────────────────────┴───────┴─────┴─────────────────┴─────────────────┴─────────────────┘
+4 parts matched, 2 identical, 2 differing; 1 only in cmp_a.kicad_sym, 1 only in cmp_b.kicad_sym
+```
+
+A `—` in a column means that library hasn't got the thing at all, and the colour
+of the entry in the *Difference* column says which category it falls into. A part
+paired up under a name that isn't identical is shown as `rt9818 ~ RT9818-33`.
+
+The table is drawn only as wide as its contents need, rather than stretched
+across the terminal; `--wide` stretches it. The libraries are named in full on
+the line above it, so their columns can go by filename alone — a path in a column
+heading would drag the whole table out to match it.
+
+`-f html` writes the same table as a self-contained HTML page and opens it in
+your browser:
+
+    cmpparts -f html -g lib_a.kicad_sym lib_b.kicad_sym
+
+The page goes to a temporary file unless `--output` names one to keep, and
+`--no-browser` writes it without opening anything — which is what to use when the
+comparison runs somewhere with no browser to open, such as a build:
+
+    cmpparts -f html -g --no-browser -o differences.html lib_a.kicad_sym lib_b.kicad_sym
+
+If there's no browser to be found, the page is still written and `cmpparts` says
+where it went, so it can be opened by hand:
+
+    Wrote /tmp/cmpparts-3mshuzrb.html
+    Warning: couldn't open a browser to show it. Open it yourself with:
+        file:///tmp/cmpparts-3mshuzrb.html
+
+The page is opened in your *default web browser* — the one
+`xdg-settings get default-web-browser` names — rather than being handed to the
+desktop's generic file opener. On Linux those are two different things: the
+generic opener gives a `file://` page to whatever program claims the `text/html`
+*file type*, and that needn't be a browser at all. A mail client that registers
+itself for HTML (Thunderbird does) will swallow the page and show nothing, while
+reporting success. If a page still doesn't appear, that association is the first
+thing to look at:
+
+    xdg-mime query default text/html        # should name a browser, not a mail client
+    xdg-mime default brave-browser.desktop text/html     # to point it at one
+
+`--output` works for the other formats too, `--verbose` adds the parts that came
+out identical to any of them, and the exit status is the same whichever is
+chosen.

@@ -35,13 +35,26 @@ start of a line or after whitespace. A `//` inside a value is left alone, so
 
 ## Properties
 
-Any `name: value` line after `device` sets a part property. The name must be a
-single word; the value is the rest of the line.
+Any `name: value` line after `device` sets a part property. The name is whatever
+sits before the colon — any one word, holding neither whitespace nor a colon of
+its own — and the value is the rest of the line. KiCad calls some of its own
+properties things like `Manf#`, so a name isn't held to letters, digits, and
+underscores.
 
     device mypart
     Reference: U
     Footprint: SOP-8
-    Datasheet: https://example.com/ds.pdf
+    Manf#: PIC32MM0064GPM028
+    Datasheet: https://example.com/ds.pdf?rev=D#page=3
+
+Only the first colon separates the name from the value, so a value can hold
+colons of its own. The colon of a property line follows its name directly, which
+is what tells `Manf#: Microchip` (a property) from `b SDA:SCL 5` (a pin whose
+name happens to carry a colon).
+
+A property of a KiCad symbol whose name has a space in it is the one thing SPD
+can't handle; `kilib2spd` warns and skips it.
+
     Description: A short description of the part
     keywords: opamp analog
     my_property_1: My very own property!

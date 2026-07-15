@@ -5,23 +5,31 @@ SPD (Shorthand Part Description) is the terse text format meant to be typed by
 hand. JPD (JSON Part Description) holds the same information as JSON, spelling
 out what SPD encodes as type codes and modifier characters. See SPD.md and
 JPD.md for the two formats.
+
+A KiCad symbol library can be read straight into JPD as well, which is how a
+part gets a description free of the geometry the library wraps it in.
 """
 
 __all__ = [
     "spd_to_jpd",
     "jpd_to_spd",
+    "symbol_lib_to_jpd",
     "spd2jpd",
     "jpd2spd",
+    "kilib2jpd",
     "spd2jpd_cli",
     "jpd2spd_cli",
+    "kilib2jpd_cli",
 ]
 
 import argparse
 import json
 import os
-import re
 import sys
 
+from simp_sexp import Sexp
+
+from .part import symbol_lib_to_parts
 from .spd import (
     KICAD_STYLE_TO_SPD,
     KICAD_TYPE_TO_SPD,
@@ -29,6 +37,7 @@ from .spd import (
     SIDE_ORDER,
     format_pin_line,
     format_spacer_line,
+    is_property_name,
     parse_spd,
     parse_spd_symbol,
     pin_to_spd_fields,
@@ -67,6 +76,34 @@ def spd_to_jpd(spd):
         "format": JPD_FORMAT,
         "version": JPD_VERSION,
         "parts": [parse_spd_symbol(lines) for lines in parse_spd(spd)],
+    }
+
+
+# ===== KiCad symbol library to JPD =====
+
+
+def symbol_lib_to_jpd(symbol_lib):
+    """
+    Convert a KiCad symbol library into a JPD part description.
+
+    What the library says about the part — its pins, their names, types, styles,
+    and alternates, and the properties of the part — comes across; the geometry
+    it's drawn with doesn't, since JPD has no way to say it and kipart lays a
+    symbol out afresh from the description anyway.
+
+    Args:
+        symbol_lib (str or Sexp): KiCad symbol library S-expression.
+
+    Returns:
+        dict: The equivalent JPD description.
+
+    Raises:
+        ValueError: If the library contains no symbols.
+    """
+    return {
+        "format": JPD_FORMAT,
+        "version": JPD_VERSION,
+        "parts": symbol_lib_to_parts(symbol_lib, geometry=False),
     }
 
 
@@ -170,9 +207,10 @@ def jpd_to_spd(jpd):
         lines = [f"device {name}"]
 
         for prop_name, prop_value in part.get("properties", {}).items():
-            if not re.fullmatch(r"\w+", prop_name):
+            if not is_property_name(prop_name):
                 raise ValueError(
-                    f"Property name '{prop_name}' of part '{name}' isn't a single word"
+                    f"Property name '{prop_name}' of part '{name}' can't be written "
+                    "in SPD: a name holds neither whitespace nor a colon"
                 )
             lines.append(f"{prop_name}: {prop_value}")
 
@@ -295,6 +333,42 @@ def jpd2spd(jpd_file, spd_file=None, overwrite=False):
     return spd_file
 
 
+def kilib2jpd(symbol_lib_file, jpd_file=None, overwrite=False):
+    """
+    Convert a KiCad symbol library file into a JPD file.
+
+    Args:
+        symbol_lib_file (str): Path to the input KiCad symbol library (.kicad_sym).
+        jpd_file (str, optional): Path for the output JPD file. If None, uses the
+                                 input filename with a .jpd extension. Use '-' to
+                                 write to stdout.
+        overwrite (bool, optional): Allow overwriting an existing output file.
+                                   Defaults to False.
+
+    Returns:
+        str: Path to the generated JPD file, or '-' if written to stdout.
+
+    Raises:
+        FileNotFoundError: If the input file doesn't exist.
+        ValueError: If the input isn't a .kicad_sym file, if it holds no symbols,
+                   or if the output file exists and overwrite is False.
+    """
+    if not os.path.exists(symbol_lib_file):
+        raise FileNotFoundError(f"Input file {symbol_lib_file} does not exist")
+
+    if os.path.splitext(symbol_lib_file)[1].lower() != ".kicad_sym":
+        raise ValueError(f"Input file must be a .kicad_sym file, got {symbol_lib_file}")
+
+    jpd_file = _output_file(symbol_lib_file, jpd_file, ".jpd", overwrite)
+
+    with open(symbol_lib_file, "r") as f:
+        jpd = symbol_lib_to_jpd(Sexp(f.read()))
+
+    _write(jpd_file, json.dumps(jpd, indent=2) + "\n")
+
+    return jpd_file
+
+
 # ===== Command-Line Interface Functions =====
 
 
@@ -368,6 +442,25 @@ def jpd2spd_cli():
     """
     _convert_files(
         jpd2spd, "Convert JPD (JSON) part description files into SPD files", ".spd"
+    )
+
+
+def kilib2jpd_cli():
+    """
+    Command-line interface for converting KiCad symbol libraries to JPD files.
+
+    Usage:
+        kilib2jpd [-h] [-v] [-o OUTPUT] [-w] input_files [input_files ...]
+
+    Examples:
+        kilib2jpd lib.kicad_sym         # Generate lib.jpd
+        kilib2jpd -o - lib.kicad_sym    # Write the JPD to stdout
+    """
+    _convert_files(
+        kilib2jpd,
+        "Convert KiCad symbol libraries into JPD (JSON) part description files, "
+        "leaving behind the geometry the symbols are drawn with",
+        ".jpd",
     )
 
 

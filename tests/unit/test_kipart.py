@@ -1794,6 +1794,111 @@ import json
 from kipart.jpd import spd_to_jpd, jpd_to_spd, spd2jpd, jpd2spd
 
 
+class TestPropertyNames:
+    """Tests for what a property of a part can be called.
+
+    KiCad names some of its own properties things like 'Manf#', so a name isn't
+    held to the letters, digits, and underscores that make up a word: it's
+    whatever sits before the colon of a property line.
+    """
+
+    def test_a_name_may_hold_any_character_but_whitespace_and_a_colon(self):
+        from kipart.spd import is_property_name
+
+        for name in ("Manf#", "manf#", "ki_fp_filters", "MPN-1", "Digi-Key#", "价格"):
+            assert is_property_name(name), name
+
+        for name in ("Manf Number", "a:b", "", " "):
+            assert not is_property_name(name), name
+
+    def test_a_property_named_with_a_hash_is_read(self):
+        from kipart.spd import parse_spd, parse_spd_symbol
+
+        part = parse_spd_symbol(
+            parse_spd(
+                "device pic32\n"
+                "manf: Microchip Technology\n"
+                "manf#: PIC32MM0064GPM028\n"
+                "left\n"
+                "i_  MCLR  1\n"
+            )[0]
+        )
+
+        assert part["properties"] == {
+            "manf": "Microchip Technology",
+            "manf#": "PIC32MM0064GPM028",
+        }
+
+    def test_a_value_may_hold_colons_and_hashes_of_its_own(self):
+        from kipart.spd import parse_spd, parse_spd_symbol
+
+        # Only the first colon separates the name from the value.
+        part = parse_spd_symbol(
+            parse_spd(
+                "device p\n"
+                "Datasheet: https://example.com/ds.pdf?rev=D#page=3\n"
+                "left\n"
+                "i  a  1\n"
+            )[0]
+        )
+
+        assert part["properties"]["Datasheet"] == (
+            "https://example.com/ds.pdf?rev=D#page=3"
+        )
+
+    def test_a_pin_whose_name_holds_a_colon_is_still_a_pin(self):
+        from kipart.spd import parse_spd, parse_spd_symbol
+
+        # The colon of a property line follows its name directly, so this is a
+        # pin line and not a property called 'b'.
+        part = parse_spd_symbol(
+            parse_spd("device p\nleft\nb  SDA:SCL  3\n")[0]
+        )
+
+        assert "properties" not in part
+        assert part["units"][0]["left"][0]["name"] == "SDA:SCL"
+
+    def test_a_property_named_with_a_hash_survives_a_trip_through_a_library(
+        self, tmp_path
+    ):
+        from kipart.jpd import jpd_to_spd, spd_to_jpd
+        from kipart.kilib2spd import symbol_lib_to_spd
+
+        spd = (
+            "device pic32\n"
+            "manf#: PIC32MM0064GPM028\n"
+            "left\n"
+            "i_  MCLR  1\n"
+            "right\n"
+            "b   RA0   2\n"
+        )
+
+        lib = spd_to_symbol_lib(spd, tmp_path)
+        assert "manf#: PIC32MM0064GPM028" in symbol_lib_to_spd(lib)
+
+        # ...and through JPD, which used to refuse to write the name back out.
+        assert spd_to_jpd(spd)["parts"][0]["properties"] == {
+            "manf#": "PIC32MM0064GPM028"
+        }
+        assert "manf#: PIC32MM0064GPM028" in jpd_to_spd(spd_to_jpd(spd))
+
+    def test_a_property_name_with_a_space_is_still_refused(self):
+        from kipart.jpd import jpd_to_spd
+
+        jpd = {
+            "parts": [
+                {
+                    "name": "p",
+                    "properties": {"Manf Number": "x"},
+                    "units": [{"left": [{"name": "a", "numbers": ["1"]}]}],
+                }
+            ]
+        }
+
+        with pytest.raises(ValueError, match="can't be written in SPD"):
+            jpd_to_spd(jpd)
+
+
 class TestJpd:
     """Tests for conversion between the SPD and JPD formats."""
 

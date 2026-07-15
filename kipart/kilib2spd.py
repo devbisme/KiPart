@@ -21,12 +21,8 @@ import sys
 
 from simp_sexp import Sexp
 
-from .kipart import (
-    DEFAULT_UNIT_ID,
-    PIN_SPACING,
-    extract_symbols_from_lib,
-    yntf_to_yesno,
-)
+from .kipart import PIN_SPACING
+from .part import symbol_lib_to_parts, symbol_to_part
 from .spd import (
     NUMBERED_NAME,
     SIDE_ORDER,
@@ -41,63 +37,29 @@ try:
 except ImportError:
     __version__ = "unknown"
 
-# Map a pin orientation to the side of the symbol the pin is on.
-ORIENTATION_TO_SIDE = {0: "left", 90: "bottom", 180: "right", 270: "top"}
 
-# Property names/values that kipart supplies by default and which don't need
-# to be written back out to the SPD file.
-DEFAULT_PROPERTIES = {"Reference": "U"}
+def _get_side_pins(unit):
+    """Lay the pins of a unit out by side, as dicts of SPD-relevant pin data.
 
-
-def _get_pins(unit):
-    """Extract the pins of a unit as dicts of SPD-relevant pin data."""
-    pins = []
-
-    for pin in unit.search("/symbol/pin", ignore_case=True):
-        at = pin.search("/pin/at", ignore_case=True)[0]
-        orientation = int(at[3])
-        try:
-            side = ORIENTATION_TO_SIDE[orientation]
-        except KeyError:
-            warn(f"skipping pin with unsupported orientation {orientation}")
-            continue
-
-        hide = pin.search("/pin/hide", ignore_case=True)
-        alternates = [
-            {"name": alt[1], "type": alt[2], "style": alt[3]}
-            for alt in pin.search("/pin/alternate", ignore_case=True)
-        ]
-
-        pins.append(
+    The pins of a side come out of the reader in the order they're placed, which
+    is the order an SPD file lists them in.
+    """
+    return {
+        side: [
             {
-                "number": pin.search("/pin/number", ignore_case=True)[0][1],
-                "name": pin.search("/pin/name", ignore_case=True)[0][1],
-                "type": pin[1],
-                "style": pin[2],
-                "hidden": bool(hide) and yntf_to_yesno(hide[0][1]) == "yes",
-                "side": side,
-                "x": float(at[1]),
-                "y": float(at[2]),
-                "alternates": alternates,
+                "number": pin["numbers"][0],
+                "name": pin["name"],
+                "type": pin["type"],
+                "style": pin["style"],
+                "hidden": pin.get("hidden", False),
+                "alternates": pin.get("alternates", []),
+                "x": pin["geometry"]["x"],
+                "y": pin["geometry"]["y"],
             }
-        )
-
-    return pins
-
-
-def _order_side_pins(side, pins):
-    """
-    Sort the pins of one side into the order they're listed in an SPD file.
-
-    Left/right pins are listed from top to bottom, top/bottom pins from left to
-    right.
-    """
-    if side in ("left", "right"):
-        # Pins run down the side, so later pins have smaller y coordinates.
-        return sorted(pins, key=lambda p: (-p["y"], p["x"]))
-
-    # Pins run across the side from left to right.
-    return sorted(pins, key=lambda p: (p["x"], -p["y"]))
+            for pin in unit.get(side, [])
+        ]
+        for side in SIDE_ORDER
+    }
 
 
 def _assign_spacers(side_pins):
@@ -192,55 +154,39 @@ def symbol_to_spd(symbol, compress=True):
     Returns:
         str: The SPD text for the symbol, ending with a newline.
     """
-    part_name = symbol.search("/symbol", ignore_case=True)[0][1]
+    return _part_to_spd(symbol_to_part(symbol, geometry=True), compress=compress)
+
+
+def _part_to_spd(part, compress=True):
+    """Write out the SPD text for one part read from a symbol library.
+
+    The part keeps the geometry of the symbol it came from, which is what tells
+    the writer where a side wants a spacer and which pins sit close enough
+    together to share a line.
+    """
+    part_name = part["name"]
 
     lines = [f"device {part_name}"]
 
-    # Emit the properties that carry information beyond kipart's defaults.
-    for _, prop_name, prop_value, *_discard in symbol.search(
-        "/symbol/property", ignore_case=True
-    ):
-        if not prop_value:
-            continue
-        if DEFAULT_PROPERTIES.get(prop_name) == prop_value:
-            continue
-        if prop_name == "Value" and prop_value == part_name:
-            continue
-        if not re.fullmatch(r"\w+", prop_name):
-            warn(
-                f"property name '{prop_name}' of symbol '{part_name}' can't be "
-                "represented in SPD; skipping it"
-            )
-            continue
+    for prop_name, prop_value in part.get("properties", {}).items():
         lines.append(f"{prop_name}: {prop_value}")
 
-    units = symbol.search("/symbol/symbol", ignore_case=True)
-    multi_unit = len(units) > 1
-
-    for unit_index, unit in enumerate(units, 1):
-        unit_name_search = unit.search("/symbol/unit_name", ignore_case=True)
-        if unit_name_search:
-            unit_id = unit_name_search[0][1]
-        else:
-            unit_id = str(unit_index)
-
-        pins = _get_pins(unit)
-        if not pins:
+    for unit in part["units"]:
+        side_pins = _get_side_pins(unit)
+        if not any(side_pins.values()):
             continue
 
-        if multi_unit or unit_id != DEFAULT_UNIT_ID:
+        # A unit that goes by a name gets a directive to introduce it. The lone
+        # unit of a one-unit part hasn't got one, and needs none.
+        if "name" in unit:
             lines.append("")
-            lines.append(f"unit {unit_id}")
+            lines.append(f"unit {unit['name']}")
             indent = " " * 8
             side_indent = " " * 4
         else:
             indent = " " * 4
             side_indent = ""
 
-        side_pins = {
-            side: _order_side_pins(side, [pin for pin in pins if pin["side"] == side])
-            for side in SIDE_ORDER
-        }
         _assign_spacers(side_pins)
 
         for side in SIDE_ORDER:
@@ -299,13 +245,9 @@ def symbol_lib_to_spd(symbol_lib, compress=True):
     Raises:
         ValueError: If the library contains no symbols.
     """
-    symbols = extract_symbols_from_lib(symbol_lib)
-    if not symbols:
-        raise ValueError("No symbols found in the symbol library")
-
     return "\n".join(
-        symbol_to_spd(symbol, compress=compress)
-        for symbol in sorted(symbols, key=lambda s: s[1])
+        _part_to_spd(part, compress=compress)
+        for part in symbol_lib_to_parts(symbol_lib, geometry=True)
     )
 
 

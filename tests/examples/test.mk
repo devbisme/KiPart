@@ -1,4 +1,4 @@
-tests := example1 example2 example3 example4 helwig hidden_test hyozd lt1512 multi_sides pin_length property_test spaces_test test1 grabbag
+tests := example1 example2 example3 example4 helwig hidden_test hyozd lt1512 multi_sides pin_length property_test spaces_test test1 grabbag cmp_a cmp_b
 
 all: $(tests:=.tst)
 
