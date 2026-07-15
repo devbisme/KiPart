@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+-   `kilib2csv`, `kilib2spd`, and `kilib2jpd` now handle KiCad's `extends` keyword. A part written with `(extends "base")` borrows the base part's units and pins and overrides only its properties; the readers copy those units and pins into it so it comes out as a whole part rather than an empty one. `extends` may chain and the base may sit anywhere in the library. `kipart.resolve_extends` is the single place this is done, called once the symbols have been read from a library.
 -   A property can be named `Manf#`, as KiCad names some of its own. An SPD property name is now whatever sits before the colon — any one word holding neither whitespace nor a colon — rather than being held to the letters, digits, and underscores of a word. A name with a space in it remains the one thing SPD can't say. `spd.is_property_name` is the single place that rule is spelled, so `kilib2spd` and `jpd2spd` no longer drop or refuse such a property either.
 
 -   Added the `cmpparts` command-line utility (and the `compare_libraries`, `compare_parts`, and `match_parts` functions) for comparing the parts of two or more libraries and reporting what differs. The libraries can be `.kicad_sym`, `.spd`, or `.jpd` files, in any mix, so a symbol library can be checked against the part description it was built from. Exits with 1 if the libraries differ, so it can serve as a check in a build.

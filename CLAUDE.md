@@ -51,7 +51,7 @@ there is one such reader and not several. `part.py` may depend on `kipart.py` an
 Run the tests, but don't stop there — the tests can't tell you a symbol came out
 subtly wrong:
 
-    pytest tests            # 110 tests
+    pytest tests            # 163 tests
     tox                     # py39-py313
 
 The real check is a round trip against `tests/examples/grabbag.spd`, which is a
@@ -97,3 +97,11 @@ you edit the pair, that's where it will tell you.
   then `"1" != 1` quietly makes every pin of a part look missing. `part.py` reads
   pin numbers, names, types, and styles through `str()` for that reason. Anything
   else that compares pin numbers across formats should do the same.
+- **`extends` is resolved only in the kilib2* read paths**, not universally.
+  `kipart.resolve_extends` copies a base part's units and pins into a part that
+  extends it, and it's called in `symbol_lib_to_parts` (feeding kilib2spd and
+  kilib2jpd) and `symbol_lib_file_to_csv_file` (kilib2csv) — *not* in
+  `extract_symbols_from_lib`, which `merge_symbol_libs` and `compare_symbols` use
+  and which must leave the `extends` relationship intact. It lives in `kipart.py`
+  because it's a `.kicad_sym`-structure operation and `part.py` may import it from
+  there; a copy in `part.py` would break the layering.

@@ -35,6 +35,7 @@ __all__ = [
     "create_empty_symbol_lib",
     "merge_symbol_libs",
     "extract_symbols_from_lib",
+    "resolve_extends",
     # Symbol parsing functions
     "symbol_to_csv_rows",
     # Symbol generation functions
@@ -583,6 +584,88 @@ def extract_symbols_from_lib(symbol_lib):
 
     # Parse the library, search for part symbols, and return a list Sexp objects, one for each part.
     return Sexp(symbol_lib).search("/kicad_symbol_lib/symbol")
+
+
+def _base_of(symbol):
+    """Give the name of the part a symbol extends, or None if it extends none."""
+    extends = symbol.search("/symbol/extends", ignore_case=True)
+    return extends[0][1] if extends else None
+
+
+def _inherit_units(symbol, base):
+    """Copy the units and pins of a base part into a part that extends it.
+
+    The extending part keeps its own properties; only the base's unit
+    sub-symbols — the graphics and pins — are brought over, renamed to the
+    extending part's prefix. The 'extends' node is dropped, since the part now
+    carries what it used to borrow.
+    """
+    name, base_name = symbol[1], base[1]
+
+    for extends in symbol.search("/symbol/extends", ignore_case=True):
+        symbol.remove(extends)
+
+    for unit in base.search("/symbol/symbol", ignore_case=True):
+        # Deep-copy the unit so the base is left untouched, then re-prefix its
+        # name, which KiCad forms as '<part>_<unit>_<style>'.
+        copy = Sexp(str(unit))
+        if isinstance(copy[1], str) and copy[1].startswith(base_name):
+            copy[1] = name + copy[1][len(base_name):]
+        symbol.append(copy)
+
+
+def resolve_extends(symbols):
+    """
+    Resolve KiCad's 'extends' keyword within a library's symbols.
+
+    A part written with '(extends "base")' has no units or pins of its own: it
+    borrows the base part's and overrides only its properties. This copies the
+    base's units and pins into each such part so a reader that walks the units
+    sees the whole part, rather than an empty one.
+
+    The parts are resolved in dependency order, since 'extends' can chain — a
+    part may extend one that itself extends another — and the base can sit
+    anywhere in the library.
+
+    Args:
+        symbols (list of Sexp): The symbols of a library, as returned by
+                               extract_symbols_from_lib. Modified in place.
+
+    Returns:
+        list of Sexp: The same list, with every 'extends' resolved.
+
+    Raises:
+        ValueError: If a part extends one that isn't in the library, or a cycle
+                   of 'extends' leaves a part with no base to draw from.
+    """
+    by_name = {symbol[1]: symbol for symbol in symbols}
+    resolved = set()
+
+    def resolve(name, pending):
+        if name in resolved:
+            return
+
+        base_name = _base_of(by_name[name])
+        if base_name is None:
+            resolved.add(name)
+            return
+
+        if base_name not in by_name:
+            raise ValueError(
+                f"Part '{name}' extends '{base_name}', which isn't in the library"
+            )
+        if base_name in pending:
+            chain = " -> ".join(list(pending) + [name, base_name])
+            raise ValueError(f"Parts extend each other in a cycle: {chain}")
+
+        resolve(base_name, pending | {name})
+        _inherit_units(by_name[name], by_name[base_name])
+        resolved.add(name)
+
+    for symbol in symbols:
+        resolve(symbol[1], set())
+
+    return symbols
 
 
 def symbol_to_csv_rows(symbol):
@@ -1745,8 +1828,9 @@ def symbol_lib_file_to_csv_file(symbol_lib_file, csv_file=None, overwrite=False)
     with open(symbol_lib_file, "r") as f:
         symbol_lib = f.read()
 
-    # Extract parts from the symbol library using common utility
-    parts = extract_symbols_from_lib(symbol_lib)
+    # Extract parts from the symbol library, giving each part that extends
+    # another the units and pins it borrows from it.
+    parts = resolve_extends(extract_symbols_from_lib(symbol_lib))
 
     # Sort parts by name for consistent output.
     parts = sorted(parts, key=lambda x: x[1])

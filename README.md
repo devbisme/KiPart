@@ -650,6 +650,10 @@ options:
 -v, --version         show program's version number and exit
 ```
 
+A part that uses KiCad's `extends` keyword to borrow another part's pins is
+written out as a whole part, with the borrowed units and pins filled in and its
+own properties kept. `kilib2spd` and `kilib2jpd` do the same.
+
 This utility handles single and multiple input files in the same manner
 as KiPart and supports some of the same options for overwriting and
 appending to the output CSV file:

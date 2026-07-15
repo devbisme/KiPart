@@ -29,7 +29,12 @@ import os
 
 from simp_sexp import Sexp
 
-from .kipart import DEFAULT_UNIT_ID, extract_symbols_from_lib, yntf_to_yesno
+from .kipart import (
+    DEFAULT_UNIT_ID,
+    extract_symbols_from_lib,
+    resolve_extends,
+    yntf_to_yesno,
+)
 from .spd import (
     NUMBERED_NAME,
     SIDE_ORDER,
@@ -284,6 +289,9 @@ def symbol_lib_to_parts(symbol_lib, geometry=False):
     symbols = extract_symbols_from_lib(symbol_lib)
     if not symbols:
         raise ValueError("No symbols found in the symbol library")
+
+    # A part that extends another borrows its units and pins; give it a copy.
+    symbols = resolve_extends(symbols)
 
     return [
         symbol_to_part(symbol, geometry=geometry)
