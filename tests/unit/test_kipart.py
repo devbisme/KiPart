@@ -21,7 +21,7 @@ from kipart.kipart import (
     merge_symbol_libs,
 )
 from kipart.random_symbol import create_random_symbol_lib
-from kipart.compare_symbols import (
+from .compare_symbols import (
     compare_symbol_pins,
     symbols_are_equal,
     symbol_libs_are_equal,
@@ -1577,6 +1577,8 @@ from kipart.kilib2spd import (
 )
 from kipart.kipart import rows_to_symbol_lib
 from kipart.spd2csv import parse_spd_file, convert_spd_symbol
+from kipart.compare_parts import compare_parts
+from kipart.part import symbol_to_part
 
 
 def spd_to_symbol_lib(spd, tmp_path):
@@ -1751,9 +1753,16 @@ class TestKilib2Spd:
         results = {s[1]: s for s in extract_symbols_from_lib(roundtripped)}
         assert set(originals) == set(results)
 
-        # Every pin keeps its name, alternates, and type through the round trip.
+        # Every pin keeps its name, type, style, and alternates through the round
+        # trip. The layout is re-derived on the way back, so geometry, unit and
+        # part names, and properties are left out of the comparison.
         for name, symbol in originals.items():
-            assert compare_symbol_pins(symbol, results[name]) == []
+            differences = compare_parts(
+                symbol_to_part(symbol),
+                symbol_to_part(results[name]),
+                ignore=["names", "properties", "geometry"],
+            )
+            assert differences == [], f"{name}: {differences}"
 
     def test_symbol_lib_file_to_spd_file(self, tmp_path):
         """Test the file-level conversion and its overwrite check."""

@@ -32,11 +32,13 @@ kipart turns those rows into a `.kicad_sym` library:
 - `kipart/compare_parts.py` — compares the parts of two or more libraries in any
   of the three formats, optionally disregarding geometry, and pairs up parts
   whose names don't agree. Owns the `cmpparts` command.
-- `kipart/compare_symbols.py` — compares `.kicad_sym` symbols and libraries at
-  the S-expression level, ignoring the order of properties, units, and pins. This
-  is how you check a change to the *symbol writer* is safe; `compare_parts` is
-  the one to reach for when the question is whether two libraries hold the same
-  parts.
+- `tests/unit/compare_symbols.py` — a **test-only** helper (not part of the
+  shipped package) that compares `.kicad_sym` symbols and libraries at the
+  S-expression level, ignoring the order of properties, units, and pins, and
+  including geometry and property effects that `compare_parts` deliberately
+  drops. It's how the round-trip tests check the *symbol writer* is byte-faithful;
+  `compare_parts` is the one to reach for when the question is only whether two
+  libraries hold the same parts.
 
 **The layering rule:** converters depend on `spd.py` and `part.py`, never on each
 other. If you need something from a sibling converter, it belongs in one of those
@@ -56,16 +58,19 @@ subtly wrong:
 
 The real check is a round trip against `tests/examples/grabbag.spd`, which is a
 deliberate torture case (multi-unit parts, alternates, buses, spacers, every pin
-type and modifier). Convert it and compare with `compare_symbols`:
+type and modifier). Convert it and compare — `tests/unit/compare_symbols.py` is
+the S-expression-level yardstick:
 
 - **SPD → JPD → SPD** should produce identical CSV, and the JPD should be
   idempotent across a second trip.
-- **library → SPD → library** should give zero `compare_symbol_pins` differences.
-  Six of grabbag's eight symbols also come back byte-identical via
-  `symbols_are_equal`; the two that don't (`opa2333`, `rt9818`) differ only in
-  where a side's pins sit along its edge, which SPD deliberately doesn't record —
-  kipart re-derives that from `--push`. Symbols built with `--bundle` don't come
-  back byte-identical either, because their bundled pins are stacked at one spot.
+- **library → SPD → library** should leave every pin's name, type, style, and
+  alternates intact — `compare_parts(..., ignore=["names", "properties",
+  "geometry"])` is the check (see `test_symbol_lib_to_spd_roundtrip`). Six of
+  grabbag's eight symbols also come back byte-identical via `symbols_are_equal`;
+  the two that don't (`opa2333`, `rt9818`) differ only in where a side's pins sit
+  along its edge, which SPD deliberately doesn't record — kipart re-derives that
+  from `--push`. Symbols built with `--bundle` don't come back byte-identical
+  either, because their bundled pins are stacked at one spot.
 
 `cmpparts` is the quick way to ask the same question of two libraries built any
 which way: `cmpparts -g old.kicad_sym new.kicad_sym` exits 0 when they hold the
@@ -101,7 +106,7 @@ you edit the pair, that's where it will tell you.
   `kipart.resolve_extends` copies a base part's units and pins into a part that
   extends it, and it's called in `symbol_lib_to_parts` (feeding kilib2spd and
   kilib2jpd) and `symbol_lib_file_to_csv_file` (kilib2csv) — *not* in
-  `extract_symbols_from_lib`, which `merge_symbol_libs` and `compare_symbols` use
-  and which must leave the `extends` relationship intact. It lives in `kipart.py`
+  `extract_symbols_from_lib`, which `merge_symbol_libs` uses and which must leave
+  the `extends` relationship intact. It lives in `kipart.py`
   because it's a `.kicad_sym`-structure operation and `part.py` may import it from
   there; a copy in `part.py` would break the layering.
