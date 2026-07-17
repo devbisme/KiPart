@@ -250,6 +250,77 @@ class TestComparePartsFindsRealDifferences:
         assert any("'a1' != 'in1'" in d["message"] for d in differences)
 
 
+class TestAlternateComparison:
+    """Comparing a pin's alternate functions, the way its own name is compared."""
+
+    # Pin 5 carries a main function plus two alternates. A re-used pin number is
+    # how SPD writes an alternate.
+    BASE = "device chip\nleft\n    b   PA0     5\n    o   TX      5\n    i   RX      5\n"
+
+    def parts(self, tmp_path, text):
+        a = tmp_path / "a.spd"
+        b = tmp_path / "b.spd"
+        a.write_text(self.BASE)
+        b.write_text(text)
+        return parts_by_name(a)["chip"], parts_by_name(b)["chip"]
+
+    def test_matching_alternates_are_identical(self, tmp_path):
+        part_a, part_b = self.parts(tmp_path, self.BASE)
+        assert compare_parts(part_a, part_b) == []
+
+    def test_an_alternate_only_one_pin_has_is_flagged_by_name(self, tmp_path):
+        # b renames the RX alternate to SDA: RX is missing from b, SDA from a.
+        part_a, part_b = self.parts(
+            tmp_path, self.BASE.replace("i   RX      5", "i   SDA     5")
+        )
+        differences = compare_parts(part_a, part_b)
+
+        by_message = {d["message"]: d for d in differences}
+        assert any(
+            "alternate 'RX' is only in the first part" in m for m in by_message
+        )
+        assert any(
+            "alternate 'SDA' is only in the second part" in m for m in by_message
+        )
+
+        rx = next(d for d in differences if "'RX'" in d["message"])
+        assert rx["field"] == "missing alternate"
+        assert rx["pin"] == "5"
+        assert rx["first"] == "RX" and rx["second"] == ABSENT
+
+    def test_a_shared_alternate_has_its_type_compared(self, tmp_path):
+        # TX keeps its name but changes type from output to tri_state.
+        part_a, part_b = self.parts(
+            tmp_path, self.BASE.replace("o   TX      5", "t   TX      5")
+        )
+        differences = compare_parts(part_a, part_b)
+
+        assert len(differences) == 1
+        diff = differences[0]
+        assert diff["field"] == "alternate 'TX' type"
+        assert (diff["first"], diff["second"]) == ("output", "tri_state")
+        assert "alternate 'TX' type: 'output' != 'tri_state'" in diff["message"]
+
+    def test_a_shared_alternate_has_its_style_compared(self, tmp_path):
+        # TX keeps its name and type but gains an inverted style.
+        part_a, part_b = self.parts(
+            tmp_path, self.BASE.replace("o   TX      5", "o!  TX      5")
+        )
+        differences = compare_parts(part_a, part_b)
+
+        assert [d["field"] for d in differences] == ["alternate 'TX' style"]
+        assert (differences[0]["first"], differences[0]["second"]) == (
+            "line",
+            "inverted",
+        )
+
+    def test_alternates_are_matched_regardless_of_order(self, tmp_path):
+        # b lists the same alternates in the other order; still identical.
+        reordered = "device chip\nleft\n    b   PA0     5\n    i   RX      5\n    o   TX      5\n"
+        part_a, part_b = self.parts(tmp_path, reordered)
+        assert compare_parts(part_a, part_b) == []
+
+
 class TestIgnoringGeometry:
     """The mode that compares what a part is, not how it's drawn."""
 
@@ -646,7 +717,7 @@ class TestExampleLibraries:
         # ...but fuzzy matching does, and then finds what changed inside it.
         differences = self.differences(libs, ignore=["geometry"], mode="fuzzy")
         fields = {d["field"] for d in differences["rt9818"]}
-        assert fields == {"part name", "property 'Manf'", "name", "alternates"}
+        assert fields == {"part name", "property 'Manf'", "name", "missing alternate"}
         assert {d["category"] for d in differences["rt9818"]} == {
             "names",
             "properties",

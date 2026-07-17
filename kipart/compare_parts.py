@@ -371,6 +371,63 @@ def _compare_properties(part_a, part_b):
     return differences
 
 
+def _compare_alternates(pin_a, pin_b, unit, number):
+    """
+    Compare the alternate functions of two pins that share a pin number.
+
+    An alternate is compared the way the pin's own name is: alternates are
+    matched by name, an alternate that only one pin has is flagged, and one both
+    pins share has its type and style compared. KiCad doesn't order a pin's
+    alternates, so neither does this.
+    """
+    # Each alternate is (name, type, style); key them by name to pair them up.
+    alternates_a = {alt[0]: alt for alt in pin_a["alternates"]}
+    alternates_b = {alt[0]: alt for alt in pin_b["alternates"]}
+    differences = []
+
+    def report(field, message, first=ABSENT, second=ABSENT):
+        differences.append(
+            _difference(
+                "pins", message, unit=unit, pin=number,
+                field=field, first=first, second=second,
+            )
+        )
+
+    for name in sorted(set(alternates_a) - set(alternates_b)):
+        report(
+            "missing alternate",
+            f"pin {number} alternate {name!r} is only in the first part",
+            first=name,
+        )
+
+    for name in sorted(set(alternates_b) - set(alternates_a)):
+        report(
+            "missing alternate",
+            f"pin {number} alternate {name!r} is only in the second part",
+            second=name,
+        )
+
+    for name in sorted(set(alternates_a) & set(alternates_b)):
+        _name_a, type_a, style_a = alternates_a[name]
+        _name_b, type_b, style_b = alternates_b[name]
+        if type_a != type_b:
+            report(
+                f"alternate {name!r} type",
+                f"pin {number} alternate {name!r} type: {type_a!r} != {type_b!r}",
+                first=type_a,
+                second=type_b,
+            )
+        if style_a != style_b:
+            report(
+                f"alternate {name!r} style",
+                f"pin {number} alternate {name!r} style: {style_a!r} != {style_b!r}",
+                first=style_a,
+                second=style_b,
+            )
+
+    return differences
+
+
 def _compare_pin(pin_a, pin_b, unit, positions):
     """Compare the two pins that share a pin number."""
     number = pin_a["number"]
@@ -393,16 +450,7 @@ def _compare_pin(pin_a, pin_b, unit, positions):
         if pin_a[field] != pin_b[field]:
             report("pins", field, pin_a[field], pin_b[field])
 
-    # KiCad doesn't order the alternates of a pin, so neither do we.
-    alternates_a = sorted(pin_a["alternates"])
-    alternates_b = sorted(pin_b["alternates"])
-    if alternates_a != alternates_b:
-        report(
-            "pins",
-            "alternates",
-            [alt[0] for alt in alternates_a],
-            [alt[0] for alt in alternates_b],
-        )
+    differences.extend(_compare_alternates(pin_a, pin_b, unit, number))
 
     if pin_a["side"] != pin_b["side"]:
         report("geometry", "side", pin_a["side"], pin_b["side"])
