@@ -7,8 +7,7 @@ Excel, or SPD file.
 
 ## Features
 
--   Generates schematic part libraries for KiCad from CSV or Excel
-    files.
+-   `kipart` generates schematic part libraries for KiCad from CSV or Excel files.
 -   Converts one or more lists of pins in a file into a library of 
     multi-unit schematic part symbols.
 -   Each row of the file lists the number, name, type, style, and
@@ -18,18 +17,19 @@ Excel, or SPD file.
 -   Pins with the same name (e.g., GND) can be placed at the
     same location so they can all be tied to a net with a single
     connection.
--   Also includes `spd2csv` for converting Shorthand Part Description (SPD) files
-    to CSV format which can then be turned into schematic part libraries.
 -   Also includes `kilib2csv` for converting existing schematic part libraries
     into CSV files suitable for input to KiPart.
 -   Also includes `kilib2spd` for converting existing schematic part libraries
-    into SPD files, so a library can be maintained in the compact SPD format.
--   Also includes `spd2jpd`, `jpd2spd`, and `kilib2jpd` for converting SPD files
-    and KiCad libraries into JPD (JSON Part Description) files, which hold the
-    same information as JSON, and back again.
--   Also includes `cmpparts` for comparing the parts of two or more libraries,
-    which can disregard the geometry a symbol is drawn with and can pair up
-    parts whose names don't quite agree.
+    into SPD (Shorthand Part Descriptiion) files, so a library can be maintained
+    in a compact, human-friendly format.
+-   Also includes `kilib2jpd` for converting existing schematic part libraries
+    into JPD (JSON Part Description) files, so a library can be maintained in
+    an AI-friendly format.
+-   Also includes `spd2csv` for converting Shorthand Part Description (SPD) files
+    to CSV format which can then be turned into schematic part libraries.
+-   Also includes `spd2jpd` and `jpd2spd` for converting between SPD and SPD files.
+-   Also includes `cmpparts` for comparing the parts of two or more libraries
+    and flagging discrepancies.
 
 ## Example Use Case
 
@@ -59,7 +59,7 @@ Simple enough:
 
     pip install kipart
 
-This will install six command-line utilities:
+This will install eight command-line utilities:
 
 -   `kipart`: The main utility for generating schematic symbols from rows of pin data
         stored in CSV or Excel files.
@@ -75,6 +75,38 @@ This will install six command-line utilities:
         part is easier to handle as JSON than as text.
 -   `cmpparts`: A utility for comparing the parts of two or more libraries and
         reporting what differs between them.
+
+## How the utilities fit together
+
+A part reaches a KiCad `.kicad_sym` library along one path: a description consisting of
+rows of CSV or Excel data is converted by  `kipart` into a symbol library.
+Part descriptions can also be stored in JPD or SPD formats which are convertible
+to CSV via the `jpd2spd` and `spd2csv` utilities.
+A KiCad library can be converted back to each of these formats using one of the
+`kilib2*` utilities.
+`cmpparts` sits off to the side, comparing the parts held in any of the
+`.kicad_sym`, `.spd`, or `.jpd` files.
+
+```mermaid
+flowchart LR
+    JPD["JPD file<br/>(.jpd)"]
+    SPD["SPD file<br/>(.spd)"]
+    CSV["CSV / Excel<br/>(.csv .xlsx .xls)"]
+    LIB["KiCad library<br/>(.kicad_sym)"]
+
+    JPD -->|jpd2spd| SPD
+    SPD -->|spd2jpd| JPD
+    SPD -->|spd2csv| CSV
+    CSV -->|kipart| LIB
+    LIB -->|kilib2csv| CSV
+    LIB -->|kilib2spd| SPD
+    LIB -->|kilib2jpd| JPD
+
+    CMP{{"cmpparts<br/>(compare parts)"}}
+    JPD -.-> CMP
+    SPD -.-> CMP
+    LIB -.-> CMP
+```
 
 ## Usage
 
