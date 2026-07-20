@@ -1409,14 +1409,14 @@ def cmpparts():
     Command-line interface for comparing the parts of two or more libraries.
 
     Usage:
-        cmpparts [-h] [-v] [-g] [-u] [-i CATEGORY] [-m MODE] [-t THRESHOLD]
+        cmpparts [-h] [-v] [-g] [-i CATEGORY] [-m MODE] [-t THRESHOLD]
                  [-a OLD=NEW] [-f FORMAT] [-o FILE] [--no-browser] [--verbose]
                  file file [file ...]
 
     Examples:
         cmpparts old.kicad_sym new.kicad_sym        # Everything, geometry included
         cmpparts -g old.kicad_sym new.kicad_sym     # Only what the part *is*
-        cmpparts -g -u old.kicad_sym new.kicad_sym  # ...and never mind the units
+        cmpparts -g -i units old.kicad_sym new.kicad_sym  # ...never mind the units
         cmpparts parts.spd built.kicad_sym          # Did the symbols come out right?
         cmpparts -m fuzzy vendor.kicad_sym mine.kicad_sym   # Names needn't agree
         cmpparts -m pins -t 0.5 a.kicad_sym b.kicad_sym     # Match on the pinout
@@ -1447,14 +1447,6 @@ def cmpparts():
         action="store_true",
         help="Ignore where the pins sit, how long they are, and how big the body "
         "is, comparing only what the part is. Short for '--ignore geometry'.",
-    )
-    parser.add_argument(
-        "-u",
-        "--ignore-units",
-        action="store_true",
-        help="Ignore how a part is split into units, comparing its pins as one "
-        "table. A pin that moved from one unit to another is then no difference. "
-        "Short for '--ignore units'.",
     )
     parser.add_argument(
         "-i",
@@ -1538,8 +1530,6 @@ def cmpparts():
     ignore = set(args.ignore)
     if args.ignore_geometry:
         ignore.add("geometry")
-    if args.ignore_units:
-        ignore.add("units")
 
     aliases = {}
     for alias in args.alias:
