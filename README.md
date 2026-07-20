@@ -830,7 +830,7 @@ The two `.spd` files can be compared directly as well, without building anything
 and say the same thing.
 
 ```
-usage: cmpparts [-h] [-g] [-u] [-i CATEGORY] [-m {exact,normalized,fuzzy,pins}]
+usage: cmpparts [-h] [-g] [-i CATEGORY] [-m {exact,normalized,fuzzy,pins}]
                 [-t THRESHOLD] [-a OLD=NEW] [-f {text,rich,html,json}]
                 [-o FILE] [--no-browser] [--wide] [--verbose] [-v]
                 FILE FILE [FILE ...]
@@ -843,8 +843,6 @@ options:
 -g, --ignore-geometry
                         Ignore where the pins sit, how long they are, and how
                         big the body is, comparing only what the part is
--u, --ignore-units    Ignore how a part is split into units, comparing its
-                        pins as one table
 -i CATEGORY, --ignore CATEGORY
                         Something to leave out of the comparison, given once
                         per entry: names, properties, geometry, units
@@ -902,11 +900,11 @@ side or changed its place in the order.
 
 How a part is split into units is a drawing decision, not a fact about the part:
 a quad NAND gate drawn as four gate units and a power unit has the same fourteen
-pins as one drawn as a single block. `--ignore-units` (or `-u`) sets the unit
-boundaries aside and compares the pins of each part as one table, so a pin that
-moved from one unit to another is no longer a difference:
+pins as one drawn as a single block. `-i units` sets the
+unit boundaries aside and compares the pins of each part as one table, so a pin
+that moved from one unit to another is no longer a difference:
 
-    cmpparts -g -u split_library.kicad_sym flat_library.kicad_sym
+    cmpparts -g -i units split_library.kicad_sym flat_library.kicad_sym
 
 `units` isn't a category of difference like the others — it's a way of comparing.
 With it, whether the units line up is no longer a question, so nothing about them

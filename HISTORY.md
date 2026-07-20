@@ -1,6 +1,6 @@
 # History
 
-## Unreleased
+## 2.7.0 (2026-07-20)
 
 -   `kilib2csv`, `kilib2spd`, and `kilib2jpd` now handle KiCad's `extends` keyword. A part written with `(extends "base")` borrows the base part's units and pins and overrides only its properties; the readers copy those units and pins into it so it comes out as a whole part rather than an empty one. `extends` may chain and the base may sit anywhere in the library. `kipart.resolve_extends` is the single place this is done, called once the symbols have been read from a library.
 -   A property can be named `Manf#`, as KiCad names some of its own. An SPD property name is now whatever sits before the colon — any one word holding neither whitespace nor a colon — rather than being held to the letters, digits, and underscores of a word. A name with a space in it remains the one thing SPD can't say. `spd.is_property_name` is the single place that rule is spelled, so `kilib2spd` and `jpd2spd` no longer drop or refuse such a property either.
@@ -12,7 +12,7 @@
 -   `cmpparts -f html` says so when there's no browser to be found, rather than claiming to have opened one. The page is written either way, and the warning names it so it can be opened by hand.
 -   The browser opened by `cmpparts -f html` no longer chatters into the terminal. A browser is spawned as a child of the process and inherits its output, so its startup grumbles (GTK modules, and the like) used to land in the middle of the user's shell prompt.
 -   The rich table is drawn only as wide as its contents need rather than stretched across the terminal, and `--wide` stretches it. The libraries are named in full above the table so their columns can go by filename alone, since a path in a column heading sets the width of the whole table.
--   `cmpparts --ignore-units` (or `-u`, or `--ignore units`) sets the unit boundaries of a part aside and compares its pins as one table, so a part drawn as a single unit and the same part split across several come out alike. Nothing about the units themselves is then reported, but every difference in the pins still is.
+-   `cmpparts -i units` sets the unit boundaries of a part aside and compares its pins as one table, so a part drawn as a single unit and the same part split across several come out alike. Nothing about the units themselves is then reported, but every difference in the pins still is.
 -   `cmpparts` now compares a pin's alternate functions the way it compares the pin's own name: alternates are matched by name, an alternate that only one part has is flagged by name (`missing alternate`), and an alternate both parts share has its type and style compared (`alternate 'TX' type`). It used to report only that the set of alternate names differed, saying nothing about a changed type or style.
 -   `cmpparts --match` pairs parts up across libraries whose names don't agree: `exact`, `normalized` (case and punctuation set aside, the default), `fuzzy` (names merely alike), or `pins` (recognizing a part by its pinout alone). `--alias OLD=NEW` pairs two parts up by hand.
 -   Added the `kilib2jpd` command-line utility (and the `symbol_lib_to_jpd` and `kilib2jpd` functions) for reading a KiCad symbol library straight into a JPD description, which took `kilib2spd | spd2jpd` before.
