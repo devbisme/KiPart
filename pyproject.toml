@@ -77,7 +77,7 @@ python_files = ["test_*.py"]
 [tool.tox]
 legacy_tox_ini = """
 [tox]
-envlist = py39, py310, py311, py312, py313, py314, py315
+envlist = py39, py310, py311, py312, py313, py314
 isolated_build = True
 
 [testenv]
