@@ -57,11 +57,17 @@ spd2csv = "kipart.spd2csv:main"
 spd2jpd = "kipart.jpd:spd2jpd_cli"
 jpd2spd = "kipart.jpd:jpd2spd_cli"
 cmpparts = "kipart.compare_parts:cmpparts"
+kipart-mcp = "kipart.mcp_server:main"
 
 [project.optional-dependencies]
 dev = [
     "pytest>=7.0",
     "tox>=4.0.0",
+]
+# The MCP server that exposes the commands above to an AI agent. FastMCP needs
+# Python 3.10, so this is an extra rather than a dependency.
+mcp = [
+    "fastmcp>=3.0; python_version>='3.10'",
 ]
 
 [tool.setuptools]

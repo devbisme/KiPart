@@ -32,6 +32,12 @@ kipart turns those rows into a `.kicad_sym` library:
 - `kipart/compare_parts.py` — compares the parts of two or more libraries in any
   of the three formats, optionally disregarding geometry, and pairs up parts
   whose names don't agree. Owns the `cmpparts` command.
+- `kipart/mcp_server.py` — an **optional** MCP server, built on FastMCP, putting
+  one tool behind each of the eight commands so an AI agent can reach them. It
+  sits on top of everything else and nothing depends on it; FastMCP is the
+  `kipart[mcp]` extra, so the import is guarded. Its tools take a part
+  description as text or as a path, which is why it wants string-level functions
+  rather than the file-level ones the commands use.
 - `tests/unit/compare_symbols.py` — a **test-only** helper (not part of the
   shipped package) that compares `.kicad_sym` symbols and libraries at the
   S-expression level, ignoring the order of properties, units, and pins, and
@@ -53,8 +59,18 @@ there is one such reader and not several. `part.py` may depend on `kipart.py` an
 Run the tests, but don't stop there — the tests can't tell you a symbol came out
 subtly wrong:
 
-    pytest tests            # 163 tests
-    tox                     # py39-py313
+    pytest tests            # 192 tests
+    tox                     # py39-py314
+
+The MCP server's tests skip themselves when FastMCP isn't installed, so a `tox`
+run that comes back green says nothing about them. `pip install '.[mcp]'`
+first, or run them directly, when that's what changed.
+
+**Tools must stay `run_in_thread=False`** — that's what the `tool()` wrapper in
+`mcp_server.py` is for. The tools capture stdout so that a stray `print` can't
+corrupt the JSON-RPC on the same pipe, and redirecting stdout changes the whole
+process: from FastMCP's default worker thread, a tool would be able to swallow
+a response the event loop was writing at that moment.
 
 The real check is a round trip against `tests/examples/grabbag.spd`, which is a
 deliberate torture case (multi-unit parts, alternates, buses, spacers, every pin

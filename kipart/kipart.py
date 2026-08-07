@@ -53,6 +53,7 @@ __all__ = [
 ]
 
 import csv
+import io
 import math
 import pandas as pd
 import os
@@ -1784,6 +1785,41 @@ def row_file_to_symbol_lib_file(
     return symbol_lib_file
 
 
+def symbol_lib_to_csv(symbol_lib):
+    """
+    Convert a KiCad symbol library into its CSV representation.
+
+    Args:
+        symbol_lib (str or Sexp): KiCad symbol library S-expression.
+
+    Returns:
+        str: The CSV text for every symbol in the library, the parts sorted by
+             name and separated by blank rows.
+    """
+    # Extract parts from the symbol library, giving each part that extends
+    # another the units and pins it borrows from it.
+    parts = resolve_extends(extract_symbols_from_lib(symbol_lib))
+
+    # Sort parts by name for consistent output.
+    parts = sorted(parts, key=lambda x: x[1])
+
+    # Convert each part to CSV rows and combine with blank rows
+    all_rows = []
+    for part in parts:
+        part_rows = symbol_to_csv_rows(part)
+        all_rows.extend(part_rows)
+        all_rows.append([])  # Add blank row between parts
+
+    # Remove trailing blank row if present
+    if all_rows and all_rows[-1] == []:
+        all_rows.pop()
+
+    csv_text = io.StringIO()
+    csv.writer(csv_text).writerows(all_rows)
+
+    return csv_text.getvalue()
+
+
 def symbol_lib_file_to_csv_file(symbol_lib_file, csv_file=None, overwrite=False):
     """
     Convert a KiCad symbol library to a CSV file.
@@ -1828,28 +1864,9 @@ def symbol_lib_file_to_csv_file(symbol_lib_file, csv_file=None, overwrite=False)
     with open(symbol_lib_file, "r") as f:
         symbol_lib = f.read()
 
-    # Extract parts from the symbol library, giving each part that extends
-    # another the units and pins it borrows from it.
-    parts = resolve_extends(extract_symbols_from_lib(symbol_lib))
-
-    # Sort parts by name for consistent output.
-    parts = sorted(parts, key=lambda x: x[1])
-
-    # Convert each part to CSV rows and combine with blank rows
-    all_rows = []
-    for part in parts:  # Sort for consistent output
-        part_rows = symbol_to_csv_rows(part)
-        all_rows.extend(part_rows)
-        all_rows.append([])  # Add blank row between parts
-
-    # Remove trailing blank row if present
-    if all_rows and all_rows[-1] == []:
-        all_rows.pop()
-
     # Write to CSV file
     with open(csv_file, "w", newline="") as f:
-        writer = csv.writer(f)
-        writer.writerows(all_rows)
+        f.write(symbol_lib_to_csv(symbol_lib))
 
     return csv_file
 

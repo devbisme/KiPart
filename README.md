@@ -76,6 +76,13 @@ This will install eight command-line utilities:
 -   `cmpparts`: A utility for comparing the parts of two or more libraries and
         reporting what differs between them.
 
+All eight are also reachable by an AI agent through an MCP server, which is an
+optional extra:
+
+    pip install "kipart[mcp]"
+
+See [Using KiPart from an AI agent](#using-kipart-from-an-ai-agent) below.
+
 ## How the utilities fit together
 
 A part reaches a KiCad `.kicad_sym` library along one path: a description consisting of
@@ -1035,3 +1042,76 @@ thing to look at:
 `--output` works for the other formats too, `--verbose` adds the parts that came
 out identical to any of them, and the exit status is the same whichever is
 chosen.
+
+## Using KiPart from an AI agent
+
+Every command above is also an [MCP](https://modelcontextprotocol.io) tool, so
+an AI agent can build a symbol library without a shell. The server ships with
+KiPart but [FastMCP](https://gofastmcp.com) doesn't, so install the extra:
+
+    pip install "kipart[mcp]"
+
+Then point an MCP client at the `kipart-mcp` command. For Claude Desktop or
+Claude Code, that's an entry in the client's config file:
+
+```json
+{
+  "mcpServers": {
+    "kipart": {
+      "command": "kipart-mcp"
+    }
+  }
+}
+```
+
+The server speaks MCP over stdio. `python -m kipart.mcp_server` runs the same
+thing if you'd rather not rely on the console script being on `PATH`.
+
+### What it offers
+
+There is one tool per command, named after it — `kipart`, `spd2csv`,
+`kilib2spd`, `cmpparts`, and the rest — taking the same options the command
+does. What differs is how a part goes in and comes out: a tool takes the
+description as **text or as a file path**, and hands the result back as text
+unless it's given an `output_path`:
+
+| Called with | Does |
+| --- | --- |
+| `spd2csv(spd_text="…")` | Returns the CSV; writes nothing |
+| `spd2csv(input_path="part.spd")` | Reads the file; returns the CSV |
+| `spd2csv(spd_text="…", output_path="part.csv")` | Returns the CSV *and* writes it |
+
+That lets an agent work a part through SPD → CSV → `.kicad_sym` entirely in
+conversation, and still convert a library the user already has on disk. Writing
+over an existing file needs `overwrite=true`, the same as `-w` does on the
+command line.
+
+`cmpparts` takes its libraries as a list, the first being the one the rest are
+compared against. Each is either a path or an object holding the text:
+
+```json
+{
+  "libraries": [
+    "my_parts.spd",
+    {"text": "(kicad_symbol_lib …)", "format": "kicad_sym", "name": "built"}
+  ],
+  "ignore": ["geometry"]
+}
+```
+
+It answers with `differ`, the same question its exit status answers.
+
+The formats themselves are served as MCP resources, so a model can look up how
+to write a part description before writing one:
+
+| Resource | Holds |
+| --- | --- |
+| `kipart://docs/spd` | SPD.md — the SPD format |
+| `kipart://docs/jpd` | JPD.md — the JPD format |
+| `kipart://docs/readme` | This README |
+| `kipart://examples/grabbag.spd` | A worked example using the whole SPD format |
+
+These read from the files beside the package, so they're available when KiPart
+is run from a clone of the repository. A wheel doesn't carry them, and in that
+case each resource says where to read it online instead. The tools are
+unaffected either way.
