@@ -124,7 +124,7 @@ def _value(value):
 
 def _normalize(name):
     """Reduce a part name to the letters and digits of its lowercase form."""
-    return re.sub(r"[^0-9a-z]", "", name.lower())
+    return re.sub(r"[^0-9a-z]", "", str(name).lower())
 
 
 def name_similarity(name_a, name_b):
