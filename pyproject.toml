@@ -73,6 +73,12 @@ mcp = [
 [tool.setuptools]
 packages = ["kipart"]
 
+# The format documents the MCP server hands back for its kipart://docs/...
+# resources. They live inside the package so that installing kipart installs
+# them, which is the only way the server can read them back.
+[tool.setuptools.package-data]
+kipart = ["docs/*.md"]
+
 [tool.wheel]
 universal = true
 

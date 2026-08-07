@@ -5,8 +5,12 @@ set -euo pipefail
 # released, so read it once and use it throughout.
 version=$(kipart -v | cut -d' ' -f2)
 
-# Build the distributions and publish them to PyPI.
+# Build the distributions and publish them to PyPI. setuptools leaves whatever
+# it copied last time in build/, and never removes a file that has since gone
+# away, so a deleted one would go on being published from there. Clearing it is
+# what keeps a build honest.
 rm -f dist/*
+rm -rf build
 python -m build
 python -m twine check dist/*
 python -m twine upload --repository pypi dist/*

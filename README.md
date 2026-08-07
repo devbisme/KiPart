@@ -165,9 +165,10 @@ The input to `kipart` is one or more CSV or Excel files.
 These contain the following items:
 
 1.  The part name or number stands alone in the first column of a row.
-2.  Part properties are listed on the following rows. Each property begins
-    with a property name followed by a colon and the property value. The
-    standard properties are:
+2.  Part properties are listed on the following rows, one property per row and
+    two columns to a row: the property name with a trailing colon in the first
+    column, its value in the second (`Reference:,U`). A property written into a
+    single cell is not read as a property. The standard properties are:
 
     -   `Reference`: The reference designator such as `U`.
     -   `Value`: The part value (often the same as the name).
@@ -515,7 +516,7 @@ options:
 ```
 
 SPD files use a simple text format to define symbols, summarized below and
-described in full in [SPD.md](SPD.md):
+described in full in [SPD.md](kipart/docs/SPD.md):
 
     ; Comment
     device part_name
@@ -762,7 +763,7 @@ encounters them. A property name may hold anything else, `Manf#` included.
 JPD (JSON Part Description) holds the same information as an SPD file, but as
 JSON, which is handier when a part is being generated or consumed by another
 program. `spd2jpd` and `jpd2spd` convert between the two formats, and the full
-format is described in [JPD.md](JPD.md).
+format is described in [JPD.md](kipart/docs/JPD.md).
 
 ```
 usage: spd2jpd [-h] [-o OUTPUT] [-w] [-v] input_files [input_files ...]
@@ -1111,10 +1112,13 @@ to write a part description before writing one:
 | --- | --- |
 | `kipart://docs/spd` | SPD.md — the SPD format |
 | `kipart://docs/jpd` | JPD.md — the JPD format |
-| `kipart://docs/readme` | This README |
-| `kipart://examples/grabbag.spd` | A worked example using the whole SPD format |
 
-These read from the files beside the package, so they're available when KiPart
-is run from a clone of the repository. A wheel doesn't carry them, and in that
-case each resource says where to read it online instead. The tools are
-unaffected either way.
+Both live in `kipart/docs`, inside the package, so installing KiPart installs
+them and the server can read them back whatever the install looks like.
+
+There is no resource for the CSV of pin data, nor for this README. The CSV is a
+tool argument rather than a format anyone keeps on disk, so the rows it holds
+are spelled out in the `kipart` tool's own description — which is where an agent
+is already looking before it calls the tool. The rest of this README is either
+an option the tools describe themselves or instructions for installing the thing
+the agent is by then already talking to.

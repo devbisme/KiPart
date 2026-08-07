@@ -9,9 +9,11 @@ unless it was told where to write it. That lets an agent work a symbol through
 SPD -> CSV -> .kicad_sym without leaving anything on disk, while still being
 able to convert a library the user already has.
 
-The formats themselves are served as resources — SPD.md, JPD.md, the README,
-and the grabbag example — so a model can look up how to write a part
-description before writing one.
+The formats themselves are served as resources — SPD.md and JPD.md, which
+kipart installs in kipart/docs — so a model can look up how to write a part
+description before writing one. The CSV of pin data has no resource of its
+own: it is a tool argument rather than a format anyone keeps on disk, so the
+rows are spelled out in the `kipart` tool's description.
 
 Run it with the `kipart-mcp` command, or `python -m kipart.mcp_server`. It
 speaks MCP over stdio.
@@ -198,7 +200,44 @@ def _convert(content, output_path, overwrite, messages):
         "Build a KiCad symbol library (.kicad_sym) from rows of pin data, the "
         "`kipart` command. The rows come as CSV text, or from a .csv, .xlsx, "
         "or .xls file. Returns the library as text, and writes it to "
-        "output_path if one is given."
+        "output_path if one is given.\n"
+        "\n"
+        "A symbol is written as: the part name alone in the first column of a "
+        "row; then a row per property, its name carrying a trailing colon in "
+        "the first column and its value in the second — 'Reference:,U' — "
+        "naming Reference, Value, Footprint, Datasheet, Description, "
+        "Keywords, Filters, or anything you care to invent; then a header row "
+        "naming the columns, of which Pin and Name are required and Unit, "
+        "Side, Type, Style and Hidden are optional, in any order; then one "
+        "row per pin beneath those headers. A blank row ends the symbol, and "
+        "another symbol may follow it.\n"
+        "\n"
+        "  Pin     Numeric (69) or alphanumeric (C10). A '*' in place of a "
+        "number leaves a gap that separates the pins into groups, which only "
+        "holds under sort='row'.\n"
+        "  Name    Anything without a comma. Split into alternate functions "
+        "at each alt_delimiter character, if one is given.\n"
+        "  Unit    The symbol gets one unit per distinct value. Leave it "
+        "blank for a single-unit part.\n"
+        "  Side    left, right, top, bottom.\n"
+        "  Type    input, output, bidirectional, tri_state, passive, free, "
+        "unspecified, power_in, power_out, open_collector, open_emitter, "
+        "no_connect.\n"
+        "  Style   line, inverted, clock, inverted_clock, input_low, "
+        "clock_low, output_low, edge_clock_high, non_logic.\n"
+        "  Hidden  y, yes, t, true or 1 hides the pin; anything else shows "
+        "it.\n"
+        "\n"
+        "Type and Style also take the usual abbreviations — in, out, io, pwr, "
+        "gnd, clk, inv, nc, and so on. An empty cell falls back to the side, "
+        "pin_type, or pin_style argument.\n"
+        "\n"
+        "    U1\n"
+        "    Reference:,U\n"
+        "    Pin,Name,Type,Side\n"
+        "    1,vcc,power_in,top\n"
+        "    2,gnd,power_in,bottom\n"
+        "    3,a0,input,left\n"
     ),
 )
 def kipart_tool(
@@ -640,24 +679,30 @@ def cmpparts_tool(
 
 # ===== The formats, as resources =====
 
-# The format documents live beside the package in a checkout. A wheel doesn't
-# carry them, so a missing one is reported rather than raised.
-DOCS = Path(__file__).resolve().parent.parent
+# The format documents live inside the package, which is what makes them
+# readable here: installing kipart installs them, the same as the modules
+# beside them. Anywhere else and only a checkout would have them.
+DOCS = Path(__file__).resolve().parent / "docs"
 
-DOC_URL = "https://github.com/devbisme/kipart/blob/master/"
+DOC_URL = "https://github.com/devbisme/kipart/blob/master/kipart/docs/"
 
 
-def _doc(relative_path):
-    """Give the text of one of the documents kipart ships beside the package."""
-    path = DOCS / relative_path
+def _doc(name):
+    """
+    Give the text of one of the format documents kipart installs.
+
+    Args:
+        name (str): The document's filename in kipart/docs.
+
+    Returns:
+        str: The document, or a note pointing at it on GitHub if this install
+            somehow lacks it — a missing document costs the caller a reference
+            rather than a conversion, so it's reported instead of raised.
+    """
     try:
-        return path.read_text()
+        return (DOCS / name).read_text()
     except OSError:
-        return (
-            f"{relative_path} isn't installed alongside kipart — it ships in "
-            "the repository rather than in the wheel. Read it at "
-            f"{DOC_URL}{relative_path}"
-        )
+        return f"{name} isn't installed with kipart. Read it at {DOC_URL}{name}"
 
 
 @server.resource(
@@ -688,30 +733,6 @@ def jpd_doc() -> str:
     return _doc("JPD.md")
 
 
-@server.resource(
-    "kipart://docs/readme",
-    name="kipart README",
-    description=(
-        "What kipart does and what each of its commands is for, including the "
-        "columns a CSV of pin data holds."
-    ),
-    mime_type="text/markdown",
-)
-def readme_doc() -> str:
-    return _doc("README.md")
-
-
-@server.resource(
-    "kipart://examples/grabbag.spd",
-    name="grabbag.spd example",
-    description=(
-        "A worked SPD example exercising the whole format — multi-unit parts, "
-        "alternates, buses, spacers, and every pin type and modifier."
-    ),
-    mime_type="text/plain",
-)
-def grabbag_example() -> str:
-    return _doc("tests/examples/grabbag.spd")
 
 
 # ===== Running it =====

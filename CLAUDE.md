@@ -1,7 +1,7 @@
 # Working on kipart
 
 Notes for anyone (human or AI) changing this codebase. The formats themselves are
-documented in [SPD.md](SPD.md) and [JPD.md](JPD.md); this file covers the things
+documented in [SPD.md](kipart/docs/SPD.md) and [JPD.md](kipart/docs/JPD.md); this file covers the things
 the code doesn't say out loud.
 
 ## What the modules are

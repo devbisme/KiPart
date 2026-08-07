@@ -3,8 +3,8 @@
 
 SPD (Shorthand Part Description) is the terse text format meant to be typed by
 hand. JPD (JSON Part Description) holds the same information as JSON, spelling
-out what SPD encodes as type codes and modifier characters. See SPD.md and
-JPD.md for the two formats.
+out what SPD encodes as type codes and modifier characters. See kipart/docs/SPD.md and
+kipart/docs/JPD.md for the two formats.
 
 A KiCad symbol library can be read straight into JPD as well, which is how a
 part gets a description free of the geometry the library wraps it in.

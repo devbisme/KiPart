@@ -11,7 +11,7 @@ have no way to say: where each pin sits, how long it is, and the shapes of the
 symbol body. Ask for it with `geometry=True`; the extra keys are ignored by
 everything that only wants the electrical description of the part.
 
-See JPD.md for the structure itself.
+See kipart/docs/JPD.md for the structure itself.
 """
 
 __all__ = [
@@ -204,7 +204,7 @@ def symbol_to_part(symbol, geometry=False):
                                   False.
 
     Returns:
-        dict: The part, shaped as described in JPD.md. Each pin carries the one
+        dict: The part, shaped as described in kipart/docs/JPD.md. Each pin carries the one
              pin number it has in the symbol, and the pins of a side are listed
              in the order they're placed. With geometry, each pin gains a
              'geometry' key and each unit a 'graphics' and 'bbox' key.

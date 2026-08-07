@@ -6,7 +6,7 @@ its pin type codes and style modifiers, the way it names several pins from one
 line, and how a pin line is read and written. The converters built on top of it
 (spd2csv, kilib2spd, jpd) deal only in the parsed pieces.
 
-See SPD.md for the format itself.
+See kipart/docs/SPD.md for the format itself.
 """
 
 __all__ = [
@@ -361,7 +361,7 @@ def parse_spd_symbol(lines: list) -> dict:
 
     This is the single reader of SPD's directives; the converters work from the
     part it returns rather than walking the lines themselves. The part is shaped
-    like this, which is also the JPD format (see JPD.md):
+    like this, which is also the JPD format (see kipart/docs/JPD.md):
 
         {
             "name": "rt9818",

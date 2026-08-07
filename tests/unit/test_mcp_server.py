@@ -5,9 +5,10 @@ isn't installed.
 
 Most of these call the tool functions directly — FastMCP's decorator hands the
 function back unchanged, so `kipart_tool(...)` is the same call the server makes
-once it has validated the arguments. The last two drive a client instead, which
-is the only way to catch what goes wrong between a client and a tool rather
-than inside one.
+once it has validated the arguments. The ones that go through `talk()` drive a
+client instead, which is the only way to catch what goes wrong between a client
+and a tool rather than inside one, or to read a tool's description as an agent
+would be given it.
 
 The symbol libraries these need are built from tests/examples/grabbag.spd rather
 than read from tests/examples/*.kicad_sym, which are gitignored build products.
@@ -40,6 +41,17 @@ CMP_A = EXAMPLES / "cmp_a.spd"
 CMP_B = EXAMPLES / "cmp_b.spd"
 
 ONE_PART_CSV = "MYPART\nPin,Name,Type,Side\n1,A,input,left\n2,B,output,right\n"
+
+
+def talk(work):
+    """Run `work` against an in-memory client of the server."""
+    from fastmcp import Client
+
+    async def session():
+        async with Client(server) as client:
+            return await work(client)
+
+    return asyncio.run(session())
 
 
 @pytest.fixture
@@ -186,6 +198,98 @@ class TestCmpparts:
             cmpparts_tool(libraries=[{"text": "device X\n"}, str(CMP_B)])
 
 
+# Every construct the `kipart` tool's description claims a row can hold: a part
+# name, properties, headers in an order of their own, a gap pin, a name split
+# into alternates, units, all four sides, an abbreviated type, a hidden pin, and
+# a second symbol after a blank row.
+DOCUMENTED_CSV = """\
+demo_part
+Reference:,U
+Footprint:,soic-8
+Name,Pin,Type,Side,Style,Unit,Hidden
+a0,1,input,left,line,LOGIC,no
+b0,2,input,left,line,LOGIC,no
+,*,,left,,LOGIC,
+clk,3,input,left,clock,LOGIC,no
+y0/q0,4,output,right,inverted,LOGIC,no
+nc,5,no_connect,right,line,LOGIC,yes
+vcc,8,pwr,top,line,PWR,no
+gnd,7,gnd,bottom,line,PWR,no
+
+second_part
+Pin,Name
+1,in
+2,out
+"""
+
+
+class TestTheCsvTheDescriptionDocuments:
+    """
+    The CSV grammar lives in the `kipart` tool's description and nowhere else.
+
+    An agent writing CSV has only that description to go on — there is no
+    resource for the format — so a description that misdescribes the rows is a
+    defect in the server, not in the prose. These build CSV written strictly to
+    what it claims and check that kipart reads back what it promised.
+    """
+
+    @staticmethod
+    def parts_of(csv_text, **options):
+        """The library that CSV builds, read back as JPD to be looked at."""
+        lib = kipart_tool(csv_text=csv_text, **options)["content"]
+        jpd = json.loads(kilib2jpd_tool(kicad_sym_text=lib)["content"])
+        return {part["name"]: part for part in jpd["parts"]}
+
+    def test_the_rows_build_what_the_description_says_they_do(self):
+        parts = self.parts_of(DOCUMENTED_CSV, alt_delimiter="/")
+
+        assert set(parts) == {"demo_part", "second_part"}
+
+        demo = parts["demo_part"]
+        assert demo["properties"]["Footprint"] == "soic-8"
+
+        units = {unit["name"]: unit for unit in demo["units"]}
+        assert set(units) == {"LOGIC", "PWR"}
+
+        # The header row named its columns out of order, and the gap pin left a
+        # space rather than a pin of its own.
+        logic = units["LOGIC"]
+        assert [pin["name"] for pin in logic["left"]] == ["a0", "b0", "clk"]
+        assert logic["left"][2]["style"] == "clock"
+
+        # A name split at the delimiter keeps one pin and gains a function.
+        y0, nc = logic["right"]
+        assert y0["name"] == "y0"
+        assert [alt["name"] for alt in y0["alternates"]] == ["q0"]
+
+        assert nc["type"] == "no_connect"
+        assert nc["hidden"] is True
+
+        # 'pwr' and 'gnd' are abbreviations the description promises are taken.
+        assert units["PWR"]["top"][0]["type"] == "power_in"
+        assert units["PWR"]["bottom"][0]["type"] == "power_in"
+
+        # A blank row ended the symbol, and the next one began another.
+        second = parts["second_part"]
+        assert [pin["name"] for pin in second["units"][0]["left"]] == ["in", "out"]
+
+    def test_the_example_in_the_description_builds(self):
+        """The worked example the description ends with has to actually work."""
+        tools = talk(lambda client: client.list_tools())
+        description = next(one for one in tools if one.name == "kipart").description
+
+        # The example is the only part of the description indented as a block.
+        example = "".join(
+            line[4:] + "\n"
+            for line in description.splitlines()
+            if line.startswith("    ")
+        )
+        assert example, "the description no longer carries a worked example"
+
+        parts = self.parts_of(example)
+        assert set(parts) == {"U1"}
+
+
 COMMANDS = {
     "kipart",
     "kilib2csv",
@@ -201,16 +305,7 @@ COMMANDS = {
 class TestThroughAClient:
     """The server as a client actually meets it, in the same process."""
 
-    @staticmethod
-    def talk(work):
-        """Run `work` against an in-memory client of the server."""
-        from fastmcp import Client
-
-        async def session():
-            async with Client(server) as client:
-                return await work(client)
-
-        return asyncio.run(session())
+    talk = staticmethod(talk)
 
     def test_it_offers_a_tool_per_command(self):
         tools = self.talk(lambda client: client.list_tools())
@@ -223,8 +318,6 @@ class TestThroughAClient:
         assert {str(one.uri) for one in resources} == {
             "kipart://docs/spd",
             "kipart://docs/jpd",
-            "kipart://docs/readme",
-            "kipart://examples/grabbag.spd",
         }
 
     def test_a_tool_call_comes_back_converted(self):
