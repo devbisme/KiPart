@@ -1,5 +1,14 @@
 # History
 
+## 2.8.0 (2026-08-07)
+
+-   Added an MCP server that puts each of kipart's eight commands behind a tool of the same name, so an AI agent can convert a part description without a shell. Run it with the `kipart-mcp` command, or `python -m kipart.mcp_server`; it speaks MCP over stdio.
+-   A tool takes its part description as *text* or as a *file path*, and hands the result back as text unless it was told where to write it, so a symbol can go from SPD through CSV to `.kicad_sym` without anything being left on disk.
+-   The server also serves SPD.md, JPD.md, the README, and the `grabbag.spd` example as resources, so a model can look up how to write a part description before writing one.
+-   The MCP server is optional: it needs FastMCP, which needs Python 3.10, so it comes as the `kipart[mcp]` extra rather than as a dependency. Nothing else in kipart depends on it.
+-   Added `symbol_lib_to_csv`, which converts a KiCad symbol library into CSV text. `symbol_lib_file_to_csv_file` (and so `kilib2csv`) now works from it, and it's what the `kilib2csv` MCP tool calls to convert a library it was handed as text.
+-   `cmpparts --match normalized` no longer fails on a part whose name isn't a string, as a name made only of digits comes back from the S-expression reader.
+
 ## 2.7.0 (2026-07-20)
 
 -   `kilib2csv`, `kilib2spd`, and `kilib2jpd` now handle KiCad's `extends` keyword. A part written with `(extends "base")` borrows the base part's units and pins and overrides only its properties; the readers copy those units and pins into it so it comes out as a whole part rather than an empty one. `extends` may chain and the base may sit anywhere in the library. `kipart.resolve_extends` is the single place this is done, called once the symbols have been read from a library.
