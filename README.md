@@ -20,16 +20,19 @@ Excel, or SPD file.
 -   Also includes `kilib2csv` for converting existing schematic part libraries
     into CSV files suitable for input to KiPart.
 -   Also includes `kilib2spd` for converting existing schematic part libraries
-    into SPD (Shorthand Part Descriptiion) files, so a library can be maintained
+    into SPD (Shorthand Part Description) files, so a library can be maintained
     in a compact, human-friendly format.
 -   Also includes `kilib2jpd` for converting existing schematic part libraries
     into JPD (JSON Part Description) files, so a library can be maintained in
     an AI-friendly format.
 -   Also includes `spd2csv` for converting Shorthand Part Description (SPD) files
     to CSV format which can then be turned into schematic part libraries.
--   Also includes `spd2jpd` and `jpd2spd` for converting between SPD and SPD files.
+-   Also includes `spd2jpd` and `jpd2spd` for converting between SPD and JPD files.
 -   Also includes `cmpparts` for comparing the parts of two or more libraries
     and flagging discrepancies.
+-   Also includes `kipart-mcp`, an MCP server that puts all of the above within
+    reach of an AI agent, taking part descriptions as text as well as files so a
+    symbol can be built without anything touching disk.
 
 ## Example Use Case
 
