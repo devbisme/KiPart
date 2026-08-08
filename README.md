@@ -62,7 +62,7 @@ Simple enough:
 
     pip install kipart
 
-This will install eight command-line utilities:
+This will install eight part-conversion command-line utilities:
 
 -   `kipart`: The main utility for generating schematic symbols from rows of pin data
         stored in CSV or Excel files.
@@ -79,8 +79,9 @@ This will install eight command-line utilities:
 -   `cmpparts`: A utility for comparing the parts of two or more libraries and
         reporting what differs between them.
 
-All eight are also reachable by an AI agent through an MCP server, which is an
-optional extra:
+All eight are also reachable by an AI agent through the MCP server, which is
+installed as a ninth command, `kipart-mcp`. It needs FastMCP, which doesn't come
+with KiPart, so install the extra before running it:
 
     pip install "kipart[mcp]"
 
@@ -222,7 +223,7 @@ These contain the following items:
             -   input, inp, in, clk
             -   output, outp, out
             -   bidirectional, bidir, bi, inout, io, iop
-            -   tristate, tri, tri_state, tristate
+            -   tri_state, tri-state, tristate, tri
             -   passive, pass
             -   free
             -   unspecified, un, analog
@@ -240,7 +241,7 @@ These contain the following items:
             -   clock, clk, rising_clk
             -   inverted_clock, inv_clk, clk_b, clk_n, ~clk, #clk
             -   input_low, inp_low, in_lw, in_b, in_n, ~in, #in
-            -   clock_low, clk_low, clk_lw, clk_b, clk_n, ~clk, #clk
+            -   clock_low, clk_low, clk_lw
             -   output_low, outp_low, out_lw, out_b, out_n, ~out, #out
             -   edge_clock_high
             -   non_logic, nl, analog
@@ -310,7 +311,7 @@ with the same name already exists, the new part will only overwrite it
 if the `-w` flag is also used. Any existing parts in the library that
 are not overwritten are retained.
 
-The `--hide_pin_num` option is used to hide pin numbers.
+The `--hide-pin-num` option is used to hide pin numbers.
 
 #### Examples
 
@@ -541,34 +542,37 @@ A pin type is composed of a code for the electrical type to which
 optional modifier characters can be added to set the
 graphical pin style and visibility:
 
-| Code             | KiCad Type     |
-|------------------|----------------|
-| p, pi, pwr       | power_in       |
-| po, pwr_out      | power_out      |
-| i, in            | input          |
-| o, out           | output         |
-| b, bi, io        | bidirectional  |
-| t, tri           | tri_state      |
-| oc               | open_collector |
-| oe               | open_emitter   |
-| pass             | passive        |
-| f                | free           |
-| u, un, a, analog | unspecified    |
-| x, nc            | no_connect     |
+| Code                | KiCad Type     |
+|---------------------|----------------|
+| p, pi, pwr, pwr_in  | power_in       |
+| po, pwr_out         | power_out      |
+| i, in               | input          |
+| o, out              | output         |
+| b, bi, io           | bidirectional  |
+| t, tri              | tri_state      |
+| oc                  | open_collector |
+| oe                  | open_emitter   |
+| pass                | passive        |
+| f                   | free           |
+| u, un, a, analog    | unspecified    |
+| x, nc               | no_connect     |
 
-| Modifier | Effect          |
-|----------|-----------------|
-| `*`      | inverted        |
-| `!`      | inverted        |
-| `~`      | inverted        |
-| `>`      | clock           |
-| `_`      | low             |
-| `@`      | analog          |
-| `-`      | hidden          |
+| Modifier            | Effect          |
+|---------------------|-----------------|
+| `*` `!` `~` `/` `#` | inverted        |
+| `>`                 | clock           |
+| `_`                 | low             |
+| `@`                 | analog          |
+| `-`                 | hidden          |
 
 Multiple modifiers can be combined (e.g., `!>` produces an inverted_clock,
 `-!>` produces an inverted_clock + hidden).
 The modifiers can be placed before or after the pin code.
+The `_` modifier depends on the pin type, giving `input_low` on an input and
+`output_low` on an output.
+
+A code that isn't in the table above is not reported as an error: the pin is
+made `passive`.
 
 If the same pin number is used more than once, the subsequent uses
 will define *alternate pins*, possibly with different names, electrical
@@ -649,14 +653,14 @@ Below is a simple example of an SPD file:
     Manf: Richtek
 
     left
-        a       vcc     3
+        p       vcc     3
         *
-        a       gnd     2
+        p       gnd     2
 
     right
         *
         *
-        h       rst#    1
+        i_      rst#    1
 
 Convert and generate the symbol:
 
@@ -767,17 +771,32 @@ format is described in [JPD.md](kipart/docs/JPD.md).
 
 ```
 usage: spd2jpd [-h] [-o OUTPUT] [-w] [-v] input_files [input_files ...]
-usage: jpd2spd [-h] [-o OUTPUT] [-w] [-v] input_files [input_files ...]
+
+Convert SPD part description files into JPD (JSON) files
 
 positional arguments:
-input_files           Input files to convert
+input_files          Input files to convert
 
 options:
--h, --help            show this help message and exit
--o OUTPUT, --output OUTPUT
-                        Output file path ('-' writes to stdout)
--w, --overwrite       Allow overwriting of an existing output file
--v, --version         show program's version number and exit
+-h, --help           show this help message and exit
+-o, --output OUTPUT  Output .jpd file path ('-' writes to stdout)
+-w, --overwrite      Allow overwriting of an existing output file
+-v, --version        show program's version number and exit
+```
+
+```
+usage: jpd2spd [-h] [-o OUTPUT] [-w] [-v] input_files [input_files ...]
+
+Convert JPD (JSON) part description files into SPD files
+
+positional arguments:
+input_files          Input files to convert
+
+options:
+-h, --help           show this help message and exit
+-o, --output OUTPUT  Output .spd file path ('-' writes to stdout)
+-w, --overwrite      Allow overwriting of an existing output file
+-v, --version        show program's version number and exit
 ```
 
     spd2jpd part.spd            # Generates part.jpd
@@ -823,7 +842,7 @@ the libraries differ and 0 if they don't, which is enough to make it a check in
 a build.
 
 A pair of libraries to try it on lives in `tests/examples`. `cmp_a.spd` and
-`cmp_b.spd` hold the same six parts with one difference of every kind between
+`cmp_b.spd` hold five parts apiece, with one difference of every kind between
 them — a part that's identical, one whose pins are merely drawn in a different
 order, one with a dropped and a retyped pin, one that's been renamed and edited,
 and one apiece that the other library hasn't got:
@@ -844,7 +863,9 @@ and say the same thing.
 usage: cmpparts [-h] [-g] [-i CATEGORY] [-m {exact,normalized,fuzzy,pins}]
                 [-t THRESHOLD] [-a OLD=NEW] [-f {text,rich,html,json}]
                 [-o FILE] [--no-browser] [--wide] [--verbose] [-v]
-                FILE FILE [FILE ...]
+                FILE [FILE ...]
+
+Compare the parts of two or more libraries and report the differences. The first library is the one the others are compared against. Libraries can be .kicad_sym, .spd, or .jpd files, in any mix.
 
 positional arguments:
 FILE                  The libraries to compare (.kicad_sym, .spd, or .jpd)
@@ -879,7 +900,11 @@ options:
 --verbose             Name the parts that came out identical, not just the
                         differing ones
 -v, --version         show program's version number and exit
+
+Exits with 1 if the libraries differ, 0 if they don't.
 ```
+
+Fewer than two libraries is an error — there's nothing to compare against.
 
 #### Ignoring the geometry
 
