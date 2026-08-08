@@ -59,7 +59,7 @@ there is one such reader and not several. `part.py` may depend on `kipart.py` an
 Run the tests, but don't stop there — the tests can't tell you a symbol came out
 subtly wrong:
 
-    pytest tests            # 192 tests
+    pytest tests            # 194 tests
     tox                     # py39-py314
 
 The MCP server's tests skip themselves when FastMCP isn't installed, so a `tox`
