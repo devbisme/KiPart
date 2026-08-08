@@ -93,20 +93,20 @@ A pin line is a type, a name, and one or more pin numbers:
 
 ### Pin types
 
-| Code             | KiCad type     |
-|------------------|----------------|
-| p, pi, pwr       | power_in       |
-| po, pwr_out      | power_out      |
-| i, in            | input          |
-| o, out           | output         |
-| b, bi, io        | bidirectional  |
-| t, tri           | tri_state      |
-| oc               | open_collector |
-| oe               | open_emitter   |
-| pass             | passive        |
-| f                | free           |
-| u, un, a, analog | unspecified    |
-| x, nc            | no_connect     |
+| Code                | KiCad type     |
+|---------------------|----------------|
+| p, pi, pwr, pwr_in  | power_in       |
+| po, pwr_out         | power_out      |
+| i, in               | input          |
+| o, out              | output         |
+| b, bi, io           | bidirectional  |
+| t, tri              | tri_state      |
+| oc                  | open_collector |
+| oe                  | open_emitter   |
+| pass                | passive        |
+| f                   | free           |
+| u, un, a, analog    | unspecified    |
+| x, nc               | no_connect     |
 
 ### Style modifiers
 
