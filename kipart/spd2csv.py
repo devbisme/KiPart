@@ -6,6 +6,8 @@ into the CSV rows that kipart reads.
 """
 
 import argparse
+import csv
+import io
 import sys
 from pathlib import Path
 
@@ -16,6 +18,23 @@ from .spd import (
     parse_spd_symbol,
     SIDE_ORDER,
 )
+
+
+def rows_to_csv(rows: list[list[str]]) -> str:
+    """
+    Write rows out as CSV text.
+
+    This goes through csv.writer rather than joining each row on commas, so
+    that a value holding a comma is quoted. Joined by hand, a property like
+    `Description: Single precision timer, DIP-8` becomes two fields, and kipart
+    reads the second one as a third column and keeps only the text before the
+    comma — a property quietly losing its tail rather than anything failing.
+    """
+    out = io.StringIO()
+    # kipart reads these rows back with csv.reader, which takes either line
+    # ending. \n keeps the output what it has always been on every platform.
+    csv.writer(out, lineterminator="\n").writerows(rows)
+    return out.getvalue()
 
 
 def convert_spd_symbol(lines: list[str]) -> list[list[str]]:
@@ -82,10 +101,7 @@ def spd_to_csv(spd_content: str) -> str:
         if i < len(symbols) - 1:
             all_csv_rows.append([])  # Blank row between symbols
 
-    # Convert to CSV string
-    return ''.join(
-        (','.join(row) + '\n') if row else '\n' for row in all_csv_rows
-    )
+    return rows_to_csv(all_csv_rows)
 
 
 def main():
@@ -143,9 +159,7 @@ def main():
             continue
 
     # Write output
-    output_content = '\n'.join(
-        ','.join(row) if row else '' for row in all_csv_rows
-    ) + '\n'
+    output_content = rows_to_csv(all_csv_rows)
 
     if args.output:
         mode = 'a' if args.merge else 'w'

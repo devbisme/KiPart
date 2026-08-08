@@ -1564,6 +1564,43 @@ i       pin1    1
 
         assert csv_rows[1] == ["Datasheet:", "https://example.com/ds.pdf", ""]
 
+    def test_a_comma_in_a_property_survives_the_csv(self):
+        """A property value holding a comma reaches the symbol whole.
+
+        The CSV is what carries a property from SPD to kipart, so a value
+        written into it unquoted splits into two fields and arrives as just the
+        text before the comma. Nothing raises — the property is simply short —
+        which is why this is worth pinning down.
+        """
+        description = "Single precision timer, DIP-8"
+        csv_text = spd_to_csv(
+            "\n".join(
+                [
+                    "device ne555",
+                    f"Description: {description}",
+                    "left",
+                    "p       gnd     1",
+                ]
+            )
+        )
+
+        row = next(
+            row
+            for row in csv.reader(csv_text.splitlines())
+            if row and row[0] == "Description:"
+        )
+        assert row[1] == description
+
+        # And through to the symbol, which is where the loss was visible.
+        symbol_lib = rows_to_symbol_lib(list(csv.reader(csv_text.splitlines())))
+        symbol = next(item for item in symbol_lib if item[0] == "symbol")
+        built = next(
+            item
+            for item in symbol
+            if item[0] == "property" and item[1] == "Description"
+        )
+        assert built[2] == description
+
 
 # ============================================================================
 # Tests for kilib2spd
