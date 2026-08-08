@@ -4,7 +4,9 @@
 
 -   Added an MCP server that puts each of kipart's eight commands behind a tool of the same name, so an AI agent can convert a part description without a shell. Run it with the `kipart-mcp` command, or `python -m kipart.mcp_server`; it speaks MCP over stdio.
 -   A tool takes its part description as *text* or as a *file path*, and hands the result back as text unless it was told where to write it, so a symbol can go from SPD through CSV to `.kicad_sym` without anything being left on disk.
--   The server also serves SPD.md, JPD.md, the README, and the `grabbag.spd` example as resources, so a model can look up how to write a part description before writing one.
+-   The server also serves SPD.md and JPD.md as resources, so a model can look up how to write a part description before writing one.
+-   SPD.md and JPD.md now live in `kipart/docs` and are installed with the package rather than sitting only in the repository, so the MCP server can serve them from any install and not just from a checkout.
+-   The CSV of pin data gets no resource of its own — it's a tool argument rather than a format anyone keeps on disk — so the `kipart` tool's description spells out the rows a symbol is written as, the columns it may hold, and the values each column takes.
 -   The MCP server is optional: it needs FastMCP, which needs Python 3.10, so it comes as the `kipart[mcp]` extra rather than as a dependency. Nothing else in kipart depends on it.
 -   Added `symbol_lib_to_csv`, which converts a KiCad symbol library into CSV text. `symbol_lib_file_to_csv_file` (and so `kilib2csv`) now works from it, and it's what the `kilib2csv` MCP tool calls to convert a library it was handed as text.
 -   `cmpparts --match normalized` no longer fails on a part whose name isn't a string, as a name made only of digits comes back from the S-expression reader.
